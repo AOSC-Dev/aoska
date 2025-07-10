@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "shop_demo2",
+  "productName": "aoska",
   "version": "0.1.0",
-  "identifier": "com.shop_demo2.app",
+  "identifier": "com.aosc.aoska",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "shop_demo2",
+        "title": "aoska",
         "width": 1150,
         "height": 800
       }

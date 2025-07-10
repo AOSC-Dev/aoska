@@ -1,0 +1,36 @@
+use std::fmt::format;
+
+use crate::common::config::ASM_ENDPOINT;
+use crate::common::packages::PackageRecommended;
+
+use anyhow::{Context, Ok, Result};
+use reqwest::{Client, Response};
+
+use serde::de::DeserializeOwned;
+
+fn build_url(path: &str) -> String {
+    format!(
+        "{}/{}",
+        ASM_ENDPOINT.trim_end_matches("/"),
+        path.trim_end_matches("/")
+    )
+}
+
+async fn fetch_data(client: &Client, path: &str) -> Result<T>
+where
+    T: DeserializeOwned,
+{
+    let url = build_url(path);
+    let resp = client
+        .get(&url)
+        .header("User-Agent", "aoska/1.0")
+        .send()
+        .await
+        .with_context(|| format!("GET {url}"))?;
+
+    resp.error_for_status_ref().with_context(|| format!("Bad Status: {}", resp.status()))?;
+
+    // Deserialize Json
+    let data = resp.json::<T>().await.with_context(|| format!("Invalid JSON in {path}"))?;
+    Ok(data)
+}
