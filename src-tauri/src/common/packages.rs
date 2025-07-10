@@ -11,6 +11,13 @@ pub enum Category {
     Observing
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PackageBrief {
+    pub name: String,
+    pub intro: String,
+    pub icon: PathBuf,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PackageFlags {
     pub unoffical: bool,
@@ -32,11 +39,6 @@ pub struct PackageInfo {
     pub homepage: String,
 }
 
-/// The list of recommended packages' name.
-/// Will be serialized into repo-root/recommended_packages.json
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PackageRecommended(pub Vec<String>);
-
 /// The detailed infomation of a package. 
 /// Will be serialized into repo-root/packages/$package_name/meta.json 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,4 +52,3 @@ pub struct PackageDetail {
     package_flags: PackageFlags,
     package_info: PackageInfo,
 }
-
