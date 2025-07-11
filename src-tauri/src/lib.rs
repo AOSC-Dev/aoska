@@ -1,4 +1,5 @@
 pub mod common;
+pub mod command;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
