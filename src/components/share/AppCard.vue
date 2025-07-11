@@ -35,12 +35,13 @@ img {
 }
 
 .name {
-    margin-top: 10px;
-    font-size: 20px;
+  margin-top: 14px;
+  font-size: 20px;
+  line-height: 20px;
 }
 
 .intro {
-    margin-top: 4px;
-    font-size: 14px;
+  margin-top: 4px;
+  font-size: 14px;
 }
 </style>

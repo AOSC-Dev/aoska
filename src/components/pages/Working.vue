@@ -5,6 +5,8 @@
       :key="index"
       :name="app.name"
       :intro="app.intro"
+      :version="app.version"
+      :size="app.size"
       @click="showDetail"
     ></AppBanner>
   </div>
@@ -17,42 +19,6 @@ import { invoke } from '@tauri-apps/api/core';
 import AppBanner from '../share/AppBanner.vue';
 import router from '../../router';
 
-// 应用信息列表
-// const appList = [
-//   {
-//     name: "应用程序1",
-//     intro: "这是应用程序1"
-//   },
-//   {
-//     name: "应用程序2",
-//     intro: "这是应用程序2"
-//   },
-//   {
-//     name: "应用程序3",
-//     intro: "这是应用程序3"
-//   },
-//   {
-//     name: "应用程序4",
-//     intro: "这是应用程序4"
-//   },
-//   {
-//     name: "应用程序5",
-//     intro: "这是应用程序5"
-//   },
-//   {
-//     name: "应用程序6",
-//     intro: "这是应用程序6"
-//   },
-//   {
-//     name: "应用程序7",
-//     intro: "这是应用程序7"
-//   },
-//   {
-//     name: "应用程序8",
-//     intro: "这是应用程序8"
-//   },
-// ]
-
 // 定义AppInfo类型
 interface AppInfo {
   name: string,
@@ -62,17 +28,32 @@ interface AppInfo {
 }
 
 // 获取应用列表
-const appList = ref<AppInfo[]>([])
-const fetchAppList = async (category: string) => {
-  try {
-    const result = await invoke<AppInfo[]>('fetch_by_category', { 
-      category: category 
-    });
-    appList.value = result;
-  } catch (error) {
-    console.error('Error fetching list:', error);
+const appList = [
+  {
+    name: "WPS 办公套件",
+    intro: "这是应用程序 WPS，这是应用程序 WPS 办公套件",
+    version: "123.4.5",
+    size: "233 Mib"
+  },
+  {
+    name: "WPS 办公套件",
+    intro: "这是应用程序 WPS，这是应用程序 WPS 办公套件",
+    version: "123.4.5",
+    size: "233 Mib"
   }
-}
+]
+
+// const appList = ref<AppInfo[]>([])
+// const fetchAppList = async (category: string) => {
+//   try {
+//     const result = await invoke<AppInfo[]>('fetch_by_category', { 
+//       category: category 
+//     });
+//     appList.value = result;
+//   } catch (error) {
+//     console.error('Error fetching list:', error);
+//   }
+// }
 
 // 跳转到应用详情
 const showDetail = () => {
@@ -80,14 +61,14 @@ const showDetail = () => {
 }
 
 // 组件挂载时自动执行
-const category = "working"
-onBeforeMount(() => {
-  fetchAppList(category)
-})
+// const category = "working"
+// onBeforeMount(() => {
+//   fetchAppList(category)
+// })
 </script>
 
 <style scoped>
 .working {
-  margin-top: 40px;
+  margin: 60px 20px 20px 20px;
 }
 </style>

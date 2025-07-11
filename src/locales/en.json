@@ -42,5 +42,8 @@
         "greeting1": "",
         "greeting2": " updates in total is available",
         "button": "Update"
+    },
+    "appBanner": {
+        "install": "install"
     }
 }

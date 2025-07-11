@@ -103,15 +103,22 @@ interface AppInfo {
 }
 
 // 获取推荐列表
-const recommandList = ref<AppInfo[]>([])
-const fetchRecommandList = async () => {
-  try {
-    const result = await invoke<AppInfo[]>('fetch_recommand');
-    recommandList.value = result;
-  } catch (error) {
-    console.error('Error fetching list:', error);
+const recommandList = ref<AppInfo[]>([
+  {
+    name: "WPS 办公套件",
+    intro: "这是应用程序 WPS"
   }
-}
+])
+
+// const recommandList = ref<AppInfo[]>([])
+// const fetchRecommandList = async () => {
+//   try {
+//     const result = await invoke<AppInfo[]>('fetch_recommand');
+//     recommandList.value = result;
+//   } catch (error) {
+//     console.error('Error fetching list:', error);
+//   }
+// }
 
 // 跳转到应用详情
 const showDetail = () => {
@@ -119,9 +126,9 @@ const showDetail = () => {
 }
 
 // 组件挂载时自动执行
-onBeforeMount(() => {
-  fetchRecommandList()
-})
+// onBeforeMount(() => {
+//   fetchRecommandList()
+// })
 </script>
 
 <style scoped>

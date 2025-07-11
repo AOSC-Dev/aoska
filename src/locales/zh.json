@@ -42,5 +42,8 @@
         "greeting1": "另有",
         "greeting2": "个常规更新，请尽早进行更新",
         "button": "立即更新"
+    },
+    "appBanner": {
+        "install": "安装"
     }
 }
