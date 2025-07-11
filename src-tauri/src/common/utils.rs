@@ -1,10 +1,7 @@
-use std::fmt::format;
-
 use crate::common::config::ASM_ENDPOINT;
-use crate::common::packages::PackageRecommended;
 
 use anyhow::{Context, Ok, Result};
-use reqwest::{Client, Response};
+use reqwest::Client;
 
 use serde::de::DeserializeOwned;
 
@@ -16,7 +13,7 @@ fn build_url(path: &str) -> String {
     )
 }
 
-async fn fetch_data(client: &Client, path: &str) -> Result<T>
+pub async fn fetch_data<T>(client: &Client, path: &str) -> Result<T>
 where
     T: DeserializeOwned,
 {
