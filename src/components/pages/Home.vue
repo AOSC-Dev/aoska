@@ -28,7 +28,7 @@
       <div class="app-title">{{ $t("home.appTitle") }}</div>
       <div class="apps">
         <AppCard
-          v-for="(app, index) in recommandList"
+          v-for="(app, index) in recommendList"
           :key="index"
           :name="app.name"
           :intro="app.intro"
@@ -103,22 +103,22 @@ interface AppInfo {
 }
 
 // 获取推荐列表
-const recommandList = ref<AppInfo[]>([
-  {
-    name: "WPS 办公套件",
-    intro: "这是应用程序 WPS"
-  }
-])
-
-// const recommandList = ref<AppInfo[]>([])
-// const fetchRecommandList = async () => {
-//   try {
-//     const result = await invoke<AppInfo[]>('fetch_recommand');
-//     recommandList.value = result;
-//   } catch (error) {
-//     console.error('Error fetching list:', error);
+// const recommendList = ref<AppInfo[]>([
+//   {
+//     name: "WPS 办公套件",
+//     intro: "这是应用程序 WPS"
 //   }
-// }
+// ])
+
+const recommendList = ref<AppInfo[]>([])
+const fetchRecommendList = async () => {
+  try {
+    const result = await invoke<AppInfo[]>('fetch_recommend');
+    recommendList.value = result;
+  } catch (error) {
+    console.error('Error fetching list:', error);
+  }
+}
 
 // 跳转到应用详情
 const showDetail = () => {
@@ -126,9 +126,9 @@ const showDetail = () => {
 }
 
 // 组件挂载时自动执行
-// onBeforeMount(() => {
-//   fetchRecommandList()
-// })
+onBeforeMount(() => {
+  fetchRecommendList()
+})
 </script>
 
 <style scoped>
