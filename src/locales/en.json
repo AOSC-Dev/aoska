@@ -45,5 +45,11 @@
     },
     "appBanner": {
         "install": "install"
+    },
+    "pages": {
+        "ranking": "Ranking:",
+        "name": "Name",
+        "download": "Most download",
+        "update": "Update time"
     }
 }
