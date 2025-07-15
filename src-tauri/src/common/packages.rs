@@ -45,12 +45,12 @@ pub struct PackageInfo {
 /// Will be serialized into repo-root/packages/$package_name/meta.json
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PackageDetail {
-    name: String,
-    icon: PathBuf,
-    title: String,
-    intro: String,
-    category: Category,
-    screenshot: PathBuf,
-    package_flags: PackageFlags,
-    package_info: PackageInfo,
+    pub name: String,
+    pub icon: PathBuf,
+    pub title: String,
+    pub intro: String,
+    pub category: Category,
+    pub screenshot: PathBuf,
+    pub package_flags: PackageFlags,
+    pub package_info: PackageInfo,
 }
