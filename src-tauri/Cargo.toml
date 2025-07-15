@@ -27,4 +27,9 @@ reqwest = { version = "0.12.22", features = ["json"] }
 chrono = {version = "0.4.41", features = ["serde"] }
 strum = { version = "0.27.1", features = ["derive"] }
 strum_macros = "0.27.1"
+oma-pm = { version = "0.53.0", features = ["aosc"] }
+oma-utils = "0.11.1"
+oma-fetch = "0.31.0"
+oma-tum = "0.1.0"
+tokio = { version = "1.46.1", features = ["macros", "rt-multi-thread"] }
 
