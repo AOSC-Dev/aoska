@@ -1,5 +1,5 @@
 <template>
-  <div class="software-tip">
+  <div class="software-flags">
     <component :is="icons[type]" class="img"/>
     <div class="info">
       <div class="title">{{ $t(`tags.${type}.title`) }}</div>
@@ -35,7 +35,7 @@ const icons = {
 </script>
 
 <style scoped>
-.software-tip {
+.software-flags {
   display: flex;
   width: 500px;
   height: 100px;
