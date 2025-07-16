@@ -46,15 +46,15 @@
       </div>
     </div>
     <div class="down-right">
-      <Unofficial></Unofficial>
-      <Confirmed class="confirmed"></Confirmed>
+      <SoftwareTip type="unofficial"></SoftwareTip>
+      <SoftwareTip type="verified"></SoftwareTip>
     </div>
   </div>
 </template>
 
 <script setup>
-import Unofficial from "../share/Unofficial.vue";
-import Confirmed from "../share/Confirmed.vue";
+
+import SoftwareTip from "../share/SoftwareTip.vue";
 </script>
 
 <style scoped>
@@ -189,9 +189,8 @@ table {
   width: 500px;
   height: 400px;
   margin: 10px 20px 20px 10px;
-}
-
-.confirmed {
-  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 </style>
