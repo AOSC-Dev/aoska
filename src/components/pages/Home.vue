@@ -2,25 +2,11 @@
   <!-- 上部组件 -->
   <div class="up-content">
     <Welcome class="welcome"></Welcome>
-    <!-- 没有需要升级的软件 -->
-    <div v-if="update == 0 && updateSecurity == 0">
-      <UpdateGreen class="update"></UpdateGreen>
-    </div>
-    <!-- 存在需要升级的软件，但没有安全更新 -->
-    <div v-else-if="update > 0 && updateSecurity == 0">
-      <UpdateYellow 
-        class="update"
-        :update="update"
-      ></UpdateYellow>
-    </div>
-    <!-- 存在安全更新 -->
-    <div v-else>
-      <UpdateRed 
-        class="update"
-        :update="update"
-        :updateSecurity="updateSecurity"
-      ></UpdateRed>
-    </div>
+    <Update 
+      class="update"
+      :update="update"
+      :updateSecurity="updateSecurity"
+    ></Update>
   </div>
   <!-- 下部组件 -->
   <div class="down-content">
@@ -57,9 +43,7 @@ import { ref, onBeforeMount } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 
 import Welcome from '../share/Welcome.vue';
-import UpdateGreen from '../share/UpdateGreen.vue';
-import UpdateYellow from '../share/UpdateYellow.vue';
-import UpdateRed from '../share/UpdateRed.vue';
+import Update from '../share/Update.vue';
 import AppCard from '../share/AppCard.vue';
 import TipCard from '../share/TipCard.vue';
 import router from '../../router';
