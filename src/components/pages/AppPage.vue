@@ -46,15 +46,15 @@
       </div>
     </div>
     <div class="down-right">
-      <SoftwareTip type="unofficial"></SoftwareTip>
-      <SoftwareTip type="verified"></SoftwareTip>
+      <SoftwareFlags type="unofficial"></SoftwareFlags>
+      <SoftwareFlags type="verified"></SoftwareFlags>
     </div>
   </div>
 </template>
 
 <script setup>
 
-import SoftwareTip from "../share/SoftwareTip.vue";
+import SoftwareFlags from "../share/SoftwareFlags.vue";
 </script>
 
 <style scoped>
