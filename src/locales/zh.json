@@ -22,20 +22,20 @@
         "sub-title": "四季流光，尽收眼底",
         "title": "安同2024年历壁纸"
     },
-    "updateGreen": {
+    "noUpdate": {
         "title": "一切如常！",
         "status": "系统各组件已更新",
         "greeting": "干得漂亮，祝您使用愉快",
         "button": "查找更新"
     },
-    "updateYellow": {
+    "systemUpdate": {
         "title": "好耶，有系统更新！",
         "status1": "今天找到",
         "status2": "个系统更新",
         "greeting": "均为常规更新，无安全漏洞",
         "button": "立即更新"
     },
-    "updateRed": {
+    "securityUpdate": {
         "title": "前方注意！",
         "status1": "今天找到",
         "status2": "个安全更新",
