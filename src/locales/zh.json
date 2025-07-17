@@ -55,27 +55,27 @@
     "tags": {
         "unofficial": {
             "title": "非官方",
-            "description": "该软件未针对安同 OS 进行适配，功能性可能存在问题。"
+            "description": "未针对安同 OS 进行适配，功能性可能存在问题。"
         },
         "verified": {
             "title": "已验证",
-            "description": "该软件已通过安同 OS 维护者测试验证，功能基本完美。"
+            "description": "已通过安同 OS 维护者测试验证，功能基本完美。"
         },
-        "non-native": {
+        "nonNative": {
             "title": "非原生",
-            "description": "本软件需搭配模拟器转译使用，对主机性能要求可能较高。"
+            "description": "需搭配模拟器转译使用，对主机性能要求较高。"
         },
         "windows": {
             "title": "Windows® 应用程序",
-            "description": "本软件是为 Windows® 设计的应用程序，使用 Wine 模拟运行。"
+            "description": "本软件为 Windows® 设计，使用 Wine 模拟运行。"
         },
         "telemetry": {
             "title": "遥测与跟踪功能",
-            "description": "本软件已知存在收集用户使用数据的功能，请注意相关配置及提示。"
+            "description": "本软件存在收集用户使用数据的功能，请注意相关配置。"
         },
-        "service-restricted": {
+        "serviceRestricted": {
             "title": "服务可能受限",
-            "description": "取决于地理位置及网络条件，本软件功能可能受限。"
+            "description": "由于地理位置及网络条件，本软件功能可能受限。"
         }
     }
 }

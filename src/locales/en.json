@@ -51,5 +51,31 @@
         "name": "Name",
         "download": "Most download",
         "update": "Update time"
+    },
+    "tags": {
+        "unofficial": {
+            "title": "Unofficial",
+            "description": "Not optimized yet, function may be limited."
+        },
+        "verified": {
+            "title": "Quality Verified",
+            "description": "Tested by maintainers, fully functional."
+        },
+        "nonNative": {
+            "title": "Non-Native",
+            "description": "Requires emulator translation."
+        },
+        "windows": {
+            "title": "Windows® Program",
+            "description": "Designed for Windows® system, runs via wine."
+        },
+        "telemetry": {
+            "title": "Telemety",
+            "description": "Known to collect user data, please review settings."
+        },
+        "serviceRestricted": {
+            "title": "Service Restriced",
+            "description": "Service may be restricted by location."
+        }
     }
 }
