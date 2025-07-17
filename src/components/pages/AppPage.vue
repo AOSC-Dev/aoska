@@ -48,6 +48,10 @@
     <div class="down-right">
       <SoftwareFlags type="unofficial"></SoftwareFlags>
       <SoftwareFlags type="verified"></SoftwareFlags>
+      <SoftwareFlags type="serviceRestricted"></SoftwareFlags>
+      <SoftwareFlags type="nonNative"></SoftwareFlags>
+      <SoftwareFlags type="windows"></SoftwareFlags>
+      <SoftwareFlags type="telemetry"></SoftwareFlags>
     </div>
   </div>
 </template>

@@ -3,7 +3,7 @@
     <component :is="icons[type]" class="img"/>
     <div class="info">
       <div class="title">{{ $t(`tags.${type}.title`) }}</div>
-      <div>{{ $t(`tags.${type}.description`) }}</div>
+      <div class="description">{{ $t(`tags.${type}.description`) }}</div>
     </div>
   </div>
 </template>
@@ -44,8 +44,15 @@ const icons = {
 }
 
 .title {
-  margin-top: 17px;
+  margin-top: 20px;
   font-size: 24px;
+  line-height: 30px;
+  font-weight: 500;
+}
+
+.description {
+  margin-top: 8px;
+  line-height: 16px;
 }
 
 .img {
