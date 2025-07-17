@@ -1,13 +1,16 @@
 <template>
-  <div>
-    <div class="up-content">
-      <div class="update-center">
-        <div class="title">{{ $t("updates.title") }}</div>
-        <div class="intro">{{ $t("updates.intro") }}</div>
-        <div class="status">{{ updateSystem }}{{ $t("updates.status1") }}{{ updateApp }}{{ $t("updates.status2") }}</div>
+  <div class="up-content">
+    <div class="update-center">
+      <div class="title">{{ $t("updates.title") }}</div>
+      <div class="intro">{{ $t("updates.intro") }}</div>
+      <div class="status">
+        <span class="number">{{ updateSystem }}</span>
+        {{ $t("updates.status1") }}
+        <span class="number">{{ updateApp }}</span>
+        {{ $t("updates.status2") }}
       </div>
-      <div class="download"></div>
     </div>
+    <div class="download"></div>
   </div>
 </template>
 
@@ -41,7 +44,6 @@ let updateApp = ref(0)
 }
 
 .intro {
-  margin-top: 5px;
   margin-left: 50px;
   font-size: 20px;
 }
@@ -50,6 +52,11 @@ let updateApp = ref(0)
   margin-top: 5px;
   margin-left: 50px;
   font-size: 20px;
+}
+
+.number {
+  font-size: 30px;
+  font-weight: 500;
 }
 
 .download {
