@@ -22,20 +22,20 @@
         "sub-title": "Seasons come...",
         "title": "AOSC 2024 wallpaper gallary"
     },
-    "updateGreen": {
+    "noUpdate": {
         "title": "All is well!",
         "status": "All system coponent is latest",
         "greeting": "Wish you a good day",
         "button": "Update"
     },
-    "updateYellow": {
+    "systemUpdate": {
         "title": "Update is available!",
         "status1": "There are ",
         "status2": " updates available",
         "greeting": "All updates are common ones",
         "button": "Update"
     },
-    "updateRed": {
+    "securityUpdate": {
         "title": "Attention!",
         "status1": "There are ",
         "status2": " security updates",

@@ -40,7 +40,7 @@ const icons = {
   width: 500px;
   height: 100px;
   border-radius: 5px;
-  background-color: lightgray;
+  background-color: #f3f3f3;
 }
 
 .title {

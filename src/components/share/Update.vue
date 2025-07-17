@@ -42,15 +42,15 @@ const hasUpdates = computed(() => props.update > 0)
 const hasSecurityUpdate = computed(() => props.updateSecurity > 0)
 
 const updateClass = computed(() => {
-  if (props.updateSecurity > 0) return 'red-update'
-  if (props.update > 0) return 'yellow-update'
-  return 'green-update'
+  if (props.updateSecurity > 0) return 'security-update'
+  if (props.update > 0) return 'system-update'
+  return 'no-update'
 })
 
 const prefix = computed(() => {
-  if (props.updateSecurity > 0) return 'updateRed'
-  if (props.update > 0) return 'updateYellow'
-  return 'updateGreen'
+  if (props.updateSecurity > 0) return 'securityUpdate'
+  if (props.update > 0) return 'systemUpdate'
+  return 'noUpdate'
 })
 </script>
 
@@ -61,16 +61,16 @@ const prefix = computed(() => {
   border-radius: 5px;
 }
 
-.green-update {
-  background-color: rgb(206, 255, 214);
+.no-update {
+  background-color: #ceffd6;
 }
 
-.yellow-update {
-  background-color: rgb(255, 239, 206);
+.system-update {
+  background-color: #cee9ff;
 }
 
-.red-update {
-  background-color: rgb(255, 217, 206);
+.security-update {
+  background-color: #ffd9ce;
 }
 
 .title {
