@@ -11,9 +11,11 @@
     <div class="down-left">
       <div class="screen-shot">
         <div class="image-container">
-          <img src="../../assets/images/3.png" alt="截图1">
-          <img src="../../assets/images/2.png" alt="截图2">
-          <img src="../../assets/images/1.png" alt="截图3">
+          <ImageCarousel 
+            :images="screenshots" 
+            :autoplay="true" 
+            :interval="4000"
+          />
         </div>
       </div>
       <div class="info">
@@ -39,10 +41,10 @@
             </tr>
           </tbody>
         </table>
-        <div class="btns">
-          <div class="main-page">发行方主页</div>
-          <div class="report-bug">报告使用问题</div>
-        </div>
+      </div>
+      <div class="btns">
+        <div class="main-page">发行方主页</div>
+        <div class="report-bug">报告使用问题</div>
       </div>
     </div>
     <div class="down-right">
@@ -57,28 +59,31 @@
 </template>
 
 <script setup>
-
 import SoftwareFlags from "../share/SoftwareFlags.vue";
+import ImageCarousel from "../share/ImageCarousel.vue";
+import { ref } from 'vue';
+
+const screenshots = ref([
+  '/src/assets/images/3.png',
+  '/src/assets/images/2.png',
+  '/src/assets/images/1.png'
+]);
 </script>
 
 <style scoped>
 .header {
   display: flex;
-  width: calc(100% - 40px);
   height: 100px;
   border-radius: 5px;
-  margin:65px 20px 10px 20px;
-  background-color: lightgray;
+  margin: 65px 20px 10px 20px;
+  padding: 20px;
+  background-color: #ececec;
 }
 
 .header img {
   width: 60px;
   height: 60px;
   margin: 20px;
-}
-
-.app-intro {
-  margin-top: 15px;
 }
 
 .name {
@@ -98,7 +103,7 @@ import SoftwareFlags from "../share/SoftwareFlags.vue";
   margin: auto 10px 10px auto;
   border: 1px solid black;
   border-radius: 5px;
-  background-color: lightgreen;
+  background-color: #ceffd6;
 }
 
 .down-content {
@@ -118,11 +123,11 @@ import SoftwareFlags from "../share/SoftwareFlags.vue";
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: hidden;
   width: calc(100% - 2px);
-  height: 300px;
-  border: 1px solid black;
+  height: 400px;
+  border: 1px solid #dadada;
   border-radius: 5px;
 }
 
@@ -137,7 +142,7 @@ import SoftwareFlags from "../share/SoftwareFlags.vue";
   margin-top: 20px;
   padding: 10px;
   border-radius: 5px;
-  background-color: lightgray;
+  background-color: #f3f3f3;
 }
 
 table {
@@ -173,7 +178,8 @@ table {
   margin-top: 20px;
   border-radius: 5px;
   line-height: 36px;
-  background-color: white;
+  background-color: #f3f3f3;
+  border: 1px solid black;
   text-align: center;
 }
 
@@ -185,7 +191,8 @@ table {
   font-size: 18px;
   border-radius: 5px;
   line-height: 36px;
-  background-color: lightcoral;
+  background-color: rgb(250, 216, 185);
+  border: 1px solid black;
   text-align: center;
 }
 
