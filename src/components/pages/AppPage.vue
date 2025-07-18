@@ -11,7 +11,7 @@
         <div class="image-container">
           <ImageCarousel 
             :images="screenshots" 
-            :autoplay="true" 
+            :autoplay="false" 
             :interval="4000"
           />
         </div>
@@ -41,8 +41,24 @@
         </table>
       </div>
       <div class="btns">
-        <div class="main-page">发行方主页</div>
-        <div class="report-bug">报告使用问题</div>
+        <Button
+          size="large"
+          color="grey"
+          width="261"
+          height="37"
+          :style="{ marginLeft: '15px' }"
+        >
+          发行方主页
+        </Button>
+        <Button
+          size="large"
+          color="yellow"
+          width="261"
+          height="37"
+          :style="{ marginLeft: '15px' }"
+        >
+          报告使用问题
+        </Button>
       </div>
     </div>
     <div class="down-right">
@@ -61,6 +77,7 @@ import SoftwareFlags from "../share/SoftwareFlags.vue";
 import ImageCarousel from "../share/ImageCarousel.vue";
 import { ref } from 'vue';
 import AppHeader from "../AppPage/AppHeader.vue";
+import Button from '../share/Button.vue';
 
 const screenshots = ref([
   '/src/assets/images/3.png',
@@ -133,6 +150,8 @@ table {
 
 .btns {
   display: flex;
+  margin-top: 20px;
+  justify-content: space-between;
 }
 
 .main-page {
