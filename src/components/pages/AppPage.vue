@@ -1,12 +1,10 @@
 <template>
-  <div class="header">
-    <img src="../../assets/icons/aosc_logo.png" alt="安同社区的logo">
-    <div class="app-intro">
-      <div class="name">微信</div>
-      <div class="intro">用户超十亿的即时聊天软件</div>
-    </div>
-    <div class="install">安装</div>
-  </div>
+  <AppHeader
+    app-name="微信"
+    app-intro="用户超十亿的即时聊天软件"
+    app-icon="/src/assets/icons/wechat.png"
+    app-banner-img="/src/assets/icons/wechat_banner.png"
+  />
   <div class="down-content">
     <div class="down-left">
       <div class="screen-shot">
@@ -62,6 +60,7 @@
 import SoftwareFlags from "../share/SoftwareFlags.vue";
 import ImageCarousel from "../share/ImageCarousel.vue";
 import { ref } from 'vue';
+import AppHeader from "../AppPage/AppHeader.vue";
 
 const screenshots = ref([
   '/src/assets/images/3.png',
@@ -71,41 +70,6 @@ const screenshots = ref([
 </script>
 
 <style scoped>
-.header {
-  display: flex;
-  height: 100px;
-  border-radius: 5px;
-  margin: 65px 20px 10px 20px;
-  padding: 20px;
-  background-color: #ececec;
-}
-
-.header img {
-  width: 60px;
-  height: 60px;
-  margin: 20px;
-}
-
-.name {
-  font-size: 40px;
-}
-
-.intro {
-  font-size: 18px;
-}
-
-.install {
-  width: 120px;
-  height: 36px;
-  font-size: 24px;
-  line-height: 36px;
-  text-align: center;
-  margin: auto 10px 10px auto;
-  border: 1px solid black;
-  border-radius: 5px;
-  background-color: #ceffd6;
-}
-
 .down-content {
   display: flex;
 }
