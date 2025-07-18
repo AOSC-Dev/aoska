@@ -6,15 +6,21 @@
     app-banner-img="/src/assets/icons/wechat_banner.png"
   />
   <div class="down-content">
-    <div class="down-left">
-      <div class="screen-shot">
-        <div class="image-container">
-          <ImageCarousel 
-            :images="screenshots" 
-            :autoplay="false" 
-            :interval="4000"
-          />
-        </div>
+    <div class="image-container">
+      <ImageCarousel 
+        :images="screenshots" 
+        :autoplay="false" 
+        :interval="4000"
+      />
+    </div>
+    <div class="down-right">
+      <div class="flags">
+        <SoftwareFlags type="unofficial"></SoftwareFlags>
+        <SoftwareFlags type="verified"></SoftwareFlags>
+        <!-- <SoftwareFlags type="serviceRestricted"></SoftwareFlags> -->
+        <!-- <SoftwareFlags type="nonNative"></SoftwareFlags> -->
+        <!-- <SoftwareFlags type="windows"></SoftwareFlags> -->
+        <!-- <SoftwareFlags type="telemetry"></SoftwareFlags> -->
       </div>
       <div class="info">
         <table>
@@ -41,12 +47,14 @@
         </table>
       </div>
       <div class="btns">
-        <Button
+        <!-- 这两个按钮比较特殊，先用div展示效果 -->
+        <div class="main-page">发行方主页</div>
+        <div class="report-bug">报告使用问题</div>
+        <!-- <Button
           size="large"
           color="grey"
           width="261"
           height="37"
-          :style="{ marginLeft: '15px' }"
         >
           发行方主页
         </Button>
@@ -55,19 +63,10 @@
           color="yellow"
           width="261"
           height="37"
-          :style="{ marginLeft: '15px' }"
         >
           报告使用问题
-        </Button>
+        </Button> -->
       </div>
-    </div>
-    <div class="down-right">
-      <SoftwareFlags type="unofficial"></SoftwareFlags>
-      <SoftwareFlags type="verified"></SoftwareFlags>
-      <SoftwareFlags type="serviceRestricted"></SoftwareFlags>
-      <SoftwareFlags type="nonNative"></SoftwareFlags>
-      <SoftwareFlags type="windows"></SoftwareFlags>
-      <SoftwareFlags type="telemetry"></SoftwareFlags>
     </div>
   </div>
 </template>
@@ -91,23 +90,10 @@ const screenshots = ref([
   display: flex;
 }
 
-.down-left {
-  width: calc(100% - 560px);
-  margin: 10px 10px 20px 20px;
-}
-
-.screen-shot {
-  width: 100%;
-}
-
 .image-container {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  overflow-x: hidden;
-  overflow-y: hidden;
+  margin: 10px 10px 20px 20px;
   width: calc(100% - 2px);
-  height: 400px;
+  height: calc(100vh - 292px);
   border: 1px solid #dadada;
   border-radius: 5px;
 }
@@ -118,9 +104,23 @@ const screenshots = ref([
   margin-right: 10px;
 }
 
+.down-right {
+  width: 520px;
+  height: calc(100vh - 292px);
+  margin: 10px 20px 20px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.flags{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .info {
   width: calc(100% - 20px);
-  margin-top: 20px;
+  margin-top: auto;
   padding: 10px;
   border-radius: 5px;
   background-color: #f3f3f3;
@@ -150,15 +150,13 @@ table {
 
 .btns {
   display: flex;
-  margin-top: 20px;
-  justify-content: space-between;
+  margin-top: 10px;
 }
 
 .main-page {
-  width: 200px;
+  width: 250px;
   height: 36px;
   font-size: 18px;
-  margin-top: 20px;
   border-radius: 5px;
   line-height: 36px;
   background-color: #f3f3f3;
@@ -167,10 +165,9 @@ table {
 }
 
 .report-bug {
-  width: 200px;
+  width: 250px;
   height: 36px;
-  margin-top: 20px;
-  margin-left: calc(50% - 195px);
+  margin-left: auto;
   font-size: 18px;
   border-radius: 5px;
   line-height: 36px;
@@ -179,12 +176,4 @@ table {
   text-align: center;
 }
 
-.down-right {
-  width: 500px;
-  height: 400px;
-  margin: 10px 20px 20px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
 </style>

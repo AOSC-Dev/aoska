@@ -40,10 +40,9 @@ defineProps({
 <style lang="css" scoped>
 .header {
   display: flex;
-  height: calc( 192px - 20px * 2 );
+  height: 192px;
   border-radius: 5px;
-  margin: 65px 20px 10px 20px;
-  padding: 20px;
+  margin: 60px 20px 10px 20px;
   background-size: cover;
   background-position: center;
 }
