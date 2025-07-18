@@ -7,7 +7,12 @@
         <div class="intro">{{ appIntro }}</div>
       </div>
     </div>
-    <Button class="install">
+    <Button
+      size="medium"
+      color="green"
+      width="129"
+      height="37"
+    >
       安装
     </Button>
   </div>
@@ -16,7 +21,7 @@
 <script setup lang="ts">
 import Button from '../share/Button.vue';
 
-const props = defineProps({
+defineProps({
   appIcon: {
     type: String,
   },
@@ -50,7 +55,6 @@ const props = defineProps({
 }
 
 .app-banner {
-  width:100%;
   height: 100%;
   display: flex;
   align-items: center;
@@ -63,13 +67,4 @@ const props = defineProps({
 .intro {
   font-size: 18px;
 }
-
-.install {
-  width: 120px;
-  height: 36px;
-  font-size: 24px;
-  line-height: 36px;
-  background-color: #ceffd6;
-}
-
 </style>
