@@ -37,7 +37,7 @@ const icons = {
 <style scoped>
 .software-flags {
   display: flex;
-  width: 500px;
+  width: 520px;
   height: 100px;
   border-radius: 5px;
   background-color: #f3f3f3;
