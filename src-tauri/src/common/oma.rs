@@ -1,24 +1,22 @@
-use anyhow::Result;
+use ahash::HashMap;
+use anyhow::{Ok, Result};
 use oma_pm::{
-    apt::{OmaApt, OmaAptArgs, OmaAptError, OmaOperation},
+    apt::{OmaApt, OmaAptError, OmaOperation},
     sort::SummarySort,
 };
 use oma_tum::{get_matches_tum, get_tum};
-use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SecurityUpdateInfo {
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct TumUpdateInfo {
     pub manifest_name: String,
+    pub name: HashMap<String, String>,
     pub is_security: bool,
     pub package_count: usize,
     pub package_names: Vec<String>,
+    pub caution: Option<HashMap<String, String>>,
 }
 
-pub async fn check_upgradable(apt: &OmaApt) -> Result<usize, OmaAptError> {
-    apt.count_pending_upgradable_pkgs()
-}
-
-pub async fn check_upgradable_detail(apt: &OmaApt) -> Result<OmaOperation, OmaAptError> {
+pub async fn check_upgradable(apt: &OmaApt) -> Result<OmaOperation, OmaAptError> {
     apt.upgrade(oma_pm::apt::Upgrade::FullUpgrade)?;
     apt.summary(
         SummarySort::default().operation().names(),
@@ -27,78 +25,46 @@ pub async fn check_upgradable_detail(apt: &OmaApt) -> Result<OmaOperation, OmaAp
     )
 }
 
-pub async fn check_security_upgradable(apt: &OmaApt) -> Result<usize> {
-    let sysroot = std::path::Path::new("/");
-    let tum_manifests = get_tum(sysroot)?;
-    // dbg!(&tum_manifests);
-    let operation = check_upgradable_detail(apt).await?;
-    // dbg!(&operation);
-    let matched_manifests = get_matches_tum(&tum_manifests, &operation);
-    // dbg!(&matched_manifests);
-    let security_count = matched_manifests
-        .iter()
-        .filter(|(_, entry_ref)| entry_ref.is_security())
-        .count();
-
-    Ok(security_count)
+pub async fn check_upgradable_count(apt: &OmaApt) -> Result<usize, OmaAptError> {
+    apt.upgrade(oma_pm::apt::Upgrade::FullUpgrade)?;
+    apt.count_pending_upgradable_pkgs()
 }
 
-pub async fn check_security_upgradable_detail(apt: &OmaApt) -> Result<Vec<SecurityUpdateInfo>> {
+pub async fn check_tum_upgradable(apt: &OmaApt) -> Result<Vec<TumUpdateInfo>> {
     let sysroot = std::path::Path::new("/");
     let tum_manifests = get_tum(sysroot)?;
+    let operation = check_upgradable(apt).await?;
 
-    let operation = check_upgradable_detail(apt).await?;
     let matched_manifests = get_matches_tum(&tum_manifests, &operation);
 
-    let security_updates: Vec<SecurityUpdateInfo> = matched_manifests
+    let tum_update: Vec<TumUpdateInfo> = matched_manifests
         .into_iter()
-        .filter(|(_, entry_ref)| entry_ref.is_security())
         .map(|(manifest_name, entry_ref)| {
-            let package_names = match entry_ref {
-                oma_tum::TopicUpdateEntryRef::Conventional { packages, .. } => {
-                    packages.keys().map(|name| name.to_string()).collect()
-                }
-                oma_tum::TopicUpdateEntryRef::Cumulative { .. } => {
-                    // Cumulative has no packages info
-                    // Returns an empty vector
-                    Vec::new()
+            let (package_names, caution, name) = match entry_ref {
+                oma_tum::TopicUpdateEntryRef::Conventional {
+                    packages,
+                    caution,
+                    name,
+                    ..
+                } => (
+                    packages.keys().map(|name| name.to_string()).collect(),
+                    caution,
+                    name,
+                ),
+                // NOTE: Ignore Cumulative TUM since it hasn't been used yet.
+                oma_tum::TopicUpdateEntryRef::Cumulative { caution, name, .. } => {
+                    (Vec::new(), caution, name)
                 }
             };
-
-            SecurityUpdateInfo {
+            TumUpdateInfo {
                 manifest_name: manifest_name.to_string(),
+                name: name.clone(),
                 is_security: entry_ref.is_security(),
                 package_count: entry_ref.count_packages(),
                 package_names,
+                caution: caution.cloned(),
             }
         })
         .collect();
-
-    Ok(security_updates)
-}
-
-#[tokio::test]
-async fn test_check_upgradable_detail() {
-    let apt = OmaApt::new(
-        vec![],
-        OmaAptArgs::builder().build(),
-        false,
-        oma_pm::apt::AptConfig::new(),
-    )
-    .unwrap();
-    let result = check_upgradable_detail(&apt).await.unwrap();
-    dbg!(result);
-}
-
-#[tokio::test]
-async fn test_check_security_upgradable() {
-    let apt = OmaApt::new(
-        vec![],
-        OmaAptArgs::builder().build(),
-        false,
-        oma_pm::apt::AptConfig::new(),
-    )
-    .unwrap();
-    let result = check_security_upgradable(&apt).await.unwrap();
-    dbg!(format!("Total Security Upgradable: {result}"));
+    Ok(tum_update)
 }
