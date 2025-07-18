@@ -8,6 +8,7 @@ pub struct CategoryIndex {
     pub packages: Vec<PackageBrief>,
 }
 
+// Serialized to recommend_index.json
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RecommendIndex {
     pub date: DateTime<Utc>,
