@@ -4,9 +4,23 @@
       <div class="title">{{ $t("updates.title") }}</div>
       <div class="intro">{{ $t("updates.intro") }}</div>
       <div class="status">
-        <span class="number">{{ updateSystem }}</span>
+        <span class="number">
+          <template v-if="loadingSystem">
+            <span class="skeleton skeleton-number"></span>
+          </template>
+          <template v-else>
+            {{ updateSystem }}
+          </template>
+        </span>
         {{ $t("updates.status1") }}
-        <span class="number">{{ updateApp }}</span>
+        <span class="number">
+          <template v-if="loadingApp">
+            <span class="skeleton skeleton-number"></span>
+          </template>
+          <template v-else>
+            {{ updateApp }}
+          </template>
+        </span>
         {{ $t("updates.status2") }}
       </div>
     </div>
@@ -15,11 +29,22 @@
 </template>
 
 <script setup lang='ts'>
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
+import { fetchUpdateCount } from '../../utils/wrapper';
+
+onMounted(async () => {
+  const updateCount = await fetchUpdateCount();
+  updateSystem.value = updateCount;
+
+  loadingSystem.value = false;
+  loadingApp.value = false;
+})
 
 // 系统升级与应用升级数
-let updateSystem = ref(10)
+let updateSystem = ref(0)
 let updateApp = ref(0)
+const loadingSystem = ref(true);
+const loadingApp = ref(true);
 </script>
 
 <style scoped>
@@ -57,6 +82,7 @@ let updateApp = ref(0)
 .number {
   font-size: 30px;
   font-weight: 500;
+  display: inline-block;
 }
 
 .download {
@@ -66,4 +92,28 @@ let updateApp = ref(0)
   border-radius: 5px;
   background-color: rgb(206, 233, 255);
 }
+
+.skeleton {
+  display: inline-block;
+  background: linear-gradient(90deg, #ececec 25%, #f3f3f3 37%, #ececec 63%);
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.2s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+.skeleton-number {
+  width: 40px;
+  height: 34px;
+  vertical-align: middle;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
 </style>
