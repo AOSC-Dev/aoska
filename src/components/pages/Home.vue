@@ -40,15 +40,14 @@
 </template>
 
 <script setup lang='ts'>
-import { ref, onBeforeMount, onMounted } from 'vue';
-import { invoke } from '@tauri-apps/api/core';
+import { ref, onBeforeMount } from 'vue';
 
 import Welcome from '../share/Welcome.vue';
 import Update from '../share/Update.vue';
 import AppCard from '../share/AppCard.vue';
 import TipCard from '../share/TipCard.vue';
 import router from '../../router';
-import { fetchUpdateCount } from '../../utils/wrapper';
+import { fetchTumUpdate, fetchUpdateCount } from '../../utils/wrapper';
 
 // 总升级与安全升级数
 let loading = ref(true)
@@ -57,7 +56,11 @@ let updateSecurity = ref(0)
 
 onBeforeMount(async () => {
   const updateCount = await fetchUpdateCount();
-  update.value = updateCount;
+  const tumUpdate = await fetchTumUpdate();
+  console.log(tumUpdate)
+  const securityUpdateCount = tumUpdate.filter((v) => {return v.is_security}).length;
+  updateSecurity.value = securityUpdateCount;
+  update.value = updateCount - securityUpdateCount;
   loading.value = false;
 })
 
