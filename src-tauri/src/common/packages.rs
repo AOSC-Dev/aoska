@@ -1,14 +1,16 @@
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use serde::{Serialize, Deserialize};
+use strum_macros::{Display, EnumString};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, EnumString, Display)]
 #[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
 pub enum Category {
     Working,
     Games,
     Video,
     Creating,
-    Observing
+    Observing,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -39,16 +41,16 @@ pub struct PackageInfo {
     pub homepage: String,
 }
 
-/// The detailed infomation of a package. 
-/// Will be serialized into repo-root/packages/$package_name/meta.json 
+/// The detailed infomation of a package.
+/// Will be serialized into repo-root/packages/$package_name/meta.json
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PackageDetail {
-    name: String,
-    icon: PathBuf,
-    title: String,
-    intro: String,
-    category: Category,
-    screenshot: PathBuf,
-    package_flags: PackageFlags,
-    package_info: PackageInfo,
+    pub name: String,
+    pub icon: PathBuf,
+    pub title: String,
+    pub intro: String,
+    pub category: Category,
+    pub screenshot: PathBuf,
+    pub package_flags: PackageFlags,
+    pub package_info: PackageInfo,
 }

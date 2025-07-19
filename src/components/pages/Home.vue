@@ -4,6 +4,7 @@
     <Welcome class="welcome"></Welcome>
     <Update 
       class="update"
+      :isLoading="loading"
       :update="update"
       :updateSecurity="updateSecurity"
     ></Update>
@@ -40,17 +41,29 @@
 
 <script setup lang='ts'>
 import { ref, onBeforeMount } from 'vue';
-import { invoke } from '@tauri-apps/api/core';
 
 import Welcome from '../share/Welcome.vue';
 import Update from '../share/Update.vue';
 import AppCard from '../share/AppCard.vue';
 import TipCard from '../share/TipCard.vue';
 import router from '../../router';
+import { fetchTumUpdate, fetchUpdateCount } from '../../utils/wrapper';
 
 // 总升级与安全升级数
-let update = ref(10)
+let loading = ref(true)
+let update = ref(0)
 let updateSecurity = ref(0)
+
+onBeforeMount(async () => {
+  const updateCount = await fetchUpdateCount();
+  const tumUpdate = await fetchTumUpdate();
+  console.log(tumUpdate)
+  const securityUpdateCount = tumUpdate.filter((v) => {return v.is_security}).length;
+  updateSecurity.value = securityUpdateCount;
+  update.value = updateCount - securityUpdateCount;
+  loading.value = false;
+})
+
 
 // 技巧指南列表
 const tipList = [
