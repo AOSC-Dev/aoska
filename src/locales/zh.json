@@ -22,20 +22,20 @@
         "sub-title": "四季流光，尽收眼底",
         "title": "安同2024年历壁纸"
     },
-    "updateGreen": {
+    "noUpdate": {
         "title": "一切如常！",
         "status": "系统各组件已更新",
         "greeting": "干得漂亮，祝您使用愉快",
         "button": "查找更新"
     },
-    "updateYellow": {
+    "systemUpdate": {
         "title": "好耶，有系统更新！",
         "status1": "今天找到",
         "status2": "个系统更新",
         "greeting": "均为常规更新，无安全漏洞",
         "button": "立即更新"
     },
-    "updateRed": {
+    "securityUpdate": {
         "title": "前方注意！",
         "status1": "今天找到",
         "status2": "个安全更新",
@@ -45,5 +45,37 @@
     },
     "appBanner": {
         "install": "安装"
+    },
+    "pages": {
+        "ranking": "排序方式：",
+        "name": "软件名称",
+        "download": "最多下载",
+        "update": "最近更新"
+    },
+    "tags": {
+        "unofficial": {
+            "title": "非官方",
+            "description": "未针对安同 OS 进行适配，功能性可能存在问题。"
+        },
+        "verified": {
+            "title": "已验证",
+            "description": "已通过安同 OS 维护者测试验证，功能基本完美。"
+        },
+        "nonNative": {
+            "title": "非原生",
+            "description": "需搭配模拟器转译使用，对主机性能要求较高。"
+        },
+        "windows": {
+            "title": "Windows® 应用程序",
+            "description": "本软件为 Windows® 设计，使用 Wine 模拟运行。"
+        },
+        "telemetry": {
+            "title": "遥测与跟踪功能",
+            "description": "本软件存在收集用户使用数据的功能，请注意相关配置。"
+        },
+        "serviceRestricted": {
+            "title": "服务可能受限",
+            "description": "由于地理位置及网络条件，本软件功能可能受限。"
+        }
     }
 }

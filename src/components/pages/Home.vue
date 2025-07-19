@@ -2,25 +2,11 @@
   <!-- 上部组件 -->
   <div class="up-content">
     <Welcome class="welcome"></Welcome>
-    <!-- 没有需要升级的软件 -->
-    <div v-if="update == 0 && updateSecurity == 0">
-      <UpdateGreen class="update"></UpdateGreen>
-    </div>
-    <!-- 存在需要升级的软件，但没有安全更新 -->
-    <div v-else-if="update > 0 && updateSecurity == 0">
-      <UpdateYellow 
-        class="update"
-        :update="update"
-      ></UpdateYellow>
-    </div>
-    <!-- 存在安全更新 -->
-    <div v-else>
-      <UpdateRed 
-        class="update"
-        :update="update"
-        :updateSecurity="updateSecurity"
-      ></UpdateRed>
-    </div>
+    <Update 
+      class="update"
+      :update="update"
+      :updateSecurity="updateSecurity"
+    ></Update>
   </div>
   <!-- 下部组件 -->
   <div class="down-content">
@@ -57,9 +43,7 @@ import { ref, onBeforeMount } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 
 import Welcome from '../share/Welcome.vue';
-import UpdateGreen from '../share/UpdateGreen.vue';
-import UpdateYellow from '../share/UpdateYellow.vue';
-import UpdateRed from '../share/UpdateRed.vue';
+import Update from '../share/Update.vue';
 import AppCard from '../share/AppCard.vue';
 import TipCard from '../share/TipCard.vue';
 import router from '../../router';
@@ -103,22 +87,26 @@ interface AppInfo {
 }
 
 // 获取推荐列表
-// const recommendList = ref<AppInfo[]>([
-//   {
-//     name: "WPS 办公套件",
-//     intro: "这是应用程序 WPS"
-//   }
-// ])
-
-const recommendList = ref<AppInfo[]>([])
-const fetchRecommendList = async () => {
-  try {
-    const result = await invoke<AppInfo[]>('fetch_recommend');
-    recommendList.value = result;
-  } catch (error) {
-    console.error('Error fetching list:', error);
+const recommendList = ref<AppInfo[]>([
+  {
+    name: "WPS 办公套件",
+    intro: "这是应用程序 WPS"
+  },
+  {
+    name: "WPS 办公套件",
+    intro: "这是应用程序 WPS"
   }
-}
+])
+
+// const recommendList = ref<AppInfo[]>([])
+// const fetchRecommendList = async () => {
+//   try {
+//     const result = await invoke<AppInfo[]>('fetch_recommend');
+//     recommendList.value = result;
+//   } catch (error) {
+//     console.error('Error fetching list:', error);
+//   }
+// }
 
 // 跳转到应用详情
 const showDetail = () => {
@@ -126,9 +114,9 @@ const showDetail = () => {
 }
 
 // 组件挂载时自动执行
-onBeforeMount(() => {
-  fetchRecommendList()
-})
+// onBeforeMount(() => {
+//   fetchRecommendList()
+// })
 </script>
 
 <style scoped>

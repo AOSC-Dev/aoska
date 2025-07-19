@@ -1,20 +1,26 @@
 <template>
-  <div class="header">
-    <img src="../../assets/icons/aosc_logo.png" alt="安同社区的logo">
-    <div class="app-intro">
-      <div class="name">微信</div>
-      <div class="intro">用户超十亿的即时聊天软件</div>
-    </div>
-    <div class="install">安装</div>
-  </div>
+  <AppHeader
+    app-name="微信"
+    app-intro="用户超十亿的即时聊天软件"
+    app-icon="/src/assets/icons/wechat.png"
+    app-banner-img="/src/assets/icons/wechat_banner.png"
+  />
   <div class="down-content">
-    <div class="down-left">
-      <div class="screen-shot">
-        <div class="image-container">
-          <img src="../../assets/images/3.png" alt="截图1">
-          <img src="../../assets/images/2.png" alt="截图2">
-          <img src="../../assets/images/1.png" alt="截图3">
-        </div>
+    <div class="image-container">
+      <ImageCarousel 
+        :images="screenshots" 
+        :autoplay="false" 
+        :interval="4000"
+      />
+    </div>
+    <div class="down-right">
+      <div class="flags">
+        <SoftwareFlags type="unofficial"></SoftwareFlags>
+        <SoftwareFlags type="verified"></SoftwareFlags>
+        <!-- <SoftwareFlags type="serviceRestricted"></SoftwareFlags> -->
+        <!-- <SoftwareFlags type="nonNative"></SoftwareFlags> -->
+        <!-- <SoftwareFlags type="windows"></SoftwareFlags> -->
+        <!-- <SoftwareFlags type="telemetry"></SoftwareFlags> -->
       </div>
       <div class="info">
         <table>
@@ -39,86 +45,56 @@
             </tr>
           </tbody>
         </table>
-        <div class="btns">
-          <div class="main-page">发行方主页</div>
-          <div class="report-bug">报告使用问题</div>
-        </div>
       </div>
-    </div>
-    <div class="down-right">
-      <Unofficial></Unofficial>
-      <Confirmed class="confirmed"></Confirmed>
+      <div class="btns">
+        <!-- 这两个按钮比较特殊，先用div展示效果 -->
+        <div class="main-page">发行方主页</div>
+        <div class="report-bug">报告使用问题</div>
+        <!-- <Button
+          size="large"
+          color="grey"
+          width="261"
+          height="37"
+        >
+          发行方主页
+        </Button>
+        <Button
+          size="large"
+          color="yellow"
+          width="261"
+          height="37"
+        >
+          报告使用问题
+        </Button> -->
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import Unofficial from "../share/Unofficial.vue";
-import Confirmed from "../share/Confirmed.vue";
+import SoftwareFlags from "../share/SoftwareFlags.vue";
+import ImageCarousel from "../share/ImageCarousel.vue";
+import { ref } from 'vue';
+import AppHeader from "../AppPage/AppHeader.vue";
+import Button from '../share/Button.vue';
+
+const screenshots = ref([
+  '/src/assets/images/3.png',
+  '/src/assets/images/2.png',
+  '/src/assets/images/1.png'
+]);
 </script>
 
 <style scoped>
-.header {
-  display: flex;
-  width: calc(100% - 40px);
-  height: 100px;
-  border-radius: 5px;
-  margin:65px 20px 10px 20px;
-  background-color: lightgray;
-}
-
-.header img {
-  width: 60px;
-  height: 60px;
-  margin: 20px;
-}
-
-.app-intro {
-  margin-top: 15px;
-}
-
-.name {
-  font-size: 40px;
-}
-
-.intro {
-  font-size: 18px;
-}
-
-.install {
-  width: 120px;
-  height: 36px;
-  font-size: 24px;
-  line-height: 36px;
-  text-align: center;
-  margin: auto 10px 10px auto;
-  border: 1px solid black;
-  border-radius: 5px;
-  background-color: lightgreen;
-}
-
 .down-content {
   display: flex;
 }
 
-.down-left {
-  width: calc(100% - 560px);
-  margin: 10px 10px 20px 20px;
-}
-
-.screen-shot {
-  width: 100%;
-}
-
 .image-container {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  overflow-x: auto;
-  overflow-y: hidden;
+  margin: 10px 10px 20px 20px;
   width: calc(100% - 2px);
-  height: 300px;
-  border: 1px solid black;
+  height: calc(100vh - 292px);
+  border: 1px solid #dadada;
   border-radius: 5px;
 }
 
@@ -128,12 +104,26 @@ import Confirmed from "../share/Confirmed.vue";
   margin-right: 10px;
 }
 
+.down-right {
+  width: 520px;
+  height: calc(100vh - 292px);
+  margin: 10px 20px 20px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.flags{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .info {
   width: calc(100% - 20px);
-  margin-top: 20px;
+  margin-top: auto;
   padding: 10px;
   border-radius: 5px;
-  background-color: lightgray;
+  background-color: #f3f3f3;
 }
 
 table {
@@ -160,38 +150,30 @@ table {
 
 .btns {
   display: flex;
+  margin-top: 10px;
 }
 
 .main-page {
-  width: 200px;
+  width: 250px;
   height: 36px;
   font-size: 18px;
-  margin-top: 20px;
   border-radius: 5px;
   line-height: 36px;
-  background-color: white;
+  background-color: #f3f3f3;
+  border: 1px solid black;
   text-align: center;
 }
 
 .report-bug {
-  width: 200px;
+  width: 250px;
   height: 36px;
-  margin-top: 20px;
-  margin-left: calc(50% - 195px);
+  margin-left: auto;
   font-size: 18px;
   border-radius: 5px;
   line-height: 36px;
-  background-color: lightcoral;
+  background-color: rgb(250, 216, 185);
+  border: 1px solid black;
   text-align: center;
 }
 
-.down-right {
-  width: 500px;
-  height: 400px;
-  margin: 10px 20px 20px 10px;
-}
-
-.confirmed {
-  margin-top: 10px;
-}
 </style>

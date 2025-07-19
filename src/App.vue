@@ -31,6 +31,7 @@ import { RouterLink, RouterView } from 'vue-router';
   position: fixed;
   top: 0;
   left: 0;
+  z-index: 9999;
 }
 
 .navigator a {
