@@ -26,16 +26,24 @@
     </div>
     <div class="download"></div>
   </div>
+  <UpdateItem
+    v-for="(tumUpdate, index) in tumUpdates"
+    :key="index"
+    :tum-update="tumUpdate"
+  ></UpdateItem>
 </template>
 
 <script setup lang='ts'>
 import { onMounted, ref } from 'vue';
-import { fetchUpdateCount } from '../../utils/wrapper';
+import { fetchTumUpdate, fetchUpdateCount } from '../../utils/wrapper';
+import { TumUpdateInfo } from '../../types/oma';
+import UpdateItem from './Updates/UpdateItem.vue';
 
 onMounted(async () => {
   const updateCount = await fetchUpdateCount();
   updateSystem.value = updateCount;
-
+  tumUpdates.value = await fetchTumUpdate();
+  console.log(await fetchTumUpdate())
   loadingSystem.value = false;
   loadingApp.value = false;
 })
@@ -43,6 +51,7 @@ onMounted(async () => {
 // 系统升级与应用升级数
 let updateSystem = ref(0)
 let updateApp = ref(0)
+const tumUpdates = ref<TumUpdateInfo[] | null>(null);
 const loadingSystem = ref(true);
 const loadingApp = ref(true);
 </script>
