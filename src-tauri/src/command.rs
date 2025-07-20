@@ -34,6 +34,7 @@ impl AppState {
         }
     }
 
+    #[cfg(debug_assertions)]
     pub fn dev() -> Self {
         use httpmock::prelude::*;
         use walkdir::WalkDir;
