@@ -1,0 +1,23 @@
+name = "vlc"
+icon = "icons/vlc.png"
+title = "VLC Media Player"
+intro = "自由、开源的跨平台多媒体播放器"
+category = "video"
+screenshot = "screenshots/vlc.png"
+
+[package_flags]
+unoffical = false
+verified = true
+non_native = false
+windows_app = false
+telemetry = false
+service_limited = false
+
+[package_info]
+publisher = "VideoLAN"
+source = "https://www.videolan.org/vlc/"
+version = "3.0.20"
+inner_version = 1
+update_date = "2024-06-30"
+install_size = 95000000
+homepage = "https://www.videolan.org/vlc/"

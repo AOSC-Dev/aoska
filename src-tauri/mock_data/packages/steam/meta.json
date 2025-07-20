@@ -1,0 +1,25 @@
+{
+  "name": "steam",
+  "icon": "icons/steam.png",
+  "title": "Steam",
+  "intro": "数字游戏分发平台",
+  "category": "games",
+  "screenshot": "screenshots/steam.png",
+  "package_flags": {
+    "unoffical": false,
+    "verified": true,
+    "non_native": true,
+    "windows_app": false,
+    "telemetry": true,
+    "service_limited": false
+  },
+  "package_info": {
+    "publisher": "Valve Corporation",
+    "source": "https://store.steampowered.com/",
+    "version": "1.0.0.78",
+    "inner_version": 1,
+    "update_date": "2024-07-10",
+    "install_size": 120000000,
+    "homepage": "https://store.steampowered.com/"
+  }
+}
