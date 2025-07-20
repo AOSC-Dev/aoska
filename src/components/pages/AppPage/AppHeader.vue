@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '../share/Button.vue';
+import Button from '../../share/Button.vue';
 
 defineProps({
   appIcon: {
