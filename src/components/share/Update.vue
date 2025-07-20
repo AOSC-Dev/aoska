@@ -87,15 +87,15 @@ const prefix = computed(() => {
 }
 
 .no-update {
-  background-color: #ceffd6;
+  background-color: var(--color-bg-light-green);
 }
 
 .system-update {
-  background-color: #cee9ff;
+  background-color: var(--color-bg-light-blue);
 }
 
 .security-update {
-  background-color: #ffd9ce;
+  background-color: var(--color-bg-light-coral);
 }
 
 .title {

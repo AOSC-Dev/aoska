@@ -75,7 +75,7 @@
 import SoftwareFlags from "../share/SoftwareFlags.vue";
 import ImageCarousel from "../share/ImageCarousel.vue";
 import { ref } from 'vue';
-import AppHeader from "../AppPage/AppHeader.vue";
+import AppHeader from "./AppPage/AppHeader.vue";
 import Button from '../share/Button.vue';
 
 const screenshots = ref([
