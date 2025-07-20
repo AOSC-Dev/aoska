@@ -1,23 +1,21 @@
-use crate::common::config::ASM_ENDPOINT;
-
 use anyhow::{Context, Ok, Result};
 use reqwest::Client;
 
 use serde::de::DeserializeOwned;
 
-fn build_url(path: &str) -> String {
+fn build_url(endpoint:&str, path: &str) -> String {
     format!(
         "{}/{}",
-        ASM_ENDPOINT.trim_end_matches("/"),
+        endpoint.trim_end_matches("/"),
         path.trim_end_matches("/")
     )
 }
 
-pub async fn fetch_data<T>(client: &Client, path: &str) -> Result<T>
+pub async fn fetch_data<T>(client: &Client, endpoint:&str, path: &str) -> Result<T>
 where
     T: DeserializeOwned,
 {
-    let url = build_url(path);
+    let url = build_url(endpoint, path);
     let resp = client
         .get(&url)
         .header("User-Agent", "aoska/1.0")

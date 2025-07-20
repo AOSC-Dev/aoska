@@ -5,7 +5,7 @@ pub mod common;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(command::AppState::new())
+        .manage(command::AppState::default())
         .invoke_handler(tauri::generate_handler![
             command::fetch_by_category,
             command::fetch_detail,
