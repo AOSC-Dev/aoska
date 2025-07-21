@@ -40,8 +40,7 @@ ahash = "0.8.12"
 toml = "0.8"
 clap = { version = "4.0", features = ["derive"] }
 
-
-[target.'cfg(debug_assertions)'.dependencies]
+# debug-mock dependencies
 httpmock = "0.7.0-rc.1"
 regex = "1.11.1"
 walkdir = "2"
