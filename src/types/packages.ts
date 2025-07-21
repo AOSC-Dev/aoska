@@ -9,7 +9,7 @@ export enum Category {
 export interface PackageBrief {
   name: string;
   intro: string;
-  icon: unknown; // PathBuf
+  icon: string; // PathBuf
 }
 
 export interface PackageFlags {

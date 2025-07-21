@@ -11,7 +11,7 @@
 <script setup>
 import VerifiedIcon from '../../assets/icons/verified.svg';
 import NonNativeIcon from '../../assets/icons/non-native.svg';
-import ServiceRestricedIcon from '../../assets/icons/service-restricted.svg';
+import ServiceLimitedIcon from '../../assets/icons/service-limited.svg';
 import UnofficialIcon from '../../assets/icons/unofficial.svg';
 import WindowsIcon from '../../assets/icons/windows.svg';
 import TelemetyIcon from '../../assets/icons/telemetry.svg';
@@ -19,16 +19,16 @@ import TelemetyIcon from '../../assets/icons/telemetry.svg';
 const props = defineProps({
   type: {
     type: String,
-    validator: (value) => ['verified', 'nonNative', 'serviceRestricted', 'unofficial', 'windows', 'telemetry'].includes(value)
+    validator: (value) => ['verified', 'non_native', 'service_limited', 'unofficial', 'windows_app', 'telemetry'].includes(value)
   }
 })
 
 const icons = {
   "verified": VerifiedIcon,
-  "nonNative": NonNativeIcon,
-  "serviceRestricted": ServiceRestricedIcon,
+  "non_native": NonNativeIcon,
+  "service_limited": ServiceLimitedIcon,
   "unofficial": UnofficialIcon,
-  "windows": WindowsIcon,
+  "windows_app": WindowsIcon,
   "telemetry": TelemetyIcon
 }
 

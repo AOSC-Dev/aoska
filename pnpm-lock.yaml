@@ -14,6 +14,9 @@ importers:
       '@tauri-apps/plugin-opener':
         specifier: ^2
         version: 2.2.7
+      filesize:
+        specifier: ^11.0.2
+        version: 11.0.2
       vue:
         specifier: ^3.5.13
         version: 3.5.16(typescript@5.6.3)
@@ -543,6 +546,10 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  filesize@11.0.2:
+    resolution: {integrity: sha512-s/iAeeWLk5BschUIpmdrF8RA8lhFZ/xDZgKw1Tan72oGws1/dFGB06nYEiyyssWUfjKNQTNRlrwMVjO9/hvXDw==}
+    engines: {node: '>= 10.4.0'}
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -1092,6 +1099,8 @@ snapshots:
   fdir@6.4.6(picomatch@4.0.2):
     optionalDependencies:
       picomatch: 4.0.2
+
+  filesize@11.0.2: {}
 
   fsevents@2.3.3:
     optional: true

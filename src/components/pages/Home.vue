@@ -19,7 +19,8 @@
           :key="index"
           :name="app.name"
           :intro="app.intro"
-          @click="showDetail"
+          :image="app.icon"
+          @click="showDetail(app.name)"
         ></AppCard>
       </div>
     </div>
@@ -47,7 +48,7 @@ import Update from '../share/Update.vue';
 import AppCard from '../share/AppCard.vue';
 import TipCard from '../share/TipCard.vue';
 import router from '../../router';
-import { fetchDetail, fetchIndex, fetchRecommend, fetchTumUpdate, fetchUpdateCount, fetchUpdateDetail } from '../../utils/wrapper';
+import { fetchRecommend, fetchTumUpdate, fetchUpdateCount } from '../../utils/wrapper';
 import { RecommendIndex } from '../../types/home';
 
 // 总升级与安全升级数
@@ -108,8 +109,8 @@ const recommendList = ref<RecommendIndex | null>(null);
 // }
 
 // 跳转到应用详情
-const showDetail = () => {
-  router.push("/app")
+const showDetail = (name: string) => {
+  router.push(`/app/${name}`)
 }
 
 // 组件挂载时自动执行

@@ -1,8 +1,8 @@
 <template>
   <AppHeader
-    app-name="微信"
-    app-intro="用户超十亿的即时聊天软件"
-    app-icon="/src/assets/icons/wechat.png"
+    :app-name="packageDetail?.name"
+    :app-intro="packageDetail?.intro"
+    :app-icon="packageDetail?.icon"
     app-banner-img="/src/assets/icons/wechat_banner.png"
   />
   <div class="down-content">
@@ -15,33 +15,35 @@
     </div>
     <div class="down-right">
       <div class="flags">
-        <SoftwareFlags type="unofficial"></SoftwareFlags>
-        <SoftwareFlags type="verified"></SoftwareFlags>
-        <!-- <SoftwareFlags type="serviceRestricted"></SoftwareFlags> -->
-        <!-- <SoftwareFlags type="nonNative"></SoftwareFlags> -->
-        <!-- <SoftwareFlags type="windows"></SoftwareFlags> -->
-        <!-- <SoftwareFlags type="telemetry"></SoftwareFlags> -->
+        <template
+          v-for="(v, k) in packageDetail?.package_flags"
+          :key="k"
+        >
+          <SoftwareFlags 
+            v-if="v"
+            :type="k" />
+        </template>
       </div>
       <div class="info">
         <table>
           <tbody>
             <tr>
               <td class="l1">发行方：</td>
-              <td class="l2">腾讯控股有限公司</td>
+              <td class="l2">{{ packageDetail?.package_info.publisher }}</td>
               <td class="l3">软件版本：</td>
-              <td class="l4">4.0.0.11</td>
+              <td class="l4">{{ packageDetail?.package_info.version }}</td>
             </tr>
             <tr>
               <td></td>
               <td></td>
               <td class="l3">更新日期：</td>
-              <td>2024年11月23日</td>
+              <td>{{ packageDetail?.package_info.update_date }}</td>
             </tr>
             <tr>
               <td class="l1">来源：</td>
-              <td>官方安装包</td>
+              <td>{{ packageDetail?.package_info.source }}</td>
               <td class="l3">安装大小：</td>
-              <td>711.19 MiB</td>
+              <td>{{ installSizeFormatted }}</td>
             </tr>
           </tbody>
         </table>
@@ -71,12 +73,27 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { filesize } from 'filesize';
 import SoftwareFlags from "../share/SoftwareFlags.vue";
 import ImageCarousel from "../share/ImageCarousel.vue";
-import { ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import AppHeader from "./AppPage/AppHeader.vue";
-import Button from '../share/Button.vue';
+import { useRoute} from "vue-router";
+import { fetchDetail } from "../../utils/wrapper";
+import { PackageDetail } from "../../types/packages";
+
+const route = useRoute();
+const packageName = ref<string>(route.params.pkgName as string);
+const packageDetail = ref<PackageDetail | null>(null);
+
+onMounted(async () => {
+  packageDetail.value = await fetchDetail(packageName.value);
+});
+
+const installSizeFormatted = computed(() => {
+  return filesize(packageDetail.value?.package_info?.install_size ?? 0);
+});
 
 const screenshots = ref([
   '/src/assets/images/3.png',
