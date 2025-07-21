@@ -1,6 +1,6 @@
 <template>
   <div class="card">
-    <img src="../../assets/icons/aosc_logo.png" alt="安同社区的logo">
+    <img :src="image" />
     <div>
       <div class="name">{{ name }}</div>
       <div class="intro">{{ intro }}</div>
@@ -13,6 +13,7 @@
 const props = defineProps<{
   name: string,
   intro: string,
+  image: string
 }>()
 </script>
 
