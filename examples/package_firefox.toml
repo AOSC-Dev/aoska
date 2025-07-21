@@ -3,7 +3,7 @@ icon = "icons/firefox.png"
 title = "Mozilla Firefox"
 intro = "快速、安全的網頁瀏覽器"
 category = "working"
-screenshot = "screenshots/firefox.png"
+screenshot = ["screenshots/firefox.png"]
 
 [package_flags]
 unoffical = false

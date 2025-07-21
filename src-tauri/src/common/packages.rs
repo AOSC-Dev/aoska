@@ -50,7 +50,7 @@ pub struct PackageDetail {
     pub title: String,
     pub intro: String,
     pub category: Category,
-    pub screenshot: PathBuf,
+    pub screenshot: Vec<PathBuf>,
     pub package_flags: PackageFlags,
     pub package_info: PackageInfo,
 }

@@ -3,7 +3,7 @@ icon = "icons/steam.png"
 title = "Steam"
 intro = "数字游戏分发平台"
 category = "games"
-screenshot = "screenshots/steam.png"
+screenshot = ["screenshots/steam-main.png", "screenshots/steam-library.png", "screenshots/steam-store.png"]
 
 [package_flags]
 unoffical = false
