@@ -4,6 +4,7 @@ title = "Steam"
 intro = "数字游戏分发平台"
 category = "games"
 screenshot = ["assets/steam-home.jpg", "assets/steam-store.png"]
+banner = "assets/banner.png"
 
 [package_flags]
 unoffical = false

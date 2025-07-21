@@ -23,5 +23,6 @@
     "update_date": "2024-07-15",
     "install_size": 85000000,
     "homepage": "https://www.mozilla.org/firefox/"
-  }
+  },
+  "banner": "assets/banner.png"
 }

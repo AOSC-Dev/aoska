@@ -80,6 +80,7 @@ struct TomlPackageDetail {
     screenshot: Vec<PathBuf>,
     package_flags: TomlPackageFlags,
     package_info: TomlPackageInfo,
+    banner: PathBuf,
 }
 
 #[derive(Debug, Deserialize)]
@@ -160,6 +161,7 @@ impl From<TomlPackageDetail> for PackageDetail {
             screenshot: toml_detail.screenshot,
             package_flags: toml_detail.package_flags.into(),
             package_info: toml_detail.package_info.into(),
+            banner: toml_detail.banner,
         }
     }
 }
