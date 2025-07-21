@@ -43,7 +43,6 @@ onMounted(async () => {
   const updateCount = await fetchUpdateCount();
   updateSystem.value = updateCount;
   tumUpdates.value = await fetchTumUpdate();
-  console.log(await fetchTumUpdate())
   loadingSystem.value = false;
   loadingApp.value = false;
 })
