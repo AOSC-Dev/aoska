@@ -15,7 +15,7 @@
       <div class="app-title">{{ $t("home.appTitle") }}</div>
       <div class="apps">
         <AppCard
-          v-for="(app, index) in recommendList"
+          v-for="(app, index) in recommendList?.packages"
           :key="index"
           :name="app.name"
           :intro="app.intro"
@@ -47,7 +47,8 @@ import Update from '../share/Update.vue';
 import AppCard from '../share/AppCard.vue';
 import TipCard from '../share/TipCard.vue';
 import router from '../../router';
-import { fetchTumUpdate, fetchUpdateCount } from '../../utils/wrapper';
+import { fetchDetail, fetchIndex, fetchRecommend, fetchTumUpdate, fetchUpdateCount, fetchUpdateDetail } from '../../utils/wrapper';
+import { RecommendIndex } from '../../types/home';
 
 // 总升级与安全升级数
 let loading = ref(true)
@@ -57,10 +58,10 @@ let updateSecurity = ref(0)
 onBeforeMount(async () => {
   const updateCount = await fetchUpdateCount();
   const tumUpdate = await fetchTumUpdate();
-  console.log(tumUpdate)
   const securityUpdateCount = tumUpdate.filter((v) => {return v.is_security}).length;
   updateSecurity.value = securityUpdateCount;
   update.value = updateCount - securityUpdateCount;
+  recommendList.value = await fetchRecommend();
   loading.value = false;
 })
 
@@ -93,23 +94,8 @@ const tipList = [
   },
 ]
 
-// 定义AppInfo类型
-interface AppInfo {
-  name: string,
-  intro: string
-}
-
 // 获取推荐列表
-const recommendList = ref<AppInfo[]>([
-  {
-    name: "WPS 办公套件",
-    intro: "这是应用程序 WPS"
-  },
-  {
-    name: "WPS 办公套件",
-    intro: "这是应用程序 WPS"
-  }
-])
+const recommendList = ref<RecommendIndex | null>(null);
 
 // const recommendList = ref<AppInfo[]>([])
 // const fetchRecommendList = async () => {

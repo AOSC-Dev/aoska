@@ -23,8 +23,8 @@ export async function fetchIndex(): Promise<Index> {
   return invoke<Index>('fetch_index');
 }
 
-export async function fetchDetail(pkg_name: string): Promise<PackageDetail> {
-  return invoke<PackageDetail>('fetch_detail', { pkg_name });
+export async function fetchDetail(pkgName: string): Promise<PackageDetail> {
+  return invoke<PackageDetail>('fetch_detail', { pkgName });
 }
 
 export async function fetchByCategory(category: string): Promise<CategoryIndex> {
