@@ -41,7 +41,7 @@ export interface PackageDetail {
   title: string;
   intro: string;
   category: Category;
-  screenshot: string;
+  screenshot: string[];
   package_flags: PackageFlags;
   package_info: PackageInfo;
 }

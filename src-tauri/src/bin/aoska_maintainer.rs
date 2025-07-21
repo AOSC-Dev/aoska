@@ -77,7 +77,7 @@ struct TomlPackageDetail {
     title: String,
     intro: String,
     category: Category,
-    screenshot: PathBuf,
+    screenshot: Vec<PathBuf>,
     package_flags: TomlPackageFlags,
     package_info: TomlPackageInfo,
 }
