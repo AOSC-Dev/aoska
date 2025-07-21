@@ -61,11 +61,11 @@
             "title": "Quality Verified",
             "description": "Tested by maintainers, fully functional."
         },
-        "nonNative": {
+        "non_native": {
             "title": "Non-Native",
             "description": "Requires emulator translation."
         },
-        "windows": {
+        "windows_app": {
             "title": "Windows® Program",
             "description": "Designed for Windows® system, runs via wine."
         },
@@ -73,9 +73,9 @@
             "title": "Telemety",
             "description": "Known to collect user data, please review settings."
         },
-        "serviceRestricted": {
-            "title": "Service Restriced",
-            "description": "Service may be restricted by location."
+        "service_limited": {
+            "title": "Service Limited",
+            "description": "Service may be limited by location."
         }
     }
 }
