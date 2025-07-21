@@ -48,7 +48,7 @@ const router = createRouter({
             component: Updates
         },
         {
-            path: "/app",
+            path: "/app/:pkgName",
             component: AppPage
         }
     ]
