@@ -1,9 +1,9 @@
 name = "firefox"
-icon = "icons/firefox.png"
+icon = "assets/logo.png"
 title = "Mozilla Firefox"
 intro = "快速、安全的網頁瀏覽器"
 category = "working"
-screenshot = ["screenshots/firefox.png"]
+screenshot = ["assets/firefox-main.png"]
 
 [package_flags]
 unoffical = false
