@@ -61,11 +61,11 @@
             "title": "已验证",
             "description": "已通过安同 OS 维护者测试验证，功能基本完美。"
         },
-        "nonNative": {
+        "non_native": {
             "title": "非原生",
             "description": "需搭配模拟器转译使用，对主机性能要求较高。"
         },
-        "windows": {
+        "windows_app": {
             "title": "Windows® 应用程序",
             "description": "本软件为 Windows® 设计，使用 Wine 模拟运行。"
         },
@@ -73,7 +73,7 @@
             "title": "遥测与跟踪功能",
             "description": "本软件存在收集用户使用数据的功能，请注意相关配置。"
         },
-        "serviceRestricted": {
+        "service_limited": {
             "title": "服务可能受限",
             "description": "由于地理位置及网络条件，本软件功能可能受限。"
         }
