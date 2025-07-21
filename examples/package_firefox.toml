@@ -4,6 +4,7 @@ title = "Mozilla Firefox"
 intro = "快速、安全的網頁瀏覽器"
 category = "working"
 screenshot = ["assets/firefox-main.png"]
+banner = "assets/banner.png"
 
 [package_flags]
 unoffical = false

@@ -53,4 +53,5 @@ pub struct PackageDetail {
     pub screenshot: Vec<PathBuf>,
     pub package_flags: PackageFlags,
     pub package_info: PackageInfo,
+    pub banner: PathBuf,
 }
