@@ -1,9 +1,9 @@
 name = "vlc"
-icon = "icons/vlc.png"
+icon = "assets/vlc.png"
 title = "VLC Media Player"
 intro = "自由、开源的跨平台多媒体播放器"
 category = "video"
-screenshot = ["screenshots/vlc.png"]
+screenshot = ["assets/vlc-main.jpg"]
 
 [package_flags]
 unoffical = false
