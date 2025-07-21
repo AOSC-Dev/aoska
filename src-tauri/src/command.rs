@@ -40,15 +40,12 @@ impl AppState {
         use walkdir::WalkDir;
 
         let server = MockServer::start();
-        for entry in WalkDir::new("mock_data") 
+        for entry in WalkDir::new("mock_data")
             .into_iter()
             .filter_map(Result::ok)
             .filter(|e| e.file_type().is_file() && e.path().extension() == Some("json".as_ref()))
         {
-            let rel = entry
-                .path()
-                .strip_prefix("mock_data")
-                .unwrap();
+            let rel = entry.path().strip_prefix("mock_data").unwrap();
             let url = format!("/{}", rel.to_string_lossy().replace('\\', "/"));
 
             server.mock(|when, then| {
@@ -193,4 +190,9 @@ pub async fn fetch_tum_update(
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub async fn get_endpoint_base_url(app: tauri::State<'_, AppState>) -> Result<String> {
+    Ok(app.base_url.clone())
 }
