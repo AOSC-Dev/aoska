@@ -13,7 +13,8 @@ pub fn run() {
             command::fetch_recommend,
             command::fetch_tum_update,
             command::fetch_update_count,
-            command::fetch_update_detail
+            command::fetch_update_detail,
+            command::get_endpoint_base_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
