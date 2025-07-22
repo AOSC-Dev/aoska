@@ -41,7 +41,8 @@ export interface PackageDetail {
   title: string;
   intro: string;
   category: Category;
-  screenshot: string[];
+  screenshot: string[]; // Vec<PathBuf>
   package_flags: PackageFlags;
   package_info: PackageInfo;
+  banner: string; // PathBuf
 }
