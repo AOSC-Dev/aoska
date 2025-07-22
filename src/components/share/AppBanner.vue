@@ -1,9 +1,9 @@
 <template>
   <div class="banner">
-    <img src="../../assets/icons/aosc_logo.png" alt="安同社区的logo">
+    <img :src="icon" alt="安同社区的logo">
     <div>
       <div class="name">{{ name }}</div>
-      <div class="info">{{ size }} | {{ version }}</div>
+      <!-- <div class="info">{{ size }} | {{ version }}</div> -->
       <div class="intro">{{ intro }}</div>
       </div>
       <div class="button">{{ $t("appBanner.install") }}</div>
@@ -15,8 +15,9 @@
 const props = defineProps<{
   name: string,
   intro: string,
-  version: string,
-  size: string,
+  icon: string,
+  // version: string,
+  // size: string,
 }>()
 </script>
 

@@ -2,10 +2,10 @@
   <!-- 导航区 -->
   <div class="navigator">
     <RouterLink to="/home">{{ $t("app.home") }}</RouterLink>
-    <RouterLink to="/working">{{ $t("app.working") }}</RouterLink>
-    <RouterLink to="/games">{{ $t("app.games") }}</RouterLink>
-    <RouterLink to="/video">{{ $t("app.video") }}</RouterLink>
-    <RouterLink to="/creating">{{ $t("app.creating") }}</RouterLink>
+    <RouterLink to="/category/working">{{ $t("app.working") }}</RouterLink>
+    <RouterLink to="/category/games">{{ $t("app.games") }}</RouterLink>
+    <RouterLink to="/category/video">{{ $t("app.video") }}</RouterLink>
+    <RouterLink to="/category/creating">{{ $t("app.creating") }}</RouterLink>
     <RouterLink to="/observing">{{ $t("app.observing") }}</RouterLink>
     <RouterLink to="/updates">{{ $t("app.updates") }}</RouterLink>
   </div>
