@@ -19,7 +19,7 @@
           :key="index"
           :name="app.name"
           :intro="app.intro"
-          :image="app.icon"
+          :image="resolveAssetPath(app.icon, app.name)"
           @click="showDetail(app.name)"
         ></AppCard>
       </div>
@@ -50,6 +50,7 @@ import TipCard from '../share/TipCard.vue';
 import router from '../../router';
 import { fetchRecommend, fetchTumUpdate, fetchUpdateCount } from '../../utils/wrapper';
 import { RecommendIndex } from '../../types/home';
+import { resolveAssetPath } from '../../utils/url';
 
 // 总升级与安全升级数
 let loading = ref(true)
