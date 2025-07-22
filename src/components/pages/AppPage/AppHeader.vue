@@ -48,9 +48,10 @@ defineProps({
 }
 
 .header .app-img {
-  width: 192px;
-  height: 192px;
-  margin: 20px;
+  width: 128px;
+  height: 128px;
+  margin: 40px;
+  filter: drop-shadow(5px 5px 10px rgba(0, 0, 0, 0.5));
 }
 
 .app-banner {
