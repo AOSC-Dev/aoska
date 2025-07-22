@@ -44,12 +44,15 @@ impl AppState {
             .into_iter()
             .filter_map(Result::ok)
             .filter(|e| {
-                e.file_type().is_file() && 
-                if let Some(ext) = e.path().extension() {
-                    matches!(ext.to_string_lossy().to_lowercase().as_str(), "json" | "png" | "jpg" | "jpeg")
-                } else {
-                    false
-                }
+                e.file_type().is_file()
+                    && if let Some(ext) = e.path().extension() {
+                        matches!(
+                            ext.to_string_lossy().to_lowercase().as_str(),
+                            "json" | "png" | "jpg" | "jpeg"
+                        )
+                    } else {
+                        false
+                    }
             })
         {
             let rel = entry.path().strip_prefix("mock_data").unwrap();
@@ -57,8 +60,10 @@ impl AppState {
 
             server.mock(|when, then| {
                 when.method(GET).path(url);
-                
-                let content_type = match entry.path().extension()
+
+                let content_type = match entry
+                    .path()
+                    .extension()
                     .and_then(|ext| ext.to_str())
                     .map(|ext| ext.to_lowercase())
                     .as_deref()
@@ -68,7 +73,7 @@ impl AppState {
                     Some("jpg") | Some("jpeg") => "image/jpeg",
                     _ => "application/octet-stream",
                 };
-                
+
                 then.status(200)
                     .header("content-type", content_type)
                     .body_from_file(entry.path().to_string_lossy().to_string());
@@ -212,6 +217,6 @@ pub async fn fetch_tum_update(
 }
 
 #[tauri::command]
-pub async fn get_endpoint_base_url(app: tauri::State<'_, AppState>) -> Result<String> {
+pub async fn get_endpoint_base_url(app: tauri::State<'_, AppState>) -> Result<String, String> {
     Ok(app.base_url.clone())
 }
