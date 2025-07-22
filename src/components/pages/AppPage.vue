@@ -1,6 +1,6 @@
 <template>
   <AppHeader
-    :app-name="packageDetail?.name"
+    :app-name="packageDetail?.title"
     :app-intro="packageDetail?.intro"
     :app-icon="resolveAssetPath(packageDetail?.icon || '', packageName)"
     :app-banner-img="resolveAssetPath(packageDetail?.banner || '', packageName)"
