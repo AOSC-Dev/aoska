@@ -1,6 +1,6 @@
 {
   "name": "vlc",
-  "icon": "assets/vlc.png",
+  "icon": "assets/icon.png",
   "title": "VLC Media Player",
   "intro": "自由、开源的跨平台多媒体播放器",
   "category": "video",
