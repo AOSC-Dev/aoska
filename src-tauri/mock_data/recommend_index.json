@@ -1,20 +1,20 @@
 {
-  "date": "2025-07-22T15:13:37.236841968Z",
+  "date": "2025-07-22T15:20:33.280404591Z",
   "packages": [
     {
       "name": "firefox",
       "intro": "Mozilla Firefox 網頁瀏覽器",
-      "icon": "assets/firefox.png"
+      "icon": "assets/logo.png"
     },
     {
       "name": "steam",
       "intro": "Steam 遊戲平台",
-      "icon": "assets/steam.png"
+      "icon": "assets/logo.png"
     },
     {
       "name": "vlc",
       "intro": "VLC 媒體播放器",
-      "icon": "assets/vlc.png"
+      "icon": "assets/logo.png"
     }
   ]
 }

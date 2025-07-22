@@ -1,14 +1,14 @@
 [[packages]]
 name = "firefox"
 intro = "Mozilla Firefox 網頁瀏覽器"
-icon = "assets/firefox.png"
+icon = "assets/logo.png"
 
 [[packages]]
 name = "steam"
 intro = "Steam 遊戲平台"
-icon = "assets/steam.png"
+icon = "assets/logo.png"
 
 [[packages]]
 name = "vlc"
 intro = "VLC 媒體播放器"
-icon = "assets/vlc.png"
+icon = "assets/logo.png"

@@ -5,42 +5,42 @@ category = "working"
 [[categories.packages]]
 name = "firefox"
 intro = "Mozilla Firefox 網頁瀏覽器"
-icon = "icons/firefox.png"
+icon = "assets/logo.png"
 
 [[categories.packages]]
 name = "thunderbird"
 intro = "Mozilla Thunderbird 電子郵件客戶端"
-icon = "icons/thunderbird.png"
+icon = "assets/logo.png"
 
 [[categories]]
 category = "games"
 [[categories.packages]]
 name = "steam"
 intro = "Steam 遊戲平台"
-icon = "icons/steam.png"
+icon = "assets/logo.png"
 
 [[categories.packages]]
 name = "minecraft"
 intro = "Minecraft 遊戲"
-icon = "icons/minecraft.png"
+icon = "assets/logo.png"
 
 [[categories]]
 category = "video"
 [[categories.packages]]
 name = "vlc"
 intro = "VLC 媒體播放器"
-icon = "icons/vlc.png"
+icon = "assets/logo.png"
 
 [[categories]]
 category = "creating"
 [[categories.packages]]
 name = "gimp"
 intro = "GIMP 影像編輯器"
-icon = "icons/gimp.png"
+icon = "assets/logo.png"
 
 [[categories]]
 category = "observing"
 [[categories.packages]]
 name = "telescope"
 intro = "天文觀測軟件"
-icon = "icons/telescope.png"
+icon = "assets/logo.png"
