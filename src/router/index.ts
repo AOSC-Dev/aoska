@@ -2,13 +2,10 @@ import { createRouter, createWebHistory } from "vue-router";
 
 // 引入路由组件
 import Home from "../components/pages/Home.vue";
-import Working from "../components/pages/Working.vue";
-import Games from "../components/pages/Games.vue";
-import Video from "../components/pages/Video.vue";
-import Creating from "../components/pages/Creating.vue";
 import Observing from "../components/pages/Observing.vue";
 import Updates from "../components/pages/Updates.vue";
 import AppPage from "../components/pages/AppPage.vue";
+import Category from "../components/pages/Category.vue";
 
 // 创建路由器
 const router = createRouter({
@@ -24,20 +21,8 @@ const router = createRouter({
             component: Home
         },
         {
-            path: "/working",
-            component: Working
-        },
-        {
-            path: "/games",
-            component: Games
-        },
-        {
-            path: "/video",
-            component: Video
-        },
-        {
-            path: "/creating",
-            component: Creating
+            path: "/category/:categoryName",
+            component: Category
         },
         {
             path: "/observing",

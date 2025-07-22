@@ -1,5 +1,5 @@
 <template>
-  <div class="creating">
+  <div class="working">
     <div class="ranking">
       <span>{{ $t("pages.ranking") }}</span>
       <span>{{ $t("pages.name") }}</span>
@@ -7,23 +7,41 @@
       <span>{{ $t("pages.update") }}</span>
     </div>
     <AppBanner
-      v-for="(app, index) in appList"
+      v-for="(app, index) in categoryIndex?.packages"
       :key="index"
       :name="app.name"
       :intro="app.intro"
-      :version="app.version"
-      :size="app.size"
-      @click="showDetail"
+      :icon="resolveAssetPath(app.icon, app.name)"
+      @click="showDetail(app.name)"
     ></AppBanner>
   </div>
 </template>
 
 <script setup lang='ts'>
-import { ref, onBeforeMount } from 'vue';
-import { invoke } from '@tauri-apps/api/core';
+import { ref, onMounted } from 'vue';
 
 import AppBanner from '../share/AppBanner.vue';
 import router from '../../router';
+import { onBeforeRouteUpdate, useRoute } from 'vue-router';
+import { CategoryIndex } from '../../types/home';
+import { fetchByCategory } from '../../utils/wrapper';
+import { resolveAssetPath } from '../../utils/url';
+
+const route = useRoute();
+const categoryIndex = ref<CategoryIndex | null>(null);
+
+const fetchCategory = async (categoryName: string) => {
+  categoryIndex.value = await fetchByCategory(categoryName as string);
+}
+
+onMounted(async () => {
+  await fetchCategory(route.params.categoryName as string);
+});
+
+onBeforeRouteUpdate(async (to, _, next) => {
+  await fetchCategory(to.params.categoryName as string);
+  next();
+});
 
 // 定义AppInfo类型
 interface AppInfo {
@@ -62,8 +80,8 @@ const appList = [
 // }
 
 // 跳转到应用详情
-const showDetail = () => {
-  router.push("/app")
+const showDetail = (name: string) => {
+  router.push(`/app/${name}`);
 }
 
 // 组件挂载时自动执行
@@ -74,7 +92,7 @@ const showDetail = () => {
 </script>
 
 <style scoped>
-.creating {
+.working {
   margin: 60px 20px 20px 20px;
 }
 
