@@ -2,13 +2,13 @@
   <AppHeader
     :app-name="packageDetail?.name"
     :app-intro="packageDetail?.intro"
-    :app-icon="packageDetail?.icon"
-    app-banner-img="/src/assets/icons/wechat_banner.png"
+    :app-icon="resolveAssetPath(packageDetail?.icon || '', packageName)"
+    :app-banner-img="resolveAssetPath(packageDetail?.banner || '', packageName)"
   />
   <div class="down-content">
     <div class="image-container">
       <ImageCarousel 
-        :images="screenshots" 
+        :images="resolveAssetPath(packageDetail?.screenshot || [], packageName)" 
         :autoplay="false" 
         :interval="4000"
       />
@@ -82,6 +82,7 @@ import AppHeader from "./AppPage/AppHeader.vue";
 import { useRoute} from "vue-router";
 import { fetchDetail } from "../../utils/wrapper";
 import { PackageDetail } from "../../types/packages";
+import { resolveAssetPath } from '../../utils/url';
 
 const route = useRoute();
 const packageName = ref<string>(route.params.pkgName as string);

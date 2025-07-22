@@ -30,3 +30,7 @@ export async function fetchDetail(pkgName: string): Promise<PackageDetail> {
 export async function fetchByCategory(category: string): Promise<CategoryIndex> {
   return invoke<CategoryIndex>('fetch_by_category', { category });
 }
+
+export async function getEndpointBaseUrl(): Promise<string> {
+  return invoke<string>('get_endpoint_base_url');
+}
