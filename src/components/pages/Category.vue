@@ -43,52 +43,10 @@ onBeforeRouteUpdate(async (to, _, next) => {
   next();
 });
 
-// 定义AppInfo类型
-interface AppInfo {
-  name: string,
-  intro: string,
-  version: string,
-  size: string
-}
-
-// 获取应用列表
-const appList = [
-  {
-    name: "WPS 办公套件",
-    intro: "这是应用程序 WPS，这是应用程序 WPS 办公套件",
-    version: "123.4.5",
-    size: "233 Mib"
-  },
-  {
-    name: "WPS 办公套件",
-    intro: "这是应用程序 WPS，这是应用程序 WPS 办公套件",
-    version: "123.4.5",
-    size: "233 Mib"
-  }
-]
-
-// const appList = ref<AppInfo[]>([])
-// const fetchAppList = async (category: string) => {
-//   try {
-//     const result = await invoke<AppInfo[]>('fetch_by_category', { 
-//       category: category 
-//     });
-//     appList.value = result;
-//   } catch (error) {
-//     console.error('Error fetching list:', error);
-//   }
-// }
-
 // 跳转到应用详情
 const showDetail = (name: string) => {
   router.push(`/app/${name}`);
 }
-
-// 组件挂载时自动执行
-// const category = "working"
-// onBeforeMount(() => {
-//   fetchAppList(category)
-// })
 </script>
 
 <style scoped>
