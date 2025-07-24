@@ -1,7 +1,7 @@
 name = "gimp"
 icon = "assets/logo.png"
 title = "GIMP"
-intro = "强大的开源图像编辑软件"
+intro = "开源图像编辑软件"
 category = "creating"
 screenshot = ["assets/gimp.jpg"]
 banner = "assets/gimp-banner.png"
