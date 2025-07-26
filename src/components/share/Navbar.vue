@@ -9,7 +9,10 @@
       </RouterLink>
     </div>
     <div class="nav-right">
-      <input></input>
+      <div class="search-input">
+        <input class="search-input" :placeholder="$t('app.search')"></input>
+      </div>
+      
       <div class="window-controls">
         <button class="win-btn" title="Minimize" v-on:click="onMinimize()">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
@@ -133,6 +136,15 @@ const onClose = () => { appWindow.close(); };
 
 .win-btn:hover {
   background-color: rgba(255, 255, 255, 0.2);
+}
+
+.search-input {
+  background-color: transparent;
+  color: white;
+  border: 1px solid #a8bca8;
+  border-radius: 5px;
+  width: 218px;
+  height: 24px;
 }
 
 </style>
