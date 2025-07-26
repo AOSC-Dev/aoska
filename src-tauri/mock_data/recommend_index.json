@@ -1,8 +1,8 @@
 {
-  "date": "2025-07-22T15:20:33.280404591Z",
+  "date": "2025-07-26T02:31:14.860208405Z",
   "packages": [
     {
-      "name": "wechat",
+      "name": "firefox",
       "intro": "Mozilla Firefox 網頁瀏覽器",
       "icon": "assets/logo.png"
     },
@@ -14,6 +14,11 @@
     {
       "name": "vlc",
       "intro": "VLC 媒體播放器",
+      "icon": "assets/logo.png"
+    },
+    {
+      "name": "wechat",
+      "intro": "即时通讯工具",
       "icon": "assets/logo.png"
     }
   ]
