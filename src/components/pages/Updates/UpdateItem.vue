@@ -16,11 +16,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { TumUpdateInfo } from '../../../types/oma';
-import { fetchUpdateDetail } from '../../../utils/wrapper';
+import { computed, ref } from 'vue';
+import { OmaOperation, TumUpdateInfo } from '../../../types/oma';
 
-const props = defineProps<{ tumUpdate: TumUpdateInfo }>();
+const props = defineProps<{ tumUpdate: TumUpdateInfo, updateDetail: OmaOperation | null}>();
 const lang = ref(navigator.language.replace("-", "_"));
 
 function getLangText(obj: Record<string, string> | undefined, lang: string, fallback = "default") {
@@ -28,18 +27,16 @@ function getLangText(obj: Record<string, string> | undefined, lang: string, fall
   return obj[lang] || obj[fallback] || Object.values(obj)[0] || "";
 }
 
-const packageVersions = ref<{ name: string; version: string | undefined }[]>([]);
-
-onMounted(async () => {
-  const details = await fetchUpdateDetail();
-  packageVersions.value = props.tumUpdate.package_names.map(name => {
-    const found = details.install.find((v) => v.name_without_arch === name);
+const packageVersions = computed(() => {
+  return props.tumUpdate.package_names.map(name => {
+    const found = props.updateDetail?.install.find((v) => v.name_without_arch === name);
     return {
       name,
       version: found?.new_version
     };
   });
 });
+
 </script>
 
 <style scoped>
