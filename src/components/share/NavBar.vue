@@ -1,5 +1,5 @@
 <template>
-  <div class="navigator">
+  <div class="navigator" data-tauri-drag-region>
     <div class="nav-left">
       <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" custom v-slot="{ href, isActive, navigate }"
         class="router-link">
