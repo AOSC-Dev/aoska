@@ -2,7 +2,7 @@
   "date": "2025-07-22T15:20:33.280404591Z",
   "packages": [
     {
-      "name": "firefox",
+      "name": "wechat",
       "intro": "Mozilla Firefox 網頁瀏覽器",
       "icon": "assets/logo.png"
     },
