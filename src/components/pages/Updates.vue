@@ -30,19 +30,21 @@
     v-for="(tumUpdate, index) in tumUpdates"
     :key="index"
     :tum-update="tumUpdate"
+    :update-detail="updateDetail"
   ></UpdateItem>
 </template>
 
 <script setup lang='ts'>
 import { onMounted, ref } from 'vue';
-import { fetchTumUpdate, fetchUpdateCount } from '../../utils/wrapper';
-import { TumUpdateInfo } from '../../types/oma';
+import { fetchTumUpdate, fetchUpdateCount, fetchUpdateDetail } from '../../utils/wrapper';
+import { OmaOperation, TumUpdateInfo } from '../../types/oma';
 import UpdateItem from './Updates/UpdateItem.vue';
 
 onMounted(async () => {
   const updateCount = await fetchUpdateCount();
   updateSystem.value = updateCount;
   tumUpdates.value = await fetchTumUpdate();
+  updateDetail.value = await fetchUpdateDetail();
   loadingSystem.value = false;
   loadingApp.value = false;
 })
@@ -51,6 +53,7 @@ onMounted(async () => {
 let updateSystem = ref(0)
 let updateApp = ref(0)
 const tumUpdates = ref<TumUpdateInfo[] | null>(null);
+const updateDetail = ref<OmaOperation | null>(null);
 const loadingSystem = ref(true);
 const loadingApp = ref(true);
 </script>
