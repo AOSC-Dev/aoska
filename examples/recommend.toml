@@ -12,3 +12,8 @@ icon = "assets/logo.png"
 name = "vlc"
 intro = "VLC 媒體播放器"
 icon = "assets/logo.png"
+
+[[packages]]
+name = "wechat"
+intro = "即时通讯工具"
+icon = "assets/logo.png"
