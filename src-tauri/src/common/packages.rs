@@ -10,7 +10,6 @@ pub enum Category {
     Games,
     Video,
     Creating,
-    Observing,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
