@@ -45,8 +45,8 @@ const navItems = [
   { to: "/updates", label: "app.updates" },
 ];
 
-import { Window } from '@tauri-apps/api/window';
-const appWindow = new Window('main');
+import { getCurrentWindow } from '@tauri-apps/api/window';
+const appWindow = getCurrentWindow();
 
 const onMinimize = () => { appWindow.minimize(); };
 const onMaximize = () => { appWindow.toggleMaximize(); };
