@@ -38,9 +38,3 @@ name = "gimp"
 intro = "GIMP 影像編輯器"
 icon = "assets/logo.png"
 
-[[categories]]
-category = "observing"
-[[categories.packages]]
-name = "telescope"
-intro = "天文觀測軟件"
-icon = "assets/logo.png"
