@@ -67,6 +67,7 @@ const onClose = () => { appWindow.close(); };
   z-index: 9999;
   padding: 10px 10px;
   box-sizing: border-box;
+  border-radius: 5px 5px 0px 0px;
 }
 
 .router-link {
