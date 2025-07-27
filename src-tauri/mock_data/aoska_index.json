@@ -51,16 +51,6 @@
           "icon": "assets/logo.png"
         }
       ]
-    },
-    {
-      "category": "observing",
-      "packages": [
-        {
-          "name": "telescope",
-          "intro": "天文觀測軟件",
-          "icon": "assets/logo.png"
-        }
-      ]
     }
   ]
 }
