@@ -1,11 +1,11 @@
 import { createRouter, createWebHistory } from "vue-router";
 
 // 引入路由组件
-import Home from "../components/pages/Home.vue";
-import Observing from "../components/pages/Observing.vue";
-import Updates from "../components/pages/Updates.vue";
+import Home from "../components/pages/HomePage.vue";
+import Observing from "../components/pages/ViewAllPage.vue";
+import UpdatePage from "../components/pages/UpdatePage.vue";
 import AppPage from "../components/pages/AppPage.vue";
-import Category from "../components/pages/Category.vue";
+import CategoryPage from "../components/pages/CategoryPage.vue";
 
 // 创建路由器
 const router = createRouter({
@@ -22,7 +22,7 @@ const router = createRouter({
         },
         {
             path: "/category/:categoryName",
-            component: Category
+            component: CategoryPage
         },
         {
             path: "/observing",
@@ -30,13 +30,13 @@ const router = createRouter({
         },
         {
             path: "/updates",
-            component: Updates
+            component: UpdatePage
         },
         {
             path: "/app/:pkgName",
             component: AppPage
         }
     ]
-})
+});
 
-export default router
+export default router;

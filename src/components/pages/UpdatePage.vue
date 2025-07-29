@@ -47,11 +47,11 @@ onMounted(async () => {
   updateDetail.value = await fetchUpdateDetail();
   loadingSystem.value = false;
   loadingApp.value = false;
-})
+});
 
 // 系统升级与应用升级数
-let updateSystem = ref(0)
-let updateApp = ref(0)
+const updateSystem = ref(0);
+const updateApp = ref(0);
 const tumUpdates = ref<TumUpdateInfo[] | null>(null);
 const updateDetail = ref<OmaOperation | null>(null);
 const loadingSystem = ref(true);

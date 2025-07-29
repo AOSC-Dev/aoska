@@ -10,11 +10,11 @@
 
 <script setup lang='ts'>
 // 接收参数
-const props = defineProps<{
+defineProps<{
   name: string,
   intro: string,
   image: string
-}>()
+}>();
 </script>
 
 <style scoped>
