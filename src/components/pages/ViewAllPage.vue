@@ -1,5 +1,5 @@
 <template>
-  <div class="observing">
+  <div class="view-all">
     <div class="ranking">
       <span>{{ $t("pages.ranking") }}</span>
       <span>{{ $t("pages.name") }}</span>
@@ -18,10 +18,7 @@
   </div>
 </template>
 
-<script setup lang='ts'>
-import { ref, onBeforeMount } from 'vue';
-import { invoke } from '@tauri-apps/api/core';
-
+<script setup lang='ts'> 
 import AppBanner from '../share/AppBanner.vue';
 import router from '../../router';
 
@@ -74,7 +71,7 @@ const showDetail = () => {
 </script>
 
 <style scoped>
-.observing {
+.view-all {
   margin: 60px 20px 20px 20px;
 }
 
