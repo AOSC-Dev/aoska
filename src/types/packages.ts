@@ -3,7 +3,6 @@ export enum Category {
   Games = "games",
   Video = "video",
   Creating = "creating",
-  Observing = "observing",
 }
 
 export interface PackageBrief {
