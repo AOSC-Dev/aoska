@@ -16,12 +16,12 @@ import UnofficialIcon from '../../assets/icons/unofficial.svg';
 import WindowsIcon from '../../assets/icons/windows.svg';
 import TelemetyIcon from '../../assets/icons/telemetry.svg';
 
-const props = defineProps({
+defineProps({
   type: {
     type: String,
     validator: (value) => ['verified', 'non_native', 'service_limited', 'unofficial', 'windows_app', 'telemetry'].includes(value)
   }
-})
+});
 
 const icons = {
   "verified": VerifiedIcon,
@@ -30,7 +30,7 @@ const icons = {
   "unofficial": UnofficialIcon,
   "windows_app": WindowsIcon,
   "telemetry": TelemetyIcon
-}
+};
 
 </script>
 

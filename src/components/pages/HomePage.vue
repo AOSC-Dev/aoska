@@ -1,13 +1,13 @@
 <template>
   <!-- 上部组件 -->
   <div class="up-content">
-    <Welcome class="welcome"></Welcome>
-    <Update 
+    <WelcomeCard class="welcome"></WelcomeCard>
+    <UpdateCard 
       class="update"
-      :isLoading="loading"
+      :is-loading="loading"
       :update="update"
-      :updateSecurity="updateSecurity"
-    ></Update>
+      :update-security="updateSecurity"
+    ></UpdateCard>
   </div>
   <!-- 下部组件 -->
   <div class="down-content">
@@ -43,8 +43,8 @@
 <script setup lang='ts'>
 import { ref, onBeforeMount } from 'vue';
 
-import Welcome from '../share/Welcome.vue';
-import Update from '../share/Update.vue';
+import WelcomeCard from '../share/WelcomeCard.vue';
+import UpdateCard from '../share/UpdateCard.vue';
 import AppCard from '../share/AppCard.vue';
 import TipCard from '../share/TipCard.vue';
 import router from '../../router';
@@ -53,19 +53,19 @@ import { RecommendIndex } from '../../types/home';
 import { resolveAssetPath } from '../../utils/url';
 
 // 总升级与安全升级数
-let loading = ref(true)
-let update = ref(0)
-let updateSecurity = ref(0)
+const loading = ref(true);
+const update = ref(0);
+const updateSecurity = ref(0);
 
 onBeforeMount(async () => {
   const updateCount = await fetchUpdateCount();
   const tumUpdate = await fetchTumUpdate();
-  const securityUpdateCount = tumUpdate.filter((v) => {return v.is_security}).length;
+  const securityUpdateCount = tumUpdate.filter((v) => {return v.is_security;}).length;
   updateSecurity.value = securityUpdateCount;
   update.value = updateCount - securityUpdateCount;
   recommendList.value = await fetchRecommend();
   loading.value = false;
-})
+});
 
 
 // 技巧指南列表
@@ -94,7 +94,7 @@ const tipList = [
     title: "应用无法安装？",
     intro: "安同维护者来帮您！"
   },
-]
+];
 
 // 获取推荐列表
 const recommendList = ref<RecommendIndex | null>(null);
@@ -111,8 +111,8 @@ const recommendList = ref<RecommendIndex | null>(null);
 
 // 跳转到应用详情
 const showDetail = (name: string) => {
-  router.push(`/app/${name}`)
-}
+  router.push(`/app/${name}`);
+};
 
 // 组件挂载时自动执行
 // onBeforeMount(() => {

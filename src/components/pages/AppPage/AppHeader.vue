@@ -7,19 +7,19 @@
         <div class="intro">{{ appIntro }}</div>
       </div>
     </div>
-    <Button
+    <CustomButton
       size="medium"
       color="green"
       width="129"
       height="37"
     >
       安装
-    </Button>
+    </CustomButton>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from '../../share/Button.vue';
+import CustomButton from '../../share/CustomButton.vue';
 
 defineProps({
   appIcon: {

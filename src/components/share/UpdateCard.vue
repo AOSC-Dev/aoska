@@ -50,23 +50,23 @@ const props = defineProps({
     type: Boolean,
     default: false
   }
-})
+});
 
-const hasUpdates = computed(() => props.update > 0)
-const hasSecurityUpdate = computed(() => props.updateSecurity > 0)
+const hasUpdates = computed(() => props.update > 0);
+const hasSecurityUpdate = computed(() => props.updateSecurity > 0);
 
 const updateClass = computed(() => {
-  if (props.isLoading) return 'loading'
-  if (props.updateSecurity > 0) return 'security-update'
-  if (props.update > 0) return 'system-update'
-  return 'no-update'
-})
+  if (props.isLoading) return 'loading';
+  if (props.updateSecurity > 0) return 'security-update';
+  if (props.update > 0) return 'system-update';
+  return 'no-update';
+});
 
 const prefix = computed(() => {
-  if (props.updateSecurity > 0) return 'securityUpdate'
-  if (props.update > 0) return 'systemUpdate'
-  return 'noUpdate'
-})
+  if (props.updateSecurity > 0) return 'securityUpdate';
+  if (props.update > 0) return 'systemUpdate';
+  return 'noUpdate';
+});
 </script>
 
 <style scoped>

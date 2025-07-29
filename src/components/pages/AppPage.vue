@@ -95,12 +95,6 @@ onMounted(async () => {
 const installSizeFormatted = computed(() => {
   return filesize(packageDetail.value?.package_info?.install_size ?? 0);
 });
-
-const screenshots = ref([
-  '/src/assets/images/3.png',
-  '/src/assets/images/2.png',
-  '/src/assets/images/1.png'
-]);
 </script>
 
 <style scoped>

@@ -1,13 +1,13 @@
 <template>
   <!-- 导航区 -->
-  <Navbar></Navbar>
+  <NavBar></NavBar>
   <!-- 展示区 -->
   <RouterView></RouterView>
 </template>
 
 <script setup lang='ts'>
 import { RouterView } from 'vue-router';
-import Navbar from './components/share/Navbar.vue';
+import NavBar from './components/share/NavBar.vue';
 </script>
 
 <style>

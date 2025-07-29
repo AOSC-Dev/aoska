@@ -1,13 +1,13 @@
-import { defineStore } from 'pinia'
-import { getEndpointBaseUrl } from '../utils/wrapper'
+import { defineStore } from 'pinia';
+import { getEndpointBaseUrl } from '../utils/wrapper';
 
 export const useConfigStore = defineStore('config', {
   state: () => {
-    return { endpoint: "" }
+    return { endpoint: "" };
   },
   actions: {
     async loadStaticEndpoint() {
       this.endpoint = await getEndpointBaseUrl();
     }
   }
-})
+});

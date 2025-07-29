@@ -32,7 +32,7 @@ const categoryIndex = ref<CategoryIndex | null>(null);
 
 const fetchCategory = async (categoryName: string) => {
   categoryIndex.value = await fetchByCategory(categoryName as string);
-}
+};
 
 onMounted(async () => {
   await fetchCategory(route.params.categoryName as string);
@@ -46,7 +46,7 @@ onBeforeRouteUpdate(async (to, _, next) => {
 // 跳转到应用详情
 const showDetail = (name: string) => {
   router.push(`/app/${name}`);
-}
+};
 </script>
 
 <style scoped>

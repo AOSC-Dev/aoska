@@ -13,12 +13,12 @@
 
 <script setup lang="ts">
 // 接收参数
-const props = defineProps<{
+defineProps<{
   month: string,
   day: number,
   title: string,
   intro: string,
-}>()
+}>();
 </script>
 
 <style scoped>
