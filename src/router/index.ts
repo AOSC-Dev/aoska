@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 
 // 引入路由组件
 import Home from "../components/pages/HomePage.vue";
-import Observing from "../components/pages/ViewAllPage.vue";
+import ViewAllPage from "../components/pages/ViewAllPage.vue";
 import UpdatePage from "../components/pages/UpdatePage.vue";
 import AppPage from "../components/pages/AppPage.vue";
 import CategoryPage from "../components/pages/CategoryPage.vue";
@@ -25,8 +25,8 @@ const router = createRouter({
             component: CategoryPage
         },
         {
-            path: "/observing",
-            component: Observing
+            path: "/view-all",
+            component: ViewAllPage
         },
         {
             path: "/updates",
