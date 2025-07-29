@@ -4,7 +4,7 @@
     :style="{ backgroundColor: tumUpdate.is_security ? 'var(--color-bg-light-coral)' : 'rgb(231,231,231)' }"
   >
     <div class="title">{{ getLangText(tumUpdate.name, lang) }}</div>
-    <div class="caution" v-if="tumUpdate.caution">{{ getLangText(tumUpdate.caution, lang) }}</div>
+    <div v-if="tumUpdate.caution" class="caution">{{ getLangText(tumUpdate.caution, lang) }}</div>
     <br>
     <ul class="update-packages">
       <li

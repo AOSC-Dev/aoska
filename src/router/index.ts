@@ -9,34 +9,34 @@ import CategoryPage from "../components/pages/CategoryPage.vue";
 
 // 创建路由器
 const router = createRouter({
-    history: createWebHistory(),
-    routes: [
-        {
-            // 重新定向
-            path: "/",
-            redirect: "/home"
-        },
-        {
-            path: "/home",
-            component: Home
-        },
-        {
-            path: "/category/:categoryName",
-            component: CategoryPage
-        },
-        {
-            path: "/view-all",
-            component: ViewAllPage
-        },
-        {
-            path: "/updates",
-            component: UpdatePage
-        },
-        {
-            path: "/app/:pkgName",
-            component: AppPage
-        }
-    ]
+  history: createWebHistory(),
+  routes: [
+    {
+      // 重新定向
+      path: "/",
+      redirect: "/home"
+    },
+    {
+      path: "/home",
+      component: Home
+    },
+    {
+      path: "/category/:categoryName",
+      component: CategoryPage
+    },
+    {
+      path: "/view-all",
+      component: ViewAllPage
+    },
+    {
+      path: "/updates",
+      component: UpdatePage
+    },
+    {
+      path: "/app/:pkgName",
+      component: AppPage
+    }
+  ]
 });
 
 export default router;

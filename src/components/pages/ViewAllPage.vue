@@ -47,7 +47,7 @@ const appList = [
     version: "123.4.5",
     size: "233 Mib"
   }
-]
+];
 
 // const appList = ref<AppInfo[]>([])
 // const fetchAppList = async (category: string) => {
@@ -63,8 +63,8 @@ const appList = [
 
 // 跳转到应用详情
 const showDetail = () => {
-  router.push("/app")
-}
+  router.push("/app");
+};
 
 // 组件挂载时自动执行
 // const category = "working"
