@@ -25,7 +25,7 @@ const navItems = [
   { to: "/category/games", label: "app.games" },
   { to: "/category/video", label: "app.video" },
   { to: "/category/creating", label: "app.creating" },
-  { to: "/observing", label: "app.observing" },
+  { to: "/view-all", label: "app.observing" },
   { to: "/updates", label: "app.updates" },
 ];
 </script>
