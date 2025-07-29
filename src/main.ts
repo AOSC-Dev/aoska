@@ -8,17 +8,17 @@ import { createPinia } from "pinia";
 import { useConfigStore } from "./stores/cofig";
 
 async function bootstrap() {
-    const pinia = createPinia();
-    const app = createApp(App);
+  const pinia = createPinia();
+  const app = createApp(App);
 
-    app.use(pinia);
-    app.use(router);
-    app.use(i18n);
+  app.use(pinia);
+  app.use(router);
+  app.use(i18n);
 
-    const configStore = useConfigStore();
-    await configStore.loadStaticEndpoint();
+  const configStore = useConfigStore();
+  await configStore.loadStaticEndpoint();
 
-    app.mount("#app");
+  app.mount("#app");
 }
 
 bootstrap();

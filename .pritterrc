@@ -6,6 +6,5 @@
   "vueIndentScriptAndStyle": false,
   "singleQuote": true,
   "trailingComma": "none",
-  "printWidth": 80,
-  "tailwindStylesheet": "./src/style.css"
+  "printWidth": 80
 }

@@ -2,7 +2,7 @@
   <div class="image-carousel" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
     <!-- 主图显示区域 -->
     <div class="main-image-container">
-      <button class="nav-button prev" @click="prev" :class="{ visible: isHovering }">
+      <button class="nav-button prev" :class="{ visible: isHovering }" @click="prev">
         &lt;
       </button>
       
@@ -11,19 +11,19 @@
           <transition-group name="fade" tag="div" class="image-transition-container">
             <img 
               v-for="(image, index) in images" 
+              v-show="currentIndex === index"
               :key="index"
               :src="image"
-              v-show="currentIndex === index"
             />
           </transition-group>
         </div>
       </div>
       
-      <button class="nav-button next" @click="next" :class="{ visible: isHovering }">
+      <button class="nav-button next" :class="{ visible: isHovering }" @click="next">
         &gt;
       </button>
       
-      <div class="indicators" v-if="isHovering">
+      <div v-if="isHovering" class="indicators">
         <div 
           v-for="(_, index) in images" 
           :key="index" 

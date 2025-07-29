@@ -3,9 +3,9 @@
     <RouterLink
       v-for="item in navItems"
       :key="item.to"
+      v-slot="{ href, isActive, navigate }"
       :to="item.to"
       custom
-      v-slot="{ href, isActive, navigate }"
     >
       <a
         :href="href"
