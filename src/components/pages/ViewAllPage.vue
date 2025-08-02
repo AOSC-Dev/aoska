@@ -22,14 +22,6 @@
 import AppBanner from '../share/AppBanner.vue';
 import router from '../../router';
 
-// 定义AppInfo类型
-interface AppInfo {
-  name: string,
-  intro: string,
-  version: string,
-  size: string
-}
-
 // 获取应用列表
 const appList = [
   {
