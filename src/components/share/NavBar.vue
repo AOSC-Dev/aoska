@@ -1,7 +1,8 @@
 <template>
   <div class="navigator" data-tauri-drag-region>
     <div class="nav-left">
-      <RouterLink v-for="item in navItems" :key="item.to" :to="item.to" custom v-slot="{ href, isActive, navigate }"
+      <RouterLink
+v-for="item in navItems" :key="item.to" :to="item.to" custom v-slot="{ href, isActive, navigate }"
         class="router-link">
         <a :href="href" :class="{ active: isActive }" @click="navigate">
           {{ $t(item.label) }}
@@ -10,21 +11,21 @@
     </div>
     <div class="nav-right">
       <div class="search-input">
-        <input class="search-input" :placeholder="$t('app.search')"></input>
+        <input class="search-input" :placeholder="$t('app.search')" />
       </div>
       
       <div class="window-controls">
-        <button class="win-btn" title="Minimize" v-on:click="onMinimize()">
+        <button class="win-btn" title="Minimize" @click="onMinimize()">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
             <path d="M6 10l6 6 6-6" stroke="white" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
-        <button class="win-btn" title="Maximize" v-on:click="onMaximize()">
+        <button class="win-btn" title="Maximize" @click="onMaximize()">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
             <path d="M6 14l6-6 6 6" stroke="white" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
-        <button class="win-btn" title="Close" v-on:click="onClose()">
+        <button class="win-btn" title="Close" @click="onClose()">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="white">
             <path d="M6 6l12 12M18 6L6 18" stroke="white" stroke-width="2" stroke-linecap="round" />
           </svg>
