@@ -1,6 +1,6 @@
 <template>
   <div class="card">
-    <img :src="image" />
+    <img :src="image" class="app-icon" />
     <div>
       <div class="name">{{ name }}</div>
       <div class="intro">{{ intro }}</div>
@@ -20,29 +20,41 @@ defineProps<{
 <style scoped>
 .card {
   display: flex;
-  width: 350px;
-  height: 72px;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px;
   border-radius: 5px;
+  height: 72px;
+  background-color: #f7f7f7;
+  transition: background-color 0.2s;
+  box-sizing: border-box;
+  cursor: pointer;
 }
 
 .card:hover {
   background-color: rgb(231, 231, 231);
 }
 
-img {
+.app-icon {
   width: 52px;
   height: 52px;
   margin: 10px;
 }
 
 .name {
-  margin-top: 14px;
   font-size: 20px;
   line-height: 20px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .intro {
-  margin-top: 4px;
   font-size: 14px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
