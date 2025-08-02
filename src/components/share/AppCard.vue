@@ -1,6 +1,6 @@
 <template>
   <div class="card">
-    <img :src="image" />
+    <img :src="image" class="app-icon" />
     <div>
       <div class="name">{{ name }}</div>
       <div class="intro">{{ intro }}</div>
@@ -35,7 +35,7 @@ defineProps<{
   background-color: rgb(231, 231, 231);
 }
 
-img {
+.app-icon {
   width: 52px;
   height: 52px;
   margin: 10px;
