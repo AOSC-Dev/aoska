@@ -1,44 +1,49 @@
 <template>
-  <!-- 上部组件 -->
-  <div class="up-content">
-    <WelcomeCard class="welcome"></WelcomeCard>
-    <UpdateCard 
-      class="update"
-      :is-loading="loading"
-      :update="update"
-      :update-security="updateSecurity"
-    ></UpdateCard>
-  </div>
-  <!-- 下部组件 -->
-  <div class="down-content">
-    <div class="app-content">
-      <div class="app-title">{{ $t("home.appTitle") }}</div>
-      <div class="apps">
-        <AppCard
-          v-for="(app, index) in recommendList?.packages"
-          :key="index"
-          :name="app.name"
-          :intro="app.intro"
-          :image="resolveAssetPath(app.icon, app.name)"
-          @click="showDetail(app.name)"
-        ></AppCard>
-      </div>
+  <!-- 整体布局容器 -->
+  <div class="home-layout">
+    <!-- 上部组件 -->
+    <div class="up-content">
+      <WelcomeCard class="welcome"></WelcomeCard>
+      <UpdateCard 
+        class="update"
+        :is-loading="loading"
+        :update="update"
+        :update-security="updateSecurity"
+      ></UpdateCard>
     </div>
-    <div class="tip-content">
-      <div class="tip-title">{{ $t("home.tipTitle") }}</div>
-      <div class="tips">
-        <TipCard
-          v-for="(tip, index) in tipList"
-          :key="index"
-          :month="tip.month"
-          :day="tip.day"
-          :title="tip.title"
-          :intro="tip.intro"
-        ></TipCard>
+
+    <!-- 下部组件 -->
+    <div class="down-content">
+      <div class="app-content">
+        <div class="app-title">{{ $t("home.appTitle") }}</div>
+        <div class="apps">
+          <AppCard
+            v-for="(app, index) in recommendList?.packages"
+            :key="index"
+            :name="app.name"
+            :intro="app.intro"
+            :image="resolveAssetPath(app.icon, app.name)"
+            @click="showDetail(app.name)"
+          ></AppCard>
+        </div>
+      </div>
+      <div class="tip-content">
+        <div class="tip-title">{{ $t("home.tipTitle") }}</div>
+        <div class="tips">
+          <TipCard
+            v-for="(tip, index) in tipList"
+            :key="index"
+            :month="tip.month"
+            :day="tip.day"
+            :title="tip.title"
+            :intro="tip.intro"
+          ></TipCard>
+        </div>
       </div>
     </div>
   </div>
 </template>
+
 
 <script setup lang='ts'>
 import { ref, onBeforeMount } from 'vue';
@@ -121,55 +126,62 @@ const showDetail = (name: string) => {
 </script>
 
 <style scoped>
+.home-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin: 60px 20px 0 20px;
+}
+
+/* 上部区域 */
 .up-content {
-  display:flex;
-  margin-top: 40px;
+  display: contents; /* 让子元素直接继承 grid 列 */
 }
 
 .welcome {
-  flex-grow: 1;
   height: 200px;
-  margin: 20px;
 }
 
 .update {
-  width: 300px;
   height: 200px;
-  margin: 20px 20px 20px 0;
 }
 
+/* 下部区域 */
 .down-content {
-  display: flex;
+  display: contents; /* 同样继承 grid 列 */
 }
 
 .app-content {
-  flex-grow: 1;
-  margin: 0 20px 20px 20px;
+  margin-bottom: 20px;
 }
 
 .app-title {
   font-size: 26px;
-  margin: 0 0 5px 5px;
+  margin-bottom: 5px;
   font-weight: 500;
 }
 
 .apps {
-  display: flex;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  align-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
 }
 
 .tip-content {
-  width: 300px;
   height: 300px;
-  margin: 0 20px 20px 0;
+  margin-bottom: 20px;
   flex-shrink: 0;
 }
 
 .tip-title {
   font-size: 26px;
-  margin: 0 0 5px 5px;
+  margin-bottom: 5px;
   font-weight: 500;
+}
+
+.tips {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 </style>
