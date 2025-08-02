@@ -7,13 +7,12 @@
       <span>{{ $t("pages.update") }}</span>
     </div>
     <AppBanner
-      v-for="(app, index) in appList"
+      v-for="(app, index) in packages"
       :key="index"
       :name="app.name"
       :intro="app.intro"
-      :version="app.version"
-      :size="app.size"
-      @click="showDetail"
+      :icon="resolveAssetPath(app.icon, app.name)"
+      @click="showDetail(app.name)"
     ></AppBanner>
   </div>
 </template>
@@ -21,45 +20,22 @@
 <script setup lang='ts'> 
 import AppBanner from '../share/AppBanner.vue';
 import router from '../../router';
+import { onMounted, ref } from 'vue';
+import { fetchIndex } from '../../utils/wrapper';
+import { PackageBrief } from '../../types/packages';
+import { resolveAssetPath } from "../../utils/url";
 
-// 获取应用列表
-const appList = [
-  {
-    name: "WPS 办公套件",
-    intro: "这是应用程序 WPS，这是应用程序 WPS 办公套件",
-    version: "123.4.5",
-    size: "233 Mib"
-  },
-  {
-    name: "WPS 办公套件",
-    intro: "这是应用程序 WPS，这是应用程序 WPS 办公套件",
-    version: "123.4.5",
-    size: "233 Mib"
-  }
-];
+const packages = ref<PackageBrief[] | null>(null);
 
-// const appList = ref<AppInfo[]>([])
-// const fetchAppList = async (category: string) => {
-//   try {
-//     const result = await invoke<AppInfo[]>('fetch_by_category', { 
-//       category: category 
-//     });
-//     appList.value = result;
-//   } catch (error) {
-//     console.error('Error fetching list:', error);
-//   }
-// }
+onMounted(async () => {
+  const index = await fetchIndex();
+  packages.value = index.packages.flatMap(categoryIndex => categoryIndex.packages);
+});
 
 // 跳转到应用详情
-const showDetail = () => {
-  router.push("/app");
+const showDetail = (name: string) => {
+  router.push(`/app/${name}`);
 };
-
-// 组件挂载时自动执行
-// const category = "working"
-// onBeforeMount(() => {
-//   fetchAppList(category)
-// })
 </script>
 
 <style scoped>
