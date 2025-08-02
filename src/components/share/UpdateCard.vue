@@ -91,7 +91,7 @@ const prefix = computed(() => {
 }
 
 .system-update {
-  background-color: var(--color-bg-light-blue);
+  background-color: var(--color-bg-blue);
 }
 
 .security-update {
