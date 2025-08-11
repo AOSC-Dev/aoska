@@ -17,11 +17,15 @@
   padding: 70px 0 0 30px;
   font-size: 30px;
   color: white;
+  font-weight: 600;
+  -webkit-text-stroke: 1px black;
 }
 
 .title {
   padding-left: 30px;
   font-size: 38px;
   color: white;
+  font-weight: 600;
+  -webkit-text-stroke: 1px black;
 }
 </style>
