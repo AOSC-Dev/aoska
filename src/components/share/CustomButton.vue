@@ -43,6 +43,7 @@ defineProps({
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-width: 128px;
 }
 
 .small {
