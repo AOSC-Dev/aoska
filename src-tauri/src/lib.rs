@@ -18,6 +18,7 @@ pub fn run() {
             command::start_upgrade,
             command::start_install,
             command::oma_is_busy,
+            command::start_remove,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
