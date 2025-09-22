@@ -268,3 +268,31 @@ pub async fn start_install(
         .await
         .map_err(|e| e.to_string())
 }
+
+// Start removing packages via omactl, return the unit name.
+#[tauri::command]
+pub async fn start_remove(
+    packages: Vec<String>,
+    // purge, remove app config or not.
+    remove_config: Option<bool>,
+    follow: Option<bool>,
+    unit: Option<String>,
+    assume_yes: Option<bool>,
+) -> Result<String, String> {
+    if packages.is_empty() {
+        return Err("packages is empty".to_string());
+    }
+    let mut args: Vec<&str> = vec!["remove"]; 
+    if assume_yes.unwrap_or(true) {
+        args.push("--yes");
+    }
+    if remove_config.unwrap_or(true) {
+        args.push("--remove_config");
+    }
+    args.push("--no-progress");
+    let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
+    args.extend(pkg_refs);
+    omactl::run_oma_blocking(&args, follow.unwrap_or(false), unit.as_deref())
+        .await
+        .map_err(|e| e.to_string())
+}
