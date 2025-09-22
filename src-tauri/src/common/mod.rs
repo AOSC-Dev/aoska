@@ -3,3 +3,4 @@ pub mod index;
 pub mod oma;
 pub mod packages;
 pub mod utils;
+pub mod omactl;

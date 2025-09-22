@@ -5,6 +5,7 @@ use crate::common::{
     packages::{Category, PackageDetail},
     utils::fetch_data,
 };
+use crate::common::omactl;
 
 use anyhow::Result;
 use oma_pm::apt::{AptConfig, OmaApt, OmaAptArgs, OmaOperation};
@@ -219,4 +220,51 @@ pub async fn fetch_tum_update(
 #[tauri::command]
 pub async fn get_endpoint_base_url(app: tauri::State<'_, AppState>) -> Result<String, String> {
     Ok(app.base_url.clone())
+}
+
+// Report whether oma is currently busy.
+#[tauri::command]
+pub async fn oma_is_busy() -> Result<bool, String> {
+    Ok(omactl::is_busy())
+}
+
+// Start a system upgrade via omactl, returning the systemd unit name.
+#[tauri::command]
+pub async fn start_upgrade(
+    follow: Option<bool>,
+    unit: Option<String>,
+    assume_yes: Option<bool>,
+) -> Result<String, String> {
+    let mut args: Vec<&str> = vec!["upgrade"]; 
+    if assume_yes.unwrap_or(true) {
+        args.push("--yes");
+    }
+    args.push("--no-progress");
+    omactl::run_oma_blocking(&args, follow.unwrap_or(false), unit.as_deref())
+        .await
+        .map_err(|e| e.to_string())
+}
+
+// Start installing packages via omactl, returning the systemd unit name.
+// packages must be non-empty.
+#[tauri::command]
+pub async fn start_install(
+    packages: Vec<String>,
+    follow: Option<bool>,
+    unit: Option<String>,
+    assume_yes: Option<bool>,
+) -> Result<String, String> {
+    if packages.is_empty() {
+        return Err("packages is empty".to_string());
+    }
+    let mut args: Vec<&str> = vec!["install"]; 
+    if assume_yes.unwrap_or(true) {
+        args.push("--yes");
+    }
+    args.push("--no-progress");
+    let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
+    args.extend(pkg_refs);
+    omactl::run_oma_blocking(&args, follow.unwrap_or(false), unit.as_deref())
+        .await
+        .map_err(|e| e.to_string())
 }
