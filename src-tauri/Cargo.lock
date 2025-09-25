@@ -138,6 +138,7 @@ dependencies = [
  "oma-pm",
  "oma-tum",
  "oma-utils",
+ "once_cell",
  "regex",
  "reqwest",
  "serde",
