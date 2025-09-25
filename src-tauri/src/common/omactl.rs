@@ -43,7 +43,7 @@ pub fn run_oma(args: &[&str], wait: bool, follow: bool, unit: Option<&str>) -> R
         cmd.arg("--follow");
     }
     if let Some(u) = unit {
-        cmd.arg(format!("--unit={}", u));
+        cmd.arg(format!("--unit={u}"));
     }
     cmd.arg("--");
     cmd.arg("oma");
