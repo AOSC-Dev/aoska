@@ -341,6 +341,12 @@ fn followers_map() -> FollowerT {
     FOLLOWERS.clone()
 }
 
+#[derive(serde::Serialize, Clone)]
+pub struct FollowerMsg {
+    pub unit: String,
+    pub line: String,
+}
+
 /// Start following a unit's logs and emit them to the frontend in real-time.
 /// Event name: "oma-log".
 /// Payload JSON: { unit: String, line: String }
@@ -357,10 +363,9 @@ pub async fn follow_oma_logs(window: tauri::Window, unit: String) -> Result<(), 
         guard.insert(unit.clone(), tx); // record.
 
         let win = window.clone();
-        let unit_clone = unit.clone();
         thread::spawn(move || {
             let mut cmd = StdCommand::new("journalctl");
-            cmd.args(["-u", &unit_clone, "-f", "-o", "cat"])
+            cmd.args(["-u", &unit.clone(), "-f", "-o", "cat"])
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped());
             if let Ok(mut child) = cmd.spawn() {
@@ -371,13 +376,11 @@ pub async fn follow_oma_logs(window: tauri::Window, unit: String) -> Result<(), 
                             break;
                         }
                         if let Ok(line) = line_res {
-                            let _ = win.emit(
-                                "oma-log",
-                                serde_json::json!({
-                                    "unit": unit_clone,
-                                    "line": line,
-                                }),
-                            );
+                            let log_msg = FollowerMsg {
+                                unit: unit.clone(),
+                                line,
+                            };
+                            let _ = win.emit("oma-log", log_msg);
                         } else {
                             break;
                         }
@@ -385,18 +388,16 @@ pub async fn follow_oma_logs(window: tauri::Window, unit: String) -> Result<(), 
                 }
                 let _ = child.kill();
             } else {
-                let _ = win.emit(
-                    "oma-log",
-                    serde_json::json!({
-                        "unit": unit_clone,
-                        "line": "<failed to spawn journalctl>"
-                    }),
-                );
+                let log_msg = FollowerMsg {
+                    unit: unit.clone(),
+                    line: "<failed to spwan journalctl>".to_string(),
+                };
+                let _ = win.emit("oma-log", log_msg);
             }
             // remove the map from Followers
             let map = followers_map();
             let mut guard = map.lock().unwrap();
-            guard.remove(&unit_clone);
+            guard.remove(&unit.clone());
         });
     }
     Ok(())
