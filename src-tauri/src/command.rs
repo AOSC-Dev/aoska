@@ -239,6 +239,7 @@ pub async fn oma_is_busy() -> Result<bool, String> {
 // Start a system upgrade via omactl, returning the systemd unit name.
 #[tauri::command]
 pub async fn start_upgrade(
+    wait: Option<bool>,
     follow: Option<bool>,
     unit: Option<String>,
     assume_yes: Option<bool>,
@@ -248,8 +249,7 @@ pub async fn start_upgrade(
         args.push("--yes");
     }
     args.push("--no-progress");
-    omactl::run_oma_blocking(&args, follow.unwrap_or(false), unit.as_deref())
-        .await
+    omactl::run_oma(&args, wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
         .map_err(|e| e.to_string())
 }
 
@@ -258,6 +258,7 @@ pub async fn start_upgrade(
 #[tauri::command]
 pub async fn start_install(
     packages: Vec<String>,
+    wait: Option<bool>,
     follow: Option<bool>,
     unit: Option<String>,
     assume_yes: Option<bool>,
@@ -272,8 +273,7 @@ pub async fn start_install(
     args.push("--no-progress");
     let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
     args.extend(pkg_refs);
-    omactl::run_oma_blocking(&args, follow.unwrap_or(false), unit.as_deref())
-        .await
+    omactl::run_oma(&args,wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
         .map_err(|e| e.to_string())
 }
 
@@ -283,6 +283,7 @@ pub async fn start_remove(
     packages: Vec<String>,
     // purge, remove app config or not.
     remove_config: Option<bool>,
+    wait: Option<bool>,
     follow: Option<bool>,
     unit: Option<String>,
     assume_yes: Option<bool>,
@@ -300,8 +301,7 @@ pub async fn start_remove(
     args.push("--no-progress");
     let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
     args.extend(pkg_refs);
-    omactl::run_oma_blocking(&args, follow.unwrap_or(false), unit.as_deref())
-        .await
+    omactl::run_oma(&args,wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
         .map_err(|e| e.to_string())
 }
 
