@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
+use core::error;
+use std::io;
 use std::process::Command;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    LazyLock,
-};
+use std::path::Path;
+use thiserror::Error;
 
 fn run_cmd(mut cmd: Command) -> Result<String> {
     let out = cmd.output().context("failed to spawn command")?;
@@ -22,17 +22,28 @@ fn run_cmd(mut cmd: Command) -> Result<String> {
     }
 }
 
-// Global busy state and mutex
-static OMA_BUSY: AtomicBool = AtomicBool::new(false);
-pub static OMA_MUTEX: LazyLock<tokio::sync::Mutex<()>> =
-    LazyLock::new(|| tokio::sync::Mutex::new(()));
+#[derive(Error, Debug)]
+#[error("oma is busy {0}")]
+pub struct OmaBusyError(String);
+
+impl OmaBusyError {
+    pub fn new(unit: Option<&str>) -> Self {
+        let s = unit.map(|u| format!(" (unit={u})")).unwrap_or_default();
+        Self(s)
+    }
+}
 
 pub fn is_busy() -> bool {
-    OMA_BUSY.load(Ordering::SeqCst)
+    let lock_path = "/run/lock/oma.lock";
+    Path::new(lock_path).exists()
 }
 
 /// Run an oma task via omactl. Returns the unit name created by omactl.
 pub fn run_oma(args: &[&str], wait: bool, follow: bool, unit: Option<&str>) -> Result<String> {
+    // TODO: race condition ? there must be a better solution.
+    if is_busy() {
+        return Err(OmaBusyError::new(unit).into());
+    }
     let mut cmd = Command::new("omactl");
     cmd.arg("run");
     if wait {
