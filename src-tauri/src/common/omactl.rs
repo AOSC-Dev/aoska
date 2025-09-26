@@ -1,8 +1,6 @@
 use anyhow::{Context, Result};
-use core::error;
-use std::io;
-use std::process::Command;
 use std::path::Path;
+use std::process::Command;
 use thiserror::Error;
 
 fn run_cmd(mut cmd: Command) -> Result<String> {
