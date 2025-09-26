@@ -248,7 +248,6 @@ pub async fn start_upgrade(
     if assume_yes.unwrap_or(true) {
         args.push("--yes");
     }
-    args.push("--no-progress");
     omactl::run_oma(&args, wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
         .map_err(|e| e.to_string())
 }
@@ -270,7 +269,6 @@ pub async fn start_install(
     if assume_yes.unwrap_or(true) {
         args.push("--yes");
     }
-    args.push("--no-progress");
     let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
     args.extend(pkg_refs);
     omactl::run_oma(&args,wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
@@ -298,7 +296,6 @@ pub async fn start_remove(
     if remove_config.unwrap_or(true) {
         args.push("--remove_config");
     }
-    args.push("--no-progress");
     let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
     args.extend(pkg_refs);
     omactl::run_oma(&args,wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
