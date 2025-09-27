@@ -1,24 +1,8 @@
-use anyhow::{Context, Result};
+use crate::common::utils::run_cmd;
+use anyhow::Result;
 use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
-
-fn run_cmd(mut cmd: Command) -> Result<String> {
-    let out = cmd.output().context("failed to spawn command")?;
-    if out.status.success() {
-        Ok(String::from_utf8_lossy(&out.stdout).to_string())
-    } else {
-        let stderr = String::from_utf8_lossy(&out.stderr).to_string();
-        let stdout = String::from_utf8_lossy(&out.stdout).to_string();
-        let msg = format!(
-            "command failed: status={:?}\nstdout:\n{}\nstderr:\n{}",
-            out.status.code(),
-            stdout,
-            stderr
-        );
-        anyhow::bail!(msg)
-    }
-}
 
 #[derive(Error, Debug)]
 #[error("oma is busy {0}")]
