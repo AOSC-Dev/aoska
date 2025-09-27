@@ -1,3 +1,4 @@
+use crate::common::omactl;
 use crate::common::{
     config::{ASM_ENDPOINT, ASM_INDEX_PATH, ASM_RECOMMEND_INDEX_PATH},
     index::{CategoryIndex, Index, RecommendIndex},
@@ -7,6 +8,14 @@ use crate::common::{
 };
 
 use anyhow::Result;
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
+use std::io::{BufRead, BufReader};
+use std::process::{Command as StdCommand, Stdio};
+use std::sync::{Arc, Mutex};
+use std::thread;
+use tauri::Emitter; // windows.emit
+
 use oma_pm::apt::{AptConfig, OmaApt, OmaAptArgs, OmaOperation};
 
 #[cfg(debug_assertions)]
@@ -219,4 +228,185 @@ pub async fn fetch_tum_update(
 #[tauri::command]
 pub async fn get_endpoint_base_url(app: tauri::State<'_, AppState>) -> Result<String, String> {
     Ok(app.base_url.clone())
+}
+
+// Report whether oma is currently busy.
+#[tauri::command]
+pub async fn oma_is_busy() -> Result<bool, String> {
+    Ok(omactl::is_busy())
+}
+
+// Start a system upgrade via omactl, returning the systemd unit name.
+#[tauri::command]
+pub async fn start_upgrade(
+    wait: Option<bool>,
+    follow: Option<bool>,
+    unit: Option<String>,
+    assume_yes: Option<bool>,
+) -> Result<String, String> {
+    let mut args: Vec<&str> = vec!["upgrade"];
+    if assume_yes.unwrap_or(true) {
+        args.push("--yes");
+    }
+    omactl::run_oma(&args, wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
+        .map_err(|e| e.to_string())
+}
+
+// Start installing packages via omactl, returning the systemd unit name.
+// packages must be non-empty.
+#[tauri::command]
+pub async fn start_install(
+    packages: Vec<String>,
+    wait: Option<bool>,
+    follow: Option<bool>,
+    unit: Option<String>,
+    assume_yes: Option<bool>,
+) -> Result<String, String> {
+    if packages.is_empty() {
+        return Err("packages is empty".to_string());
+    }
+    let mut args: Vec<&str> = vec!["install"];
+    if assume_yes.unwrap_or(true) {
+        args.push("--yes");
+    }
+    let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
+    args.extend(pkg_refs);
+    omactl::run_oma(&args,wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
+        .map_err(|e| e.to_string())
+}
+
+// Start removing packages via omactl, return the unit name.
+#[tauri::command]
+pub async fn start_remove(
+    packages: Vec<String>,
+    // purge, remove app config or not.
+    remove_config: Option<bool>,
+    wait: Option<bool>,
+    follow: Option<bool>,
+    unit: Option<String>,
+    assume_yes: Option<bool>,
+) -> Result<String, String> {
+    if packages.is_empty() {
+        return Err("packages is empty".to_string());
+    }
+    let mut args: Vec<&str> = vec!["remove"];
+    if assume_yes.unwrap_or(true) {
+        args.push("--yes");
+    }
+    if remove_config.unwrap_or(true) {
+        args.push("--remove_config");
+    }
+    let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
+    args.extend(pkg_refs);
+    omactl::run_oma(&args,wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
+        .map_err(|e| e.to_string())
+}
+
+/// Fetch a unit's current status.
+#[tauri::command]
+pub async fn oma_unit_status(unit: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || omactl::status(&unit)) // NOTE: use move to send result to another thread.
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
+
+/// Fetch a unit's accumulated logs.
+#[tauri::command]
+pub async fn oma_unit_logs(unit: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || omactl::logs(&unit))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
+
+/// Fetch a unit's result.
+#[tauri::command]
+pub async fn oma_unit_result(unit: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || omactl::result(&unit))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
+
+// Store active log-follow cancel senders so we can stop them.
+type StopSender = std::sync::mpsc::Sender<()>;
+type FollowerT = Arc<Mutex<HashMap<String, StopSender>>>;
+static FOLLOWERS: Lazy<FollowerT> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
+
+fn followers_map() -> FollowerT {
+    FOLLOWERS.clone()
+}
+
+#[derive(serde::Serialize, Clone)]
+pub struct FollowerMsg {
+    pub unit: String,
+    pub line: String,
+}
+
+/// Start following a unit's logs and emit them to the frontend in real-time.
+/// Event name: "oma-log".
+/// Payload JSON: { unit: String, line: String }
+/// If already (this wouldn't happen in design.) following the unit, returns Ok immediately.
+#[tauri::command]
+pub async fn follow_oma_logs(window: tauri::Window, unit: String) -> Result<(), String> {
+    let map = followers_map();
+    {
+        let mut guard = map.lock().unwrap();
+        if guard.contains_key(&unit) {
+            return Ok(()); // already following, return.
+        }
+        let (tx, rx) = std::sync::mpsc::channel::<()>();
+        guard.insert(unit.clone(), tx); // record.
+
+        let win = window.clone();
+        thread::spawn(move || {
+            let mut cmd = StdCommand::new("journalctl");
+            cmd.args(["-u", &unit.clone(), "-f", "-o", "cat"])
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
+            if let Ok(mut child) = cmd.spawn() {
+                if let Some(stdout) = child.stdout.take() {
+                    let reader = BufReader::new(stdout);
+                    for line_res in reader.lines() {
+                        if rx.try_recv().is_ok() {
+                            break;
+                        }
+                        if let Ok(line) = line_res {
+                            let log_msg = FollowerMsg {
+                                unit: unit.clone(),
+                                line,
+                            };
+                            let _ = win.emit("oma-log", log_msg);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                let _ = child.kill();
+            } else {
+                let log_msg = FollowerMsg {
+                    unit: unit.clone(),
+                    line: "<failed to spwan journalctl>".to_string(),
+                };
+                let _ = win.emit("oma-log", log_msg);
+            }
+            // remove the map from Followers
+            let map = followers_map();
+            let mut guard = map.lock().unwrap();
+            guard.remove(&unit.clone());
+        });
+    }
+    Ok(())
+}
+
+/// Stop following a unit's logs.
+#[tauri::command]
+pub async fn stop_follow_oma_logs(unit: String) -> Result<(), String> {
+    let map = followers_map();
+    let mut guard = map.lock().unwrap();
+    if let Some(sender) = guard.remove(&unit) {
+        let _ = sender.send(()); // signal stop
+    }
+    Ok(())
 }

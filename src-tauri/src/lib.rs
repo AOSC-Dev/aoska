@@ -15,6 +15,15 @@ pub fn run() {
             command::fetch_update_count,
             command::fetch_update_detail,
             command::get_endpoint_base_url,
+            command::start_upgrade,
+            command::start_install,
+            command::oma_is_busy,
+            command::start_remove,
+            command::oma_unit_status,
+            command::oma_unit_logs,
+            command::follow_oma_logs,
+            command::stop_follow_oma_logs,
+            command::oma_unit_result,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
