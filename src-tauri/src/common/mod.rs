@@ -5,3 +5,4 @@ pub mod packages;
 pub mod utils;
 pub mod omactl;
 pub mod repo_mgr;
+pub mod download_mgr;
