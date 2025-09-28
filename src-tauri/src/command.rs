@@ -7,14 +7,14 @@ use crate::common::{
     utils::fetch_data,
 };
 
-use anyhow::Result;
 use once_cell::sync::Lazy;
+use tauri::webview::DownloadEvent;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::process::{Command as StdCommand, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use tauri::{Emitter, Url}; // windows.emit
+use tauri::{Emitter, Event, Url}; // windows.emit
 
 use oma_pm::apt::{AptConfig, OmaApt, OmaAptArgs, OmaOperation};
 
@@ -444,6 +444,34 @@ pub async fn open_url_window(
         label.unwrap_or("Aoska Webview".to_string()),
         tauri::WebviewUrl::External(parsed_url),
     )
+    .build()
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn open_download_window(
+    app: tauri::AppHandle,
+    url: String,
+    label: Option<String>,
+) -> Result<(), String> {
+    let parsed_url = Url::parse(&url).map_err(|e| e.to_string())?;
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        label.unwrap_or("Aoska Webview".to_string()),
+        tauri::WebviewUrl::External(parsed_url),
+    )
+    .on_download({
+        move |_webview, event| {
+            match event {
+                DownloadEvent::Requested { url, .. /* destination */ } => {
+                    // TODO: start download
+                    false // cancel webview download event.
+                } 
+                _ => true
+            }
+        }
+    })
     .build()
     .map_err(|e| e.to_string())?;
     Ok(())
