@@ -14,7 +14,7 @@ use std::io::{BufRead, BufReader};
 use std::process::{Command as StdCommand, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
-use tauri::Emitter; // windows.emit
+use tauri::{Emitter, Url}; // windows.emit
 
 use oma_pm::apt::{AptConfig, OmaApt, OmaAptArgs, OmaOperation};
 
@@ -254,8 +254,13 @@ pub async fn start_upgrade(
             args.extend(pkgs.iter().map(|s| s.as_str()));
         }
     }
-    omactl::run_oma(&args, wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
-        .map_err(|e| e.to_string())
+    omactl::run_oma(
+        &args,
+        wait.unwrap_or(false),
+        follow.unwrap_or(false),
+        unit.as_deref(),
+    )
+    .map_err(|e| e.to_string())
 }
 
 // Start installing packages via omactl, returning the systemd unit name.
@@ -277,8 +282,13 @@ pub async fn start_install(
     }
     let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
     args.extend(pkg_refs);
-    omactl::run_oma(&args,wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
-        .map_err(|e| e.to_string())
+    omactl::run_oma(
+        &args,
+        wait.unwrap_or(false),
+        follow.unwrap_or(false),
+        unit.as_deref(),
+    )
+    .map_err(|e| e.to_string())
 }
 
 // Start removing packages via omactl, return the unit name.
@@ -304,8 +314,13 @@ pub async fn start_remove(
     }
     let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
     args.extend(pkg_refs);
-    omactl::run_oma(&args,wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
-        .map_err(|e| e.to_string())
+    omactl::run_oma(
+        &args,
+        wait.unwrap_or(false),
+        follow.unwrap_or(false),
+        unit.as_deref(),
+    )
+    .map_err(|e| e.to_string())
 }
 
 /// Fetch a unit's current status.
@@ -414,5 +429,22 @@ pub async fn stop_follow_oma_logs(unit: String) -> Result<(), String> {
     if let Some(sender) = guard.remove(&unit) {
         let _ = sender.send(()); // signal stop
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn open_url_window(
+    app: tauri::AppHandle,
+    url: String,
+    label: Option<String>,
+) -> Result<(), String> {
+    let parsed_url = Url::parse(&url).map_err(|e| e.to_string())?;
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        label.unwrap_or("Aoska Webview".to_string()),
+        tauri::WebviewUrl::External(parsed_url),
+    )
+    .build()
+    .map_err(|e| e.to_string())?;
     Ok(())
 }
