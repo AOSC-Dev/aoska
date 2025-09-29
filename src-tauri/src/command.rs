@@ -239,6 +239,7 @@ pub async fn oma_is_busy() -> Result<bool, String> {
 // Start a system upgrade via omactl, returning the systemd unit name.
 #[tauri::command]
 pub async fn start_upgrade(
+    packages: Option<Vec<String>>,
     wait: Option<bool>,
     follow: Option<bool>,
     unit: Option<String>,
@@ -247,6 +248,11 @@ pub async fn start_upgrade(
     let mut args: Vec<&str> = vec!["upgrade"];
     if assume_yes.unwrap_or(true) {
         args.push("--yes");
+    }
+    if let Some(pkgs) = &packages {
+        if !pkgs.is_empty() {
+            args.extend(pkgs.iter().map(|s| s.as_str()));
+        }
     }
     omactl::run_oma(&args, wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
         .map_err(|e| e.to_string())
