@@ -6,15 +6,15 @@ use crate::common::{
     packages::{Category, PackageDetail},
     utils::fetch_data,
 };
-
-use anyhow::Result;
+use crate::common::download_mgr::DownloadManager;
 use once_cell::sync::Lazy;
+use tauri::webview::DownloadEvent;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::process::{Command as StdCommand, Stdio};
 use std::sync::{Arc, Mutex};
-use std::thread;
-use tauri::Emitter; // windows.emit
+use tauri::{Emitter, Url}; // windows.emit
+use std::path::PathBuf;
 
 use oma_pm::apt::{AptConfig, OmaApt, OmaAptArgs, OmaOperation};
 
@@ -24,6 +24,7 @@ use httpmock::prelude::*;
 pub struct AppState {
     client: reqwest::Client,
     base_url: String,
+    download_manager: Arc<DownloadManager>,
     #[cfg(debug_assertions)]
     _mock_server: MockServer,
 }
@@ -37,7 +38,7 @@ impl AppState {
                 .build()
                 .expect("Reqwest Client"),
             base_url: ASM_ENDPOINT.to_string(),
-
+            download_manager: Arc::new(DownloadManager::new().expect("Failed to create DownloadManager")),
             #[cfg(debug_assertions)]
             _mock_server: unreachable!(),
         }
@@ -89,11 +90,12 @@ impl AppState {
             });
         }
 
-        Self {
+        Self { 
             client: reqwest::Client::builder()
                 .user_agent("aoska/1.0")
                 .build()
                 .expect("Reqwest Client"),
+            download_manager: Arc::new(DownloadManager::new().expect("Failed to create DownloadManager")),
             base_url: server.base_url(),
             _mock_server: server,
         }
@@ -254,8 +256,13 @@ pub async fn start_upgrade(
             args.extend(pkgs.iter().map(|s| s.as_str()));
         }
     }
-    omactl::run_oma(&args, wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
-        .map_err(|e| e.to_string())
+    omactl::run_oma(
+        &args,
+        wait.unwrap_or(false),
+        follow.unwrap_or(false),
+        unit.as_deref(),
+    )
+    .map_err(|e| e.to_string())
 }
 
 // Start installing packages via omactl, returning the systemd unit name.
@@ -277,8 +284,13 @@ pub async fn start_install(
     }
     let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
     args.extend(pkg_refs);
-    omactl::run_oma(&args,wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
-        .map_err(|e| e.to_string())
+    omactl::run_oma(
+        &args,
+        wait.unwrap_or(false),
+        follow.unwrap_or(false),
+        unit.as_deref(),
+    )
+    .map_err(|e| e.to_string())
 }
 
 // Start removing packages via omactl, return the unit name.
@@ -304,8 +316,13 @@ pub async fn start_remove(
     }
     let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
     args.extend(pkg_refs);
-    omactl::run_oma(&args,wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
-        .map_err(|e| e.to_string())
+    omactl::run_oma(
+        &args,
+        wait.unwrap_or(false),
+        follow.unwrap_or(false),
+        unit.as_deref(),
+    )
+    .map_err(|e| e.to_string())
 }
 
 /// Fetch a unit's current status.
@@ -366,7 +383,7 @@ pub async fn follow_oma_logs(window: tauri::Window, unit: String) -> Result<(), 
         guard.insert(unit.clone(), tx); // record.
 
         let win = window.clone();
-        thread::spawn(move || {
+        std::thread::spawn(async move || {
             let mut cmd = StdCommand::new("journalctl");
             cmd.args(["-u", &unit.clone(), "-f", "-o", "cat"])
                 .stdout(Stdio::piped())
@@ -414,5 +431,54 @@ pub async fn stop_follow_oma_logs(unit: String) -> Result<(), String> {
     if let Some(sender) = guard.remove(&unit) {
         let _ = sender.send(()); // signal stop
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn open_url_window(
+    app: tauri::AppHandle,
+    url: String,
+    label: Option<String>,
+) -> Result<(), String> {
+    let parsed_url = Url::parse(&url).map_err(|e| e.to_string())?;
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        label.unwrap_or("Aoska Webview".to_string()),
+        tauri::WebviewUrl::External(parsed_url),
+    )
+    .build()
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn open_download_window(
+    app: tauri::AppHandle,
+    app_state: tauri::State<'_, AppState>,
+    url: String,
+    file_name: String,
+    dst: Option<PathBuf>,
+    label: Option<String>,
+) -> Result<(), String> {
+    let parsed_url = Url::parse(&url).map_err(|e| e.to_string())?;
+    let dm = app_state.download_manager.clone(); // use Arc::clone() here, won't create another instance.
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        label.unwrap_or("Aoska Webview".to_string()),
+        tauri::WebviewUrl::External(parsed_url),
+    )
+    .on_download({
+        move |_webview, event| {
+            match event {
+                DownloadEvent::Requested { url, .. /* destination */ } => {
+                    dm.enqueue(url.to_string(), file_name.clone(), dst.clone(), None);
+                    false // cancel webview download event.
+                } 
+                _ => true
+            }
+        }
+    })
+    .build()
+    .map_err(|e| e.to_string())?;
     Ok(())
 }
