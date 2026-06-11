@@ -1,8 +1,8 @@
 pub mod config;
-pub mod index;
-pub mod oma;
-pub mod packages;
-pub mod utils;
-pub mod omactl;
-pub mod repo_mgr;
 pub mod download_mgr;
+pub mod index;
+pub mod omactl;
+pub mod omactl_types;
+pub mod packages;
+pub mod repo_mgr;
+pub mod utils;
