@@ -18,9 +18,9 @@ aoska MUST preserve an omactl-provided package key such as `name_without_arch` o
 
 aoska MUST distinguish aoska-catalog-manageable software, other oma-managed software, non-oma-managed storage, and free space when those categories are presented.
 
-aoska MUST obtain selected update preview data by invoking `omactl plan upgrade --json <package>...` when a non-empty selected update set is previewed.
+aoska MUST obtain selected update preview data by invoking `omactl plan upgrade --json <package>...` when a non-empty selected update set is previewed, and MUST gate that action on `plan.upgrade.selected.v1`.
 
-aoska MUST start selected update execution by invoking `omactl run upgrade --json <package>...` when a non-empty selected update set is executed.
+aoska MUST start selected update execution by invoking `omactl run upgrade --json <package>...` when a non-empty selected update set is executed, and MUST gate that action on `run.upgrade.selected.v1`.
 
 aoska MUST treat an empty selected update set as an invalid frontend action unless the user explicitly chose an all-updates flow.
 

@@ -82,7 +82,7 @@
   - Home: banner, recommended apps, tips/guides, update status card.
   - Category/view-all/search results: app cards/lists filtered by catalog metadata and search.
   - App detail: hero, screenshots, metadata, flags, actions.
-  - Updates and uninstall: storage summary, update health card, installed/updatable list, selected batch actions.
+  - Updates and uninstall: update health card, installed/updatable list, selected batch actions, and storage summary when package-manager storage capabilities are available.
   - Operation status: checking, downloading, running, completed, failed, cancelled, manual action required.
 - Content hierarchy:
   1. System/app state and primary action.
@@ -150,7 +150,7 @@
 - New/changed components:
   - Dark-mode token set.
   - Update-status card variants.
-  - Storage usage summary with segmented bar and tooltip.
+  - Capability-conditional storage usage summary with segmented bar and tooltip.
   - Batch operation toolbar for update/remove selected.
   - Operation confirmation modal.
   - Operation progress/log dialog.
@@ -275,9 +275,9 @@
   - Planning command group: `pm_plan_update`, `pm_plan_install`, and `pm_plan_remove`.
   - Operation start command group: `pm_start_update`, `pm_start_install`, `pm_start_remove`, and `pm_start_refresh`.
   - Operation observation command group: `pm_operation_status`, `pm_operation_result`, `pm_operation_logs`, `pm_follow_operation_logs`, and `pm_cancel_operation`.
-  - Storage command group: `pm_storage_summary`, joining omactl runtime size data with aoska catalog membership.
+  - Capability-conditional storage command group: `pm_storage_summary`, joining omactl runtime size data with aoska catalog membership only when omactl advertises storage or equivalent installed-size capabilities; otherwise the UI should hide storage summary details rather than treating them as failed package operations.
   - Temporary compatibility wrappers for old `fetch_update_*` and `oma_*` commands may exist only while delegating to the omactl JSON-backed `pm_*` layer and should be removed after frontend migration.
-  - Query installed packages with source of management:
+  - When package-manager storage capabilities are available, query installed packages with source of management:
     - aoska-manageable software.
     - other oma-managed software.
     - non-oma-managed space.
@@ -289,8 +289,8 @@
     - installed version.
     - install size.
     - package source.
-  - Plan install/remove/update before action where possible.
-  - Start install/remove/update for selected package lists.
+  - Plan install/remove/update before action where possible; selected update planning is enabled only when omactl advertises selected-upgrade planning capability.
+  - Start install/remove/update for selected package lists; selected update execution is enabled only when omactl advertises selected-upgrade execution capability.
   - Distinguish scheduling success from operation success.
   - Follow unit logs and expose operation result.
   - Report update check status:
