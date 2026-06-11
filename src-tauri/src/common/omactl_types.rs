@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::BTreeMap;
 
 pub const SCHEMA_VERSION: u64 = 1;
 
@@ -52,4 +53,15 @@ pub struct PmUpdateSummary {
     pub security: Option<usize>,
     pub security_classification_available: bool,
     pub raw: Value,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+pub struct TumUpdateInfo {
+    pub manifest_name: String,
+    pub name: BTreeMap<String, String>,
+    pub is_security: bool,
+    pub package_count: u64,
+    pub package_names: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub caution: Option<BTreeMap<String, String>>,
 }
