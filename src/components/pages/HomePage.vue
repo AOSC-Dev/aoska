@@ -9,6 +9,7 @@
         :is-loading="loading"
         :update="update"
         :update-security="updateSecurity"
+        :security-classification-available="securityClassificationAvailable"
       ></UpdateCard>
     </div>
 
@@ -61,11 +62,13 @@ import { resolveAssetPath } from '../../utils/url';
 const loading = ref(true);
 const update = ref(0);
 const updateSecurity = ref(0);
+const securityClassificationAvailable = ref(true);
 
 onBeforeMount(async () => {
   const updateCount = await fetchUpdateCount();
   const tumUpdate = await fetchTumUpdate();
   const securityUpdateCount = tumUpdate?.filter((v) => {return v.is_security;}).length ?? 0;
+  securityClassificationAvailable.value = tumUpdate !== null;
   updateSecurity.value = securityUpdateCount;
   update.value = tumUpdate === null ? updateCount : updateCount - securityUpdateCount;
   recommendList.value = await fetchRecommend();

@@ -207,6 +207,30 @@ pub fn update_summary() -> Result<PmUpdateSummary> {
     })
 }
 
+pub fn query_tum_updates() -> Result<Vec<Value>> {
+    require_capability("plan.tum.v1").context("TUM_UNAVAILABLE: plan.tum.v1 is not advertised")?;
+    let plan = plan_upgrade(&[])?;
+    if plan
+        .pointer("/tum/available")
+        .or_else(|| plan.get("tum_available"))
+        .and_then(Value::as_bool)
+        == Some(false)
+    {
+        bail!("TUM_UNAVAILABLE: omactl plan reports TUM data unavailable");
+    }
+    for pointer in [
+        "/tum/updates",
+        "/tum/groups",
+        "/tum_updates",
+        "/security_updates",
+    ] {
+        if let Some(items) = plan.pointer(pointer).and_then(Value::as_array) {
+            return Ok(items.clone());
+        }
+    }
+    bail!("TUM_UNAVAILABLE: omactl plan did not include TUM update groups")
+}
+
 pub fn plan_upgrade(packages: &[String]) -> Result<Value> {
     let mut args = args(&["plan", "upgrade", "--json"]);
     args.extend(packages.iter().cloned());
@@ -335,21 +359,20 @@ pub fn validate_log_event(line: &str, unit: &str) -> Result<Value> {
             SCHEMA_VERSION
         );
     }
-    if envelope.ok {
-        if envelope.kind != "omactl.unit.log-line" {
-            bail!("unexpected omactl log event kind: {}", envelope.kind);
-        }
-        let event_unit = envelope
-            .data
-            .as_ref()
-            .and_then(|data| data.get("unit"))
-            .and_then(Value::as_str)
-            .ok_or_else(|| anyhow!("omactl log event missing data.unit"))?;
-        if event_unit != unit {
-            bail!("omactl log event unit mismatch: {event_unit} != {unit}");
-        }
-    } else {
-        let _ = omactl_error(envelope.kind, envelope.error);
+    if !envelope.ok {
+        return Err(omactl_error(envelope.kind, envelope.error).into());
+    }
+    if envelope.kind != "omactl.unit.log-line" {
+        bail!("unexpected omactl log event kind: {}", envelope.kind);
+    }
+    let event_unit = envelope
+        .data
+        .as_ref()
+        .and_then(|data| data.get("unit"))
+        .and_then(Value::as_str)
+        .ok_or_else(|| anyhow!("omactl log event missing data.unit"))?;
+    if event_unit != unit {
+        bail!("omactl log event unit mismatch: {event_unit} != {unit}");
     }
     Ok(value)
 }
@@ -440,5 +463,14 @@ mod tests {
             .unwrap_err()
             .to_string();
         assert!(error.contains("omactl.query.installed"));
+    }
+
+    #[test]
+    fn rejects_error_log_event_without_payload() {
+        let json = r#"{"schema_version":1,"ok":false,"kind":"omactl.unit.log-error"}"#;
+        let error = validate_log_event(json, "oma-task-test.service")
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("did not include structured error payload"));
     }
 }

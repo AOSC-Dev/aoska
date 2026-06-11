@@ -36,6 +36,13 @@
         "greeting": "均为常规更新，无安全漏洞",
         "button": "立即更新"
     },
+    "unknownSecurityUpdate": {
+        "title": "发现系统更新",
+        "status1": "今天找到",
+        "status2": "个系统更新",
+        "greeting": "安全更新分类暂不可用，请查看更新详情",
+        "button": "立即更新"
+    },
     "securityUpdate": {
         "title": "前方注意！",
         "status1": "今天找到",

@@ -46,6 +46,10 @@ const props = defineProps({
     type: Number,
     default: 0
   },
+  securityClassificationAvailable: {
+    type: Boolean,
+    default: true
+  },
   isLoading: {
     type: Boolean,
     default: false
@@ -54,6 +58,7 @@ const props = defineProps({
 
 const hasUpdates = computed(() => props.update > 0);
 const hasSecurityUpdate = computed(() => props.updateSecurity > 0);
+const hasUnknownSecurityClassification = computed(() => hasUpdates.value && !props.securityClassificationAvailable);
 
 const updateClass = computed(() => {
   if (props.isLoading) return 'loading';
@@ -64,6 +69,7 @@ const updateClass = computed(() => {
 
 const prefix = computed(() => {
   if (props.updateSecurity > 0) return 'securityUpdate';
+  if (hasUnknownSecurityClassification.value) return 'unknownSecurityUpdate';
   if (props.update > 0) return 'systemUpdate';
   return 'noUpdate';
 });

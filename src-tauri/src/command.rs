@@ -168,7 +168,7 @@ pub async fn fetch_update_detail(_app: tauri::State<'_, AppState>) -> Result<Val
 
 #[tauri::command]
 pub async fn fetch_tum_update(_app: tauri::State<'_, AppState>) -> Result<Vec<Value>, String> {
-    Err("TUM_UNAVAILABLE: omactl plan.tum.v1 is not advertised".to_string())
+    join_blocking(tokio::task::spawn_blocking(omactl::query_tum_updates).await)
 }
 
 fn compat_oma_operation(updates: &Value) -> Value {
