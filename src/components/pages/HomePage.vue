@@ -67,7 +67,10 @@ const securityClassificationAvailable = ref(true);
 onBeforeMount(async () => {
   const updateCount = await fetchUpdateCount();
   const tumUpdate = await fetchTumUpdate();
-  const securityUpdateCount = tumUpdate?.filter((v) => {return v.is_security;}).length ?? 0;
+  const securityUpdateCount =
+    tumUpdate
+      ?.filter((v) => v.is_security)
+      .reduce((sum, v) => sum + v.package_count, 0) ?? 0;
   securityClassificationAvailable.value = tumUpdate !== null;
   updateSecurity.value = securityUpdateCount;
   update.value = tumUpdate === null ? updateCount : updateCount - securityUpdateCount;

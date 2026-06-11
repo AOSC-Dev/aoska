@@ -12,7 +12,8 @@ use once_cell::sync::Lazy;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read};
-use std::process::{Command as StdCommand, Stdio};
+use std::process::{Child, Command as StdCommand, Stdio};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::Emitter; // windows.emit
@@ -496,13 +497,48 @@ pub async fn oma_unit_result(unit: String) -> Result<String, String> {
     serde_json::to_string(&value).map_err(|e| e.to_string())
 }
 
-// Store active log-follow cancel senders so we can stop them.
+// Store active log followers so we can stop idle omactl children and avoid
+// unregistering a newer follower for the same unit from an older worker.
 type StopSender = std::sync::mpsc::Sender<()>;
-type FollowerT = Arc<Mutex<HashMap<String, StopSender>>>;
+type SharedChild = Arc<Mutex<Option<Child>>>;
+
+#[derive(Clone)]
+struct FollowerControl {
+    token: u64,
+    stop: StopSender,
+    child: SharedChild,
+}
+
+type FollowerT = Arc<Mutex<HashMap<String, FollowerControl>>>;
 static FOLLOWERS: Lazy<FollowerT> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
+static NEXT_FOLLOWER_TOKEN: AtomicU64 = AtomicU64::new(1);
 
 fn followers_map() -> FollowerT {
     FOLLOWERS.clone()
+}
+
+fn kill_follower_child(control: &FollowerControl) {
+    if let Some(child) = control.child.lock().unwrap().as_mut() {
+        let _ = child.kill();
+    }
+}
+
+fn remove_follower_if_current(map: &FollowerT, unit: &str, token: u64) {
+    let mut guard = map.lock().unwrap();
+    if guard
+        .get(unit)
+        .map(|control| control.token == token)
+        .unwrap_or(false)
+    {
+        guard.remove(unit);
+    }
+}
+
+fn stop_follower(map: &FollowerT, unit: &str) -> Option<FollowerControl> {
+    let control = map.lock().unwrap().remove(unit)?;
+    let _ = control.stop.send(());
+    kill_follower_child(&control);
+    Some(control)
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -583,10 +619,20 @@ fn start_follow_operation_logs(
         return Ok(());
     }
     let (tx, rx) = std::sync::mpsc::channel::<()>();
-    guard.insert(unit.clone(), tx);
+    let token = NEXT_FOLLOWER_TOKEN.fetch_add(1, Ordering::Relaxed);
+    let child_slot = Arc::new(Mutex::new(None));
+    guard.insert(
+        unit.clone(),
+        FollowerControl {
+            token,
+            stop: tx,
+            child: child_slot.clone(),
+        },
+    );
     drop(guard);
 
     let win = window.clone();
+    let cleanup_map = map.clone();
     thread::spawn(move || {
         let mut cmd = StdCommand::new("omactl");
         cmd.args(["logs", "--json", "--follow", &unit])
@@ -601,14 +647,27 @@ fn start_follow_operation_logs(
                     stderr
                 })
             });
+            let stdout = child.stdout.take();
+            *child_slot.lock().unwrap() = Some(child);
             let mut saw_stdout = false;
             let mut should_kill = false;
             let mut emitted_error = false;
-            if let Some(stdout) = child.stdout.take() {
+            if rx.try_recv().is_ok() {
+                should_kill = true;
+            }
+            if should_kill {
+                if let Some(child) = child_slot.lock().unwrap().as_mut() {
+                    let _ = child.kill();
+                }
+            }
+            if let Some(stdout) = stdout {
                 let reader = BufReader::new(stdout);
                 for line_res in reader.lines() {
                     if rx.try_recv().is_ok() {
                         should_kill = true;
+                        if let Some(child) = child_slot.lock().unwrap().as_mut() {
+                            let _ = child.kill();
+                        }
                         break;
                     }
                     match line_res {
@@ -662,9 +721,18 @@ fn start_follow_operation_logs(
                 should_kill = true;
             }
             if should_kill {
-                let _ = child.kill();
+                if let Some(child) = child_slot.lock().unwrap().as_mut() {
+                    let _ = child.kill();
+                }
             }
-            let wait_result = child.wait();
+            let child_to_wait = child_slot.lock().unwrap().take();
+            let wait_result = child_to_wait
+                .map(|mut child| child.wait())
+                .unwrap_or_else(|| {
+                    Err(std::io::Error::other(
+                        "missing omactl logs --json --follow child handle",
+                    ))
+                });
             let stderr = stderr_handle
                 .and_then(|handle| handle.join().ok())
                 .unwrap_or_default();
@@ -694,9 +762,7 @@ fn start_follow_operation_logs(
             let message = "failed to spawn omactl logs --json --follow".to_string();
             emit_follower_error(&win, &unit, message, emit_legacy_oma_log);
         }
-        let map = followers_map();
-        let mut guard = map.lock().unwrap();
-        guard.remove(&unit);
+        remove_follower_if_current(&cleanup_map, &unit, token);
     });
     Ok(())
 }
@@ -715,10 +781,7 @@ pub async fn follow_oma_logs(window: tauri::Window, unit: String) -> Result<(), 
 #[tauri::command]
 pub async fn stop_follow_oma_logs(unit: String) -> Result<(), String> {
     let map = followers_map();
-    let mut guard = map.lock().unwrap();
-    if let Some(sender) = guard.remove(&unit) {
-        let _ = sender.send(()); // signal stop
-    }
+    stop_follower(&map, &unit);
     Ok(())
 }
 
@@ -748,5 +811,68 @@ mod tests {
         assert!(
             follower_process_error("oma-task-test.service", true, Some(0), "", false).is_none()
         );
+    }
+
+    #[test]
+    fn remove_follower_if_current_preserves_newer_token() {
+        let (tx1, _rx1) = std::sync::mpsc::channel::<()>();
+        let (tx2, _rx2) = std::sync::mpsc::channel::<()>();
+        let map: FollowerT = Arc::new(Mutex::new(HashMap::new()));
+        map.lock().unwrap().insert(
+            "oma-task-test.service".to_string(),
+            FollowerControl {
+                token: 2,
+                stop: tx2,
+                child: Arc::new(Mutex::new(None)),
+            },
+        );
+
+        let old_control = FollowerControl {
+            token: 1,
+            stop: tx1,
+            child: Arc::new(Mutex::new(None)),
+        };
+        remove_follower_if_current(&map, "oma-task-test.service", old_control.token);
+        assert_eq!(
+            map.lock()
+                .unwrap()
+                .get("oma-task-test.service")
+                .map(|control| control.token),
+            Some(2)
+        );
+
+        remove_follower_if_current(&map, "oma-task-test.service", 2);
+        assert!(!map.lock().unwrap().contains_key("oma-task-test.service"));
+    }
+
+    #[test]
+    fn stop_follower_kills_idle_child() {
+        let (tx, _rx) = std::sync::mpsc::channel::<()>();
+        let child = StdCommand::new("sh")
+            .args(["-c", "sleep 30"])
+            .spawn()
+            .expect("spawn idle mock follower");
+        let map: FollowerT = Arc::new(Mutex::new(HashMap::new()));
+        let child_slot = Arc::new(Mutex::new(Some(child)));
+        map.lock().unwrap().insert(
+            "oma-task-test.service".to_string(),
+            FollowerControl {
+                token: 1,
+                stop: tx,
+                child: child_slot.clone(),
+            },
+        );
+
+        let control = stop_follower(&map, "oma-task-test.service").expect("active follower");
+        assert!(!map.lock().unwrap().contains_key("oma-task-test.service"));
+        let status = control
+            .child
+            .lock()
+            .unwrap()
+            .as_mut()
+            .expect("child handle")
+            .wait()
+            .expect("wait for killed child");
+        assert!(!status.success());
     }
 }
