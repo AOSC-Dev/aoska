@@ -1,0 +1,19 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-STATIC-CATALOG"
+title = "Static Catalog Boundary"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska MAY continue to fetch and render static catalog indexes, recommendations, package detail metadata, screenshots, icons, and banners independently from omactl.
+
+aoska MAY join static catalog metadata with package-management state obtained from omactl for presentation.
+
+aoska MUST NOT use static catalog metadata as the source of installed state, upgradable state, operation plans, TUM/security classification, or package-changing operation status.
+
+Package-management state derived from APT or oma MUST come from omactl.
+
+**Rationale:** The omactl migration concerns package-management integration only. The app-store catalog remains a separate aoska product surface."""

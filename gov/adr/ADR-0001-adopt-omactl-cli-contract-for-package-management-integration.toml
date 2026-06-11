@@ -1,0 +1,98 @@
+#:schema ../schema/adr.schema.json
+
+[govctl]
+id = "ADR-0001"
+title = "Adopt omactl CLI contract for package-management integration"
+status = "proposed"
+date = "2026-06-11"
+refs = ["RFC-0001"]
+
+[content]
+context = """
+aoska currently mixes two package-management integration paths: read-side update details are computed through oma Rust crates in the Tauri backend, while write-side install, remove, and upgrade operations are started through omactl and the system-installed oma binary.
+
+### Problem Statement
+
+This split creates version-skew risk between crates compiled into aoska and the oma binary installed on the target system. It also embeds libapt-facing package-manager behavior in the GUI process, which increases build complexity and couples aoska to oma internals.
+
+### Constraints
+
+omactl owns the process/systemd boundary for package-changing operations. oma owns package-management semantics such as dependency resolution, operation planning, and TUM/security classification.
+
+The local aoska [[RFC-0001]] governs how the aoska backend consumes omactl for package-management flows. The omactl repository has its own RFC-0001 that owns the external CLI/JSON contract exposed by omactl; that producer contract is tracked as `docs/rfc/RFC-0001.md` in `https://github.com/AOSC-Dev/omactl`. Cross-repository RFCs are named in prose because govctl references are repository-local.
+
+### Decision Drivers
+
+- aoska should have one package-management integration boundary that can be validated at runtime.
+- Package planning and package execution should reflect the same installed oma behavior.
+- libapt-facing and systemd-facing logic should stay outside the Tauri GUI process.
+- The static app-store catalog should remain separate from package-manager state.
+
+### Options Considered
+
+The alternatives were evaluated before this decision was written:
+
+1. Use omactl CLI/JSON as the sole package-management integration path. This satisfies the boundary, runtime consistency, and process-isolation drivers, at the cost of requiring new omactl machine-readable capabilities.
+2. Keep direct oma Rust crate dependencies in aoska. This preserves existing Rust data access, but keeps package-manager internals and version skew inside aoska.
+3. Retain a hybrid model with crates for reads and omactl for writes. This minimizes short-term churn, but preserves the current two-source-of-truth problem."""
+decision = """
+We will adopt the omactl CLI/JSON contract as aoska's sole package-management integration path because:
+
+1. **Single boundary:** aoska should consume one external package-management contract rather than mixing embedded crates and process execution.
+2. **Runtime consistency:** the installed oma binary should own the behavior that users observe during both planning and execution.
+3. **Process isolation:** libapt-facing package-manager logic should stay outside the Tauri GUI process.
+
+### Implementation Notes
+
+The aoska backend should treat omactl capability availability as an integration prerequisite defined by local [[RFC-0001]]. The backend should not fall back to parsing human-oriented oma, omactl, systemctl, or journalctl output."""
+consequences = """
+### Positive
+
+- aoska becomes less coupled to oma internal Rust crate versions.
+- The same oma installation owns package planning and package execution behavior.
+- Backend error handling can be driven by a stable JSON envelope instead of terminal text.
+- Package-changing operations keep privilege, process lifetime, and systemd state outside the GUI process.
+
+### Negative
+
+- omactl and oma must provide the required machine-readable query and planning capabilities before the migration can complete. Mitigation: aoska will capability-gate package-management flows and report missing capability identifiers in diagnostics.
+- aoska loses direct Rust type access to `OmaOperation`-like data and must maintain its own consumer-side JSON models. Mitigation: aoska will validate required envelope fields, tolerate unknown fields, and keep consumer models aligned with the omactl repository RFC.
+- Integration failures become runtime capability or execution errors rather than compile-time crate API errors. Mitigation: aoska will check capabilities before enabling flows and preserve structured omactl error codes for developer diagnostics.
+- The contract is split across two repositories. Mitigation: the omactl repository owns producer requirements, while local [[RFC-0001]] owns aoska consumer requirements and names the external omactl RFC explicitly.
+
+### Neutral
+
+- The static app-store catalog remains owned by aoska and is not governed by this decision."""
+
+[[content.alternatives]]
+text = "Use omactl CLI/JSON as the sole package-management integration path"
+status = "accepted"
+pros = [
+    "Single aoska backend boundary for package state, planning, execution, and unit inspection",
+    "Avoids linking libapt-facing oma crates into the Tauri process",
+    "Reduces version skew by making the installed oma binary the source of behavior",
+]
+cons = ["Requires omactl and oma to expose stable machine-readable capabilities before aoska can fully migrate"]
+
+[[content.alternatives]]
+text = "Keep direct oma Rust crate dependencies in aoska"
+status = "rejected"
+pros = [
+    "Preserves direct access to existing Rust operation structures",
+    "Avoids waiting for new omactl query and planning surfaces",
+]
+cons = [
+    "Keeps package-manager internals inside the GUI process",
+    "Preserves version skew between compiled crates and the installed oma binary",
+]
+rejection_reason = "The approach keeps the coupling and skew that this decision is intended to remove."
+
+[[content.alternatives]]
+text = "Retain a hybrid model with crates for reads and omactl for writes"
+status = "rejected"
+pros = ["Minimizes short-term changes to aoska update UI code"]
+cons = [
+    "Leaves two sources of truth for package-management behavior",
+    "Requires aoska maintainers to reason about both crate APIs and CLI behavior",
+]
+rejection_reason = "The hybrid model is the current problematic state and does not give aoska a clean external contract."

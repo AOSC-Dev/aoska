@@ -1,0 +1,37 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-OPERATION-FLOWS"
+title = "Package Operation Flows"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska MUST start package-changing upgrade operations by invoking `omactl run upgrade --json` or a future capability that explicitly supersedes `run.upgrade.v1`.
+
+aoska MUST start package-changing install operations by invoking `omactl run install --json <package>...` or a future capability that explicitly supersedes `run.install.v1`.
+
+aoska MUST start package-changing remove operations by invoking `omactl run remove --json <package>...` or a future capability that explicitly supersedes `run.remove.v1`.
+
+aoska MUST pass package names, operation flags, and unit identifiers to omactl as structured process arguments.
+
+aoska MUST pass package paths to omactl only when the invoked omactl operation explicitly accepts local package paths.
+
+aoska MUST NOT build shell fragments from package names, package paths, operation flags, or unit identifiers.
+
+aoska MUST treat a successful `omactl run` response as scheduling success, not as package-operation success.
+
+aoska MUST retain the returned `data.unit` value for each scheduled package-changing operation until the terminal state has been recorded and either surfaced to the frontend or persisted in backend history.
+
+aoska MAY forget a completed operation after its terminal state and final diagnostics have been surfaced or persisted.
+
+aoska MUST use `omactl status --json <unit>` to obtain operation state for a retained unit.
+
+aoska MUST use `omactl result --json <unit>` to obtain terminal result information for a retained unit.
+
+aoska MUST use `omactl logs --json <unit>` or `omactl logs --json --follow <unit>` to obtain operation logs for a retained unit.
+
+aoska MUST distinguish scheduling failure from unit execution failure after scheduling.
+
+**Rationale:** aoska needs systemd-backed package operation lifetime management while keeping shell and privilege boundaries outside the GUI process."""

@@ -1,0 +1,17 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-CLI-ONLY-INTEGRATION"
+title = "CLI-only Package Integration"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska backend package-management code MUST NOT link directly against `oma-pm`, `oma-utils`, `oma-fetch`, `oma-tum`, `oma-apt`, or other oma internal Rust crates for package state, planning, TUM classification, or package-changing operations.
+
+aoska backend package-management code MUST obtain package-management state, operation plans, operation starts, unit status, unit results, and unit logs through omactl commands that satisfy the external omactl CLI/JSON contract.
+
+aoska MAY keep dependencies needed for Tauri, static catalog fetching, JSON decoding, UI-owned metadata, and non-package-manager functionality.
+
+**Rationale:** This removes the crate-version skew between aoska and the system-installed oma binary and keeps package-manager internals outside the GUI process."""

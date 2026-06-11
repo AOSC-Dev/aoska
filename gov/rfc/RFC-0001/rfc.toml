@@ -1,0 +1,31 @@
+#:schema ../../schema/rfc.schema.json
+
+[govctl]
+id = "RFC-0001"
+title = "aoska backend consumption of omactl package operations"
+version = "0.1.0"
+status = "draft"
+phase = "spec"
+owners = ["@wxiwnd"]
+created = "2026-06-11"
+
+[[sections]]
+title = "Summary"
+clauses = ["clauses/C-SUMMARY.toml"]
+
+[[sections]]
+title = "Specification"
+clauses = [
+    "clauses/C-CLI-ONLY-INTEGRATION.toml",
+    "clauses/C-CAPABILITY-CHECKS.toml",
+    "clauses/C-JSON-CONSUMPTION.toml",
+    "clauses/C-UPDATE-FLOWS.toml",
+    "clauses/C-OPERATION-FLOWS.toml",
+    "clauses/C-ERROR-HANDLING.toml",
+    "clauses/C-STATIC-CATALOG.toml",
+]
+
+[[changelog]]
+version = "0.1.0"
+date = "2026-06-11"
+notes = "Initial draft"

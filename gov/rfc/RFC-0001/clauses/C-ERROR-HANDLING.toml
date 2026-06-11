@@ -1,0 +1,29 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-ERROR-HANDLING"
+title = "Error Handling"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska MUST map omactl structured error codes to backend error states.
+
+aoska MUST preserve the original omactl error code in developer-facing diagnostics when an omactl error envelope contains a code.
+
+aoska MUST distinguish scheduling failure from package-operation failure after scheduling.
+
+aoska MUST distinguish `INVALID_ARGUMENTS`, `UNSUPPORTED_COMMAND`, `OMA_BUSY`, `AUTHORIZATION_FAILED`, `SYSTEMD_FAILED`, `OMA_EXEC_FAILED`, `TUM_UNAVAILABLE`, `UNKNOWN_UNIT`, `MALFORMED_DELEGATE_OUTPUT`, and `INTERNAL_ERROR` when omactl provides those codes.
+
+aoska MUST treat an unrecognized omactl error code as a generic omactl integration error while preserving the original code for diagnostics.
+
+aoska SHOULD map `OMA_BUSY` to a user-facing busy/package-manager-active state.
+
+aoska SHOULD map `AUTHORIZATION_FAILED` to a user-facing permission or authentication failure state.
+
+aoska SHOULD map `UNSUPPORTED_COMMAND` and missing capabilities to an upgrade-required diagnostic for omactl or oma.
+
+aoska SHOULD map `TUM_UNAVAILABLE` to a security-classification-unavailable state instead of an empty security-update state.
+
+**Rationale:** GUI state transitions need stable failure categories instead of inferred text patterns."""
