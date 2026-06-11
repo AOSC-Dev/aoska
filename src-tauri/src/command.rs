@@ -2,21 +2,20 @@ use crate::common::omactl;
 use crate::common::{
     config::{ASM_ENDPOINT, ASM_INDEX_PATH, ASM_RECOMMEND_INDEX_PATH},
     index::{CategoryIndex, Index, RecommendIndex},
-    oma::{check_tum_upgradable, check_upgradable, check_upgradable_count, TumUpdateInfo},
+    omactl_types::{PmCapabilities, PmOperationStart, PmUpdateSummary},
     packages::{Category, PackageDetail},
     utils::fetch_data,
 };
 
 use anyhow::Result;
 use once_cell::sync::Lazy;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::process::{Command as StdCommand, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::Emitter; // windows.emit
-
-use oma_pm::apt::{AptConfig, OmaApt, OmaAptArgs, OmaOperation};
 
 #[cfg(debug_assertions)]
 use httpmock::prelude::*;
@@ -158,71 +157,19 @@ pub async fn fetch_detail(
 
 #[tauri::command]
 pub async fn fetch_update_count(_app: tauri::State<'_, AppState>) -> Result<usize, String> {
-    tokio::task::spawn_blocking(move || {
-        let apt = OmaApt::new(
-            vec![],
-            OmaAptArgs::builder().build(),
-            false,
-            AptConfig::new(),
-        )
-        .map_err(|e| e.to_string())?;
-
-        // OmaApt type from the oma-pm contains fields that are not Send or Sync
-        // which means they cannot be safely shared between threads
-        // Use tokio runtime to run the async function in blocking context
-        let rt = tokio::runtime::Handle::current();
-        rt.block_on(async {
-            check_upgradable_count(&apt)
-                .await
-                .map_err(|e| e.to_string())
-        })
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    pm_update_summary().await.map(|summary| summary.total)
 }
 
 #[tauri::command]
-pub async fn fetch_update_detail(_app: tauri::State<'_, AppState>) -> Result<OmaOperation, String> {
-    tokio::task::spawn_blocking(move || {
-        let apt = OmaApt::new(
-            vec![],
-            OmaAptArgs::builder().build(),
-            false,
-            AptConfig::new(),
-        )
-        .map_err(|e| e.to_string())?;
-
-        // OmaApt type from the oma-pm contains fields that are not Send or Sync
-        // which means they cannot be safely shared between threads
-        // Use tokio runtime to run the async function in blocking context
-        let rt = tokio::runtime::Handle::current();
-        rt.block_on(async { check_upgradable(&apt).await.map_err(|e| e.to_string()) })
-    })
-    .await
-    .map_err(|e| e.to_string())?
+pub async fn fetch_update_detail(_app: tauri::State<'_, AppState>) -> Result<Value, String> {
+    pm_list_updates().await
 }
 
 #[tauri::command]
-pub async fn fetch_tum_update(
-    _app: tauri::State<'_, AppState>,
-) -> Result<Vec<TumUpdateInfo>, String> {
-    tokio::task::spawn_blocking(move || {
-        let apt = OmaApt::new(
-            vec![],
-            OmaAptArgs::builder().build(),
-            false,
-            AptConfig::new(),
-        )
-        .map_err(|e| e.to_string())?;
-
-        // OmaApt type from the oma-pm contains fields that are not Send or Sync
-        // which means they cannot be safely shared between threads
-        // Use tokio runtime to run the async function in blocking context
-        let rt = tokio::runtime::Handle::current();
-        rt.block_on(async { check_tum_upgradable(&apt).await.map_err(|e| e.to_string()) })
-    })
-    .await
-    .map_err(|e| e.to_string())?
+pub async fn fetch_tum_update(_app: tauri::State<'_, AppState>) -> Result<Vec<Value>, String> {
+    // TUM/security classification is intentionally unavailable until omactl exposes
+    // plan.tum.v1 data through the JSON contract consumed by pm_* commands.
+    Ok(Vec::new())
 }
 
 #[tauri::command]
@@ -234,6 +181,111 @@ pub async fn get_endpoint_base_url(app: tauri::State<'_, AppState>) -> Result<St
 #[tauri::command]
 pub async fn oma_is_busy() -> Result<bool, String> {
     Ok(omactl::is_busy())
+}
+
+fn join_blocking<T>(
+    result: Result<Result<T, anyhow::Error>, tokio::task::JoinError>,
+) -> Result<T, String> {
+    result
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn pm_capabilities() -> Result<PmCapabilities, String> {
+    join_blocking(tokio::task::spawn_blocking(omactl::capabilities).await)
+}
+
+#[tauri::command]
+pub async fn pm_list_updates() -> Result<Value, String> {
+    join_blocking(tokio::task::spawn_blocking(omactl::query_upgradable).await)
+}
+
+#[tauri::command]
+pub async fn pm_update_summary() -> Result<PmUpdateSummary, String> {
+    join_blocking(tokio::task::spawn_blocking(omactl::update_summary).await)
+}
+
+#[tauri::command]
+pub async fn pm_list_installed() -> Result<Value, String> {
+    join_blocking(tokio::task::spawn_blocking(omactl::query_installed).await)
+}
+
+#[tauri::command]
+pub async fn pm_package_state(packages: Vec<String>) -> Result<Value, String> {
+    join_blocking(
+        tokio::task::spawn_blocking(move || omactl::query_package_detail(&packages)).await,
+    )
+}
+
+#[tauri::command]
+pub async fn pm_start_update(
+    packages: Option<Vec<String>>,
+    assume_yes: Option<bool>,
+) -> Result<PmOperationStart, String> {
+    let packages = packages.unwrap_or_default();
+    join_blocking(
+        tokio::task::spawn_blocking(move || {
+            omactl::run_upgrade(&packages, assume_yes.unwrap_or(true))
+        })
+        .await,
+    )
+}
+
+#[tauri::command]
+pub async fn pm_start_install(
+    packages: Vec<String>,
+    assume_yes: Option<bool>,
+) -> Result<PmOperationStart, String> {
+    join_blocking(
+        tokio::task::spawn_blocking(move || {
+            omactl::run_install(&packages, assume_yes.unwrap_or(true))
+        })
+        .await,
+    )
+}
+
+#[tauri::command]
+pub async fn pm_start_remove(
+    packages: Vec<String>,
+    remove_config: Option<bool>,
+    assume_yes: Option<bool>,
+) -> Result<PmOperationStart, String> {
+    join_blocking(
+        tokio::task::spawn_blocking(move || {
+            omactl::run_remove(
+                &packages,
+                remove_config.unwrap_or(true),
+                assume_yes.unwrap_or(true),
+            )
+        })
+        .await,
+    )
+}
+
+#[tauri::command]
+pub async fn pm_start_refresh() -> Result<PmOperationStart, String> {
+    join_blocking(tokio::task::spawn_blocking(omactl::run_refresh).await)
+}
+
+#[tauri::command]
+pub async fn pm_operation_status(unit: String) -> Result<Value, String> {
+    join_blocking(tokio::task::spawn_blocking(move || omactl::status(&unit)).await)
+}
+
+#[tauri::command]
+pub async fn pm_operation_result(unit: String) -> Result<Value, String> {
+    join_blocking(tokio::task::spawn_blocking(move || omactl::result(&unit)).await)
+}
+
+#[tauri::command]
+pub async fn pm_operation_logs(unit: String) -> Result<Value, String> {
+    join_blocking(tokio::task::spawn_blocking(move || omactl::logs(&unit)).await)
+}
+
+#[tauri::command]
+pub async fn pm_cancel_operation(unit: String) -> Result<Value, String> {
+    join_blocking(tokio::task::spawn_blocking(move || omactl::cancel(&unit)).await)
 }
 
 // Start a system upgrade via omactl, returning the systemd unit name.
@@ -254,8 +306,13 @@ pub async fn start_upgrade(
             args.extend(pkgs.iter().map(|s| s.as_str()));
         }
     }
-    omactl::run_oma(&args, wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
-        .map_err(|e| e.to_string())
+    omactl::run_oma(
+        &args,
+        wait.unwrap_or(false),
+        follow.unwrap_or(false),
+        unit.as_deref(),
+    )
+    .map_err(|e| e.to_string())
 }
 
 // Start installing packages via omactl, returning the systemd unit name.
@@ -277,8 +334,13 @@ pub async fn start_install(
     }
     let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
     args.extend(pkg_refs);
-    omactl::run_oma(&args,wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
-        .map_err(|e| e.to_string())
+    omactl::run_oma(
+        &args,
+        wait.unwrap_or(false),
+        follow.unwrap_or(false),
+        unit.as_deref(),
+    )
+    .map_err(|e| e.to_string())
 }
 
 // Start removing packages via omactl, return the unit name.
@@ -304,35 +366,34 @@ pub async fn start_remove(
     }
     let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
     args.extend(pkg_refs);
-    omactl::run_oma(&args,wait.unwrap_or(false), follow.unwrap_or(false), unit.as_deref())
-        .map_err(|e| e.to_string())
+    omactl::run_oma(
+        &args,
+        wait.unwrap_or(false),
+        follow.unwrap_or(false),
+        unit.as_deref(),
+    )
+    .map_err(|e| e.to_string())
 }
 
 /// Fetch a unit's current status.
 #[tauri::command]
 pub async fn oma_unit_status(unit: String) -> Result<String, String> {
-    tokio::task::spawn_blocking(move || omactl::status(&unit)) // NOTE: use move to send result to another thread.
-        .await
-        .map_err(|e| e.to_string())?
-        .map_err(|e| e.to_string())
+    let value = pm_operation_status(unit).await?;
+    serde_json::to_string(&value).map_err(|e| e.to_string())
 }
 
 /// Fetch a unit's accumulated logs.
 #[tauri::command]
 pub async fn oma_unit_logs(unit: String) -> Result<String, String> {
-    tokio::task::spawn_blocking(move || omactl::logs(&unit))
-        .await
-        .map_err(|e| e.to_string())?
-        .map_err(|e| e.to_string())
+    let value = pm_operation_logs(unit).await?;
+    serde_json::to_string(&value).map_err(|e| e.to_string())
 }
 
 /// Fetch a unit's result.
 #[tauri::command]
 pub async fn oma_unit_result(unit: String) -> Result<String, String> {
-    tokio::task::spawn_blocking(move || omactl::result(&unit))
-        .await
-        .map_err(|e| e.to_string())?
-        .map_err(|e| e.to_string())
+    let value = pm_operation_result(unit).await?;
+    serde_json::to_string(&value).map_err(|e| e.to_string())
 }
 
 // Store active log-follow cancel senders so we can stop them.
@@ -367,8 +428,8 @@ pub async fn follow_oma_logs(window: tauri::Window, unit: String) -> Result<(), 
 
         let win = window.clone();
         thread::spawn(move || {
-            let mut cmd = StdCommand::new("journalctl");
-            cmd.args(["-u", &unit.clone(), "-f", "-o", "cat"])
+            let mut cmd = StdCommand::new("omactl");
+            cmd.args(["logs", "--json", "--follow", &unit.clone()])
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped());
             if let Ok(mut child) = cmd.spawn() {
@@ -393,7 +454,7 @@ pub async fn follow_oma_logs(window: tauri::Window, unit: String) -> Result<(), 
             } else {
                 let log_msg = FollowerMsg {
                     unit: unit.clone(),
-                    line: "<failed to spwan journalctl>".to_string(),
+                    line: "<failed to spawn omactl logs --json --follow>".to_string(),
                 };
                 let _ = win.emit("oma-log", log_msg);
             }
