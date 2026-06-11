@@ -1,0 +1,35 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-INSTALLED-INVENTORY-SELECTION"
+title = "Installed Inventory and Selected Actions"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska MUST obtain installed package inventory for the update/uninstall surface by invoking `omactl query installed --json` through the package-manager backend layer or a future capability that explicitly supersedes `query.installed.v1`.
+
+aoska MUST require `query.installed.v1` before enabling installed-list rows that are derived from package-manager state.
+
+aoska MUST join installed inventory with static catalog metadata by stable package references rather than by localized display names.
+
+aoska MUST preserve an omactl-provided package key such as `name_without_arch` or an equivalent stable package identifier when matching installed, upgradable, and catalog entries.
+
+aoska MUST distinguish aoska-catalog-manageable software, other oma-managed software, non-oma-managed storage, and free space when those categories are presented.
+
+aoska MUST obtain selected update preview data by invoking `omactl plan upgrade --json <package>...` when a non-empty selected update set is previewed.
+
+aoska MUST start selected update execution by invoking `omactl run upgrade --json <package>...` when a non-empty selected update set is executed.
+
+aoska MUST treat an empty selected update set as an invalid frontend action unless the user explicitly chose an all-updates flow.
+
+aoska MUST obtain selected remove preview data by invoking `omactl plan remove --json <package>...` before presenting machine-derived remove consequences for selected installed packages.
+
+aoska MUST start selected remove execution by invoking `omactl run remove --json <package>...` for selected removable packages.
+
+aoska MUST disable selected update and selected remove actions until at least one eligible package is selected.
+
+aoska MUST NOT infer remove eligibility solely from static catalog membership.
+
+**Rationale:** Issue #33 requires installed/update/uninstall rows and selected batch actions while preserving omactl as the runtime truth for package state and operation eligibility."""

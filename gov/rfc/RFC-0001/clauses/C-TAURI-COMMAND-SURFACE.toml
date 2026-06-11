@@ -1,0 +1,27 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-TAURI-COMMAND-SURFACE"
+title = "Tauri Package Manager Command Surface"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska MUST expose frontend package-management use cases through Tauri commands whose names start with `pm_`.
+
+aoska MUST provide a capability command named `pm_capabilities` that wraps `omactl capabilities --json` and gates package-management features before they are enabled in the frontend.
+
+aoska MUST provide query commands for update summary, update list, installed inventory, and package runtime state under the package-manager command surface, including `pm_update_summary`, `pm_list_updates`, `pm_list_installed`, and `pm_package_state` or future commands that explicitly supersede them.
+
+aoska MUST provide planning commands for update, install, and remove previews under the package-manager command surface, including `pm_plan_update`, `pm_plan_install`, and `pm_plan_remove` or future commands that explicitly supersede them.
+
+aoska MUST provide operation-start commands for update, install, remove, and refresh/check flows under the package-manager command surface, including `pm_start_update`, `pm_start_install`, `pm_start_remove`, and `pm_start_refresh` or future commands that explicitly supersede them.
+
+aoska MUST provide operation observation commands under the package-manager command surface, including `pm_operation_status`, `pm_operation_result`, `pm_operation_logs`, `pm_follow_operation_logs`, and `pm_cancel_operation` or future commands that explicitly supersede them.
+
+aoska MAY provide `pm_storage_summary` to expose storage presentation data that combines omactl runtime size primitives with aoska catalog membership.
+
+aoska MUST NOT expose raw oma crate-shaped types as the long-term frontend package-management API.
+
+**Rationale:** The frontend should depend on app-store use cases and omactl JSON semantics, not on historical Rust crate shapes or raw command-line details."""

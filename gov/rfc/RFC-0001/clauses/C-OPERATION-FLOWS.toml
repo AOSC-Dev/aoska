@@ -8,7 +8,9 @@ status = "active"
 
 [content]
 text = """
-aoska MUST start package-changing upgrade operations by invoking `omactl run upgrade --json` or a future capability that explicitly supersedes `run.upgrade.v1`.
+aoska MUST start package-changing all-upgrade operations by invoking `omactl run upgrade --json` or a future capability that explicitly supersedes `run.upgrade.v1`.
+
+aoska MUST start package-changing selected-upgrade operations by invoking `omactl run upgrade --json <package>...` or a future capability that explicitly supersedes selected upgrade semantics for `run.upgrade.v1`.
 
 aoska MUST start package-changing install operations by invoking `omactl run install --json <package>...` or a future capability that explicitly supersedes `run.install.v1`.
 
@@ -33,5 +35,7 @@ aoska MUST use `omactl result --json <unit>` to obtain terminal result informati
 aoska MUST use `omactl logs --json <unit>` or `omactl logs --json --follow <unit>` to obtain operation logs for a retained unit.
 
 aoska MUST distinguish scheduling failure from unit execution failure after scheduling.
+
+aoska MUST use `omactl cancel --json <unit>` to request cancellation for an omactl-managed operation when cancellation is enabled.
 
 **Rationale:** aoska needs systemd-backed package operation lifetime management while keeping shell and privilege boundaries outside the GUI process."""
