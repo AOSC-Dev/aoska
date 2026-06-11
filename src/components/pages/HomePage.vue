@@ -4,7 +4,7 @@
     <!-- 上部组件 -->
     <div class="up-content">
       <WelcomeCard class="welcome"></WelcomeCard>
-      <UpdateCard 
+      <UpdateCard
         class="update"
         :is-loading="loading"
         :update="update"

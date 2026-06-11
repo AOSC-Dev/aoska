@@ -2,7 +2,7 @@ use crate::common::omactl;
 use crate::common::{
     config::{ASM_ENDPOINT, ASM_INDEX_PATH, ASM_RECOMMEND_INDEX_PATH},
     index::{CategoryIndex, Index, RecommendIndex},
-    omactl_types::{PmCapabilities, PmOperationStart, PmUpdateSummary},
+    omactl_types::{PmCapabilities, PmOperationStart, PmUpdateSummary, TumUpdateInfo},
     packages::{Category, PackageDetail},
     utils::fetch_data,
 };
@@ -11,7 +11,7 @@ use anyhow::Result;
 use once_cell::sync::Lazy;
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::process::{Command as StdCommand, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -167,7 +167,9 @@ pub async fn fetch_update_detail(_app: tauri::State<'_, AppState>) -> Result<Val
 }
 
 #[tauri::command]
-pub async fn fetch_tum_update(_app: tauri::State<'_, AppState>) -> Result<Vec<Value>, String> {
+pub async fn fetch_tum_update(
+    _app: tauri::State<'_, AppState>,
+) -> Result<Vec<TumUpdateInfo>, String> {
     join_blocking(tokio::task::spawn_blocking(omactl::query_tum_updates).await)
 }
 
@@ -515,6 +517,61 @@ pub struct FollowerErrorMsg {
     pub message: String,
 }
 
+fn follower_process_error(
+    unit: &str,
+    success: bool,
+    code: Option<i32>,
+    stderr: &str,
+    saw_stdout: bool,
+) -> Option<String> {
+    if success {
+        return None;
+    }
+
+    let output_state = if saw_stdout {
+        "after log output"
+    } else {
+        "without log output"
+    };
+    let status = code
+        .map(|code| format!("status={code}"))
+        .unwrap_or_else(|| "status=terminated".to_string());
+    let stderr = stderr.trim();
+    let stderr = if stderr.is_empty() {
+        String::new()
+    } else {
+        format!(" stderr={stderr}")
+    };
+
+    Some(format!(
+        "omactl logs --json --follow failed for {unit} {output_state}: {status}{stderr}"
+    ))
+}
+
+fn emit_follower_error(
+    win: &tauri::Window,
+    unit: &str,
+    message: String,
+    emit_legacy_oma_log: bool,
+) {
+    let _ = win.emit(
+        "pm-operation-log-error",
+        FollowerErrorMsg {
+            unit: unit.to_string(),
+            message: message.clone(),
+        },
+    );
+    if emit_legacy_oma_log {
+        let _ = win.emit(
+            "oma-log",
+            FollowerMsg {
+                unit: unit.to_string(),
+                line: format!("<{message}>"),
+            },
+        );
+    }
+}
+
 fn start_follow_operation_logs(
     window: tauri::Window,
     unit: String,
@@ -536,15 +593,28 @@ fn start_follow_operation_logs(
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
         if let Ok(mut child) = cmd.spawn() {
+            let stderr_handle = child.stderr.take().map(|stderr| {
+                thread::spawn(move || {
+                    let mut reader = BufReader::new(stderr);
+                    let mut stderr = String::new();
+                    let _ = reader.read_to_string(&mut stderr);
+                    stderr
+                })
+            });
+            let mut saw_stdout = false;
+            let mut should_kill = false;
+            let mut emitted_error = false;
             if let Some(stdout) = child.stdout.take() {
                 let reader = BufReader::new(stdout);
                 for line_res in reader.lines() {
                     if rx.try_recv().is_ok() {
+                        should_kill = true;
                         break;
                     }
                     match line_res {
                         Ok(line) => match omactl::validate_log_event(&line, &unit) {
                             Ok(event) => {
+                                saw_stdout = true;
                                 let _ = win.emit("pm-operation-log", event.clone());
                                 if emit_legacy_oma_log {
                                     let event_line = event
@@ -563,48 +633,66 @@ fn start_follow_operation_logs(
                                 }
                             }
                             Err(error) => {
-                                let _ = win.emit(
-                                    "pm-operation-log-error",
-                                    FollowerErrorMsg {
-                                        unit: unit.clone(),
-                                        message: error.to_string(),
-                                    },
+                                emit_follower_error(
+                                    &win,
+                                    &unit,
+                                    error.to_string(),
+                                    emit_legacy_oma_log,
                                 );
+                                emitted_error = true;
+                                should_kill = true;
                                 break;
                             }
                         },
                         Err(error) => {
-                            let _ = win.emit(
-                                "pm-operation-log-error",
-                                FollowerErrorMsg {
-                                    unit: unit.clone(),
-                                    message: error.to_string(),
-                                },
+                            emit_follower_error(
+                                &win,
+                                &unit,
+                                error.to_string(),
+                                emit_legacy_oma_log,
                             );
+                            emitted_error = true;
+                            should_kill = true;
                             break;
                         }
                     }
                 }
             }
-            let _ = child.kill();
+            if rx.try_recv().is_ok() {
+                should_kill = true;
+            }
+            if should_kill {
+                let _ = child.kill();
+            }
+            let wait_result = child.wait();
+            let stderr = stderr_handle
+                .and_then(|handle| handle.join().ok())
+                .unwrap_or_default();
+            match wait_result {
+                Ok(status) if !emitted_error => {
+                    if let Some(message) = follower_process_error(
+                        &unit,
+                        status.success(),
+                        status.code(),
+                        &stderr,
+                        saw_stdout,
+                    ) {
+                        emit_follower_error(&win, &unit, message, emit_legacy_oma_log);
+                    }
+                }
+                Err(error) if !emitted_error => {
+                    emit_follower_error(
+                        &win,
+                        &unit,
+                        format!("failed to reap omactl logs --json --follow: {error}"),
+                        emit_legacy_oma_log,
+                    );
+                }
+                _ => {}
+            }
         } else {
             let message = "failed to spawn omactl logs --json --follow".to_string();
-            let _ = win.emit(
-                "pm-operation-log-error",
-                FollowerErrorMsg {
-                    unit: unit.clone(),
-                    message: message.clone(),
-                },
-            );
-            if emit_legacy_oma_log {
-                let _ = win.emit(
-                    "oma-log",
-                    FollowerMsg {
-                        unit: unit.clone(),
-                        line: format!("<{message}>"),
-                    },
-                );
-            }
+            emit_follower_error(&win, &unit, message, emit_legacy_oma_log);
         }
         let map = followers_map();
         let mut guard = map.lock().unwrap();
@@ -632,4 +720,33 @@ pub async fn stop_follow_oma_logs(unit: String) -> Result<(), String> {
         let _ = sender.send(()); // signal stop
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn follower_process_error_reports_nonzero_stderr_without_stdout() {
+        let message = follower_process_error(
+            "oma-task-test.service",
+            false,
+            Some(42),
+            "omactl exploded\n",
+            false,
+        )
+        .unwrap();
+
+        assert!(message.contains("oma-task-test.service"));
+        assert!(message.contains("status=42"));
+        assert!(message.contains("omactl exploded"));
+        assert!(message.contains("without log output"));
+    }
+
+    #[test]
+    fn follower_process_error_ignores_success() {
+        assert!(
+            follower_process_error("oma-task-test.service", true, Some(0), "", false).is_none()
+        );
+    }
 }

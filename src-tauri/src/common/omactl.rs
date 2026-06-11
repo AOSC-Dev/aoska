@@ -1,6 +1,6 @@
 use crate::common::omactl_types::{
     OmactlCapabilitiesPayload, OmactlEnvelope, OmactlErrorPayload, OmactlUnitPayload,
-    PmCapabilities, PmOperationStart, PmUpdateSummary, SCHEMA_VERSION,
+    PmCapabilities, PmOperationStart, PmUpdateSummary, TumUpdateInfo, SCHEMA_VERSION,
 };
 use anyhow::{anyhow, bail, Context, Result};
 use serde::de::DeserializeOwned;
@@ -207,9 +207,15 @@ pub fn update_summary() -> Result<PmUpdateSummary> {
     })
 }
 
-pub fn query_tum_updates() -> Result<Vec<Value>> {
+pub fn query_tum_updates() -> Result<Vec<TumUpdateInfo>> {
     require_capability("plan.tum.v1").context("TUM_UNAVAILABLE: plan.tum.v1 is not advertised")?;
+    require_capability("plan.upgrade.v1")
+        .context("TUM_UNAVAILABLE: plan.upgrade.v1 is not advertised")?;
     let plan = plan_upgrade(&[])?;
+    extract_tum_updates(&plan)
+}
+
+fn extract_tum_updates(plan: &Value) -> Result<Vec<TumUpdateInfo>> {
     if plan
         .pointer("/tum/available")
         .or_else(|| plan.get("tum_available"))
@@ -225,7 +231,8 @@ pub fn query_tum_updates() -> Result<Vec<Value>> {
         "/security_updates",
     ] {
         if let Some(items) = plan.pointer(pointer).and_then(Value::as_array) {
-            return Ok(items.clone());
+            return serde_json::from_value(Value::Array(items.clone()))
+                .context("invalid TUM update group payload");
         }
     }
     bail!("TUM_UNAVAILABLE: omactl plan did not include TUM update groups")
@@ -438,6 +445,7 @@ fn count_packages(raw: &Value) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn parses_success_envelope_by_kind() {
@@ -472,5 +480,36 @@ mod tests {
             .unwrap_err()
             .to_string();
         assert!(error.contains("did not include structured error payload"));
+    }
+
+    #[test]
+    fn extracts_empty_tum_updates() {
+        let plan = json!({"tum":{"available":true,"updates":[]}});
+        let updates = extract_tum_updates(&plan).unwrap();
+        assert!(updates.is_empty());
+    }
+
+    #[test]
+    fn rejects_unavailable_tum_updates() {
+        let plan = json!({"tum":{"available":false,"updates":[]}});
+        let error = extract_tum_updates(&plan).unwrap_err().to_string();
+        assert!(error.contains("TUM_UNAVAILABLE"));
+    }
+
+    #[test]
+    fn rejects_tum_updates_without_security_flag() {
+        let plan = json!({
+            "tum": {
+                "available": true,
+                "updates": [{
+                    "manifest_name": "security",
+                    "name": {"en": "Security updates"},
+                    "package_count": 1,
+                    "package_names": ["openssl"]
+                }]
+            }
+        });
+        let error = extract_tum_updates(&plan).unwrap_err().to_string();
+        assert!(error.contains("invalid TUM update group payload"));
     }
 }
