@@ -157,17 +157,20 @@ pub async fn fetch_detail(
 }
 
 #[tauri::command]
+/// Deprecated compatibility wrapper: use `pm_update_summary`.
 pub async fn fetch_update_count(_app: tauri::State<'_, AppState>) -> Result<usize, String> {
     pm_update_summary().await.map(|summary| summary.total)
 }
 
 #[tauri::command]
+/// Deprecated compatibility wrapper: use `pm_list_updates`.
 pub async fn fetch_update_detail(_app: tauri::State<'_, AppState>) -> Result<Value, String> {
     let updates = pm_list_updates().await?;
     Ok(compat_oma_operation(&updates))
 }
 
 #[tauri::command]
+/// Deprecated compatibility wrapper: use `pm_update_summary` and `pm_list_updates`.
 pub async fn fetch_tum_update(
     _app: tauri::State<'_, AppState>,
 ) -> Result<Vec<TumUpdateInfo>, String> {
@@ -412,6 +415,7 @@ pub async fn pm_follow_operation_logs(window: tauri::Window, unit: String) -> Re
 
 // Start a system upgrade via omactl, returning the systemd unit name.
 #[tauri::command]
+/// Deprecated compatibility wrapper: use `pm_start_update`.
 pub async fn start_upgrade(
     packages: Option<Vec<String>>,
     wait: Option<bool>,
@@ -432,6 +436,7 @@ pub async fn start_upgrade(
 // Start installing packages via omactl, returning the systemd unit name.
 // packages must be non-empty.
 #[tauri::command]
+/// Deprecated compatibility wrapper: use `pm_start_install`.
 pub async fn start_install(
     packages: Vec<String>,
     wait: Option<bool>,
@@ -454,6 +459,7 @@ pub async fn start_install(
 
 // Start removing packages via omactl, return the unit name.
 #[tauri::command]
+/// Deprecated compatibility wrapper: use `pm_start_remove`.
 pub async fn start_remove(
     packages: Vec<String>,
     // purge, remove app config or not.
@@ -478,6 +484,7 @@ pub async fn start_remove(
 
 /// Fetch a unit's current status.
 #[tauri::command]
+/// Deprecated compatibility wrapper: use `pm_operation_status`.
 pub async fn oma_unit_status(unit: String) -> Result<String, String> {
     let value = pm_operation_status(unit).await?;
     serde_json::to_string(&value).map_err(|e| e.to_string())
@@ -485,6 +492,7 @@ pub async fn oma_unit_status(unit: String) -> Result<String, String> {
 
 /// Fetch a unit's accumulated logs.
 #[tauri::command]
+/// Deprecated compatibility wrapper: use `pm_operation_logs`.
 pub async fn oma_unit_logs(unit: String) -> Result<String, String> {
     let value = pm_operation_logs(unit).await?;
     serde_json::to_string(&value).map_err(|e| e.to_string())
@@ -492,6 +500,7 @@ pub async fn oma_unit_logs(unit: String) -> Result<String, String> {
 
 /// Fetch a unit's result.
 #[tauri::command]
+/// Deprecated compatibility wrapper: use `pm_operation_result`.
 pub async fn oma_unit_result(unit: String) -> Result<String, String> {
     let value = pm_operation_result(unit).await?;
     serde_json::to_string(&value).map_err(|e| e.to_string())
@@ -772,6 +781,7 @@ fn start_follow_operation_logs(
 /// Payload JSON: { unit: String, line: String }
 /// If already (this wouldn't happen in design.) following the unit, returns Ok immediately.
 #[tauri::command]
+/// Deprecated compatibility wrapper: use `pm_follow_operation_logs`.
 pub async fn follow_oma_logs(window: tauri::Window, unit: String) -> Result<(), String> {
     require_pm_capability("unit.logs.v1").await?;
     start_follow_operation_logs(window, unit, true)
@@ -779,6 +789,7 @@ pub async fn follow_oma_logs(window: tauri::Window, unit: String) -> Result<(), 
 
 /// Stop following a unit's logs.
 #[tauri::command]
+/// Deprecated compatibility wrapper: use the `pm_*` operation log follower lifecycle.
 pub async fn stop_follow_oma_logs(unit: String) -> Result<(), String> {
     let map = followers_map();
     stop_follower(&map, &unit);

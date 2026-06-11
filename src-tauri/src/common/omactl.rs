@@ -131,6 +131,35 @@ where
     parse_json(&stdout, expected_kinds)
 }
 
+fn parse_exact_json<T>(stdout: &str, expected_kind: &str) -> Result<T>
+where
+    T: DeserializeOwned,
+{
+    let envelope: OmactlEnvelope =
+        serde_json::from_str(stdout).context("invalid omactl JSON envelope")?;
+    if envelope.schema_version != SCHEMA_VERSION {
+        return Err(OmactlJsonError::UnsupportedSchema {
+            actual: envelope.schema_version,
+            expected: SCHEMA_VERSION,
+            kind: envelope.kind,
+        }
+        .into());
+    }
+    if !envelope.ok {
+        return Err(omactl_error(envelope.kind, envelope.error).into());
+    }
+    if envelope.kind != expected_kind {
+        return Err(OmactlJsonError::UnexpectedKind {
+            actual: envelope.kind,
+            expected: vec![expected_kind.to_string()],
+        }
+        .into());
+    }
+    let kind = envelope.kind;
+    let data = envelope.data.ok_or(OmactlJsonError::MissingData { kind })?;
+    serde_json::from_value(data).context("invalid omactl JSON payload")
+}
+
 fn args(parts: &[&str]) -> Vec<String> {
     parts.iter().map(|part| (*part).to_string()).collect()
 }
@@ -152,7 +181,8 @@ fn push_unit(args: &mut Vec<String>, unit: Option<&str>) {
 }
 
 pub fn capabilities() -> Result<PmCapabilities> {
-    let raw = json_value(&args(&["capabilities", "--json"]), &["omactl.capabilities"])?;
+    let stdout = run_omactl(&args(&["capabilities", "--json"]))?;
+    let raw: Value = parse_exact_json(&stdout, "omactl.capabilities")?;
     let payload: OmactlCapabilitiesPayload =
         serde_json::from_value(raw.clone()).context("invalid omactl capabilities payload")?;
     Ok(PmCapabilities {
@@ -471,6 +501,15 @@ mod tests {
             .unwrap_err()
             .to_string();
         assert!(error.contains("omactl.query.installed"));
+    }
+
+    #[test]
+    fn rejects_versioned_capabilities_kind() {
+        let json = r#"{"schema_version":1,"ok":true,"kind":"omactl.capabilities.v1","data":{"capabilities":[]}}"#;
+        let error = parse_exact_json::<Value>(json, "omactl.capabilities")
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("omactl.capabilities.v1"));
     }
 
     #[test]
