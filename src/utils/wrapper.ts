@@ -11,8 +11,15 @@ export async function fetchUpdateCount(): Promise<number> {
   return invoke<number>('fetch_update_count');
 }
 
-export async function fetchTumUpdate(): Promise<TumUpdateInfo[]> {
-  return invoke<TumUpdateInfo[]>('fetch_tum_update');
+export async function fetchTumUpdate(): Promise<TumUpdateInfo[] | null> {
+  try {
+    return await invoke<TumUpdateInfo[]>('fetch_tum_update');
+  } catch (error) {
+    if (String(error).includes('TUM_UNAVAILABLE')) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function fetchRecommend(): Promise<RecommendIndex> {

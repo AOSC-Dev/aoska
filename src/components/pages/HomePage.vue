@@ -65,9 +65,9 @@ const updateSecurity = ref(0);
 onBeforeMount(async () => {
   const updateCount = await fetchUpdateCount();
   const tumUpdate = await fetchTumUpdate();
-  const securityUpdateCount = tumUpdate.filter((v) => {return v.is_security;}).length;
+  const securityUpdateCount = tumUpdate?.filter((v) => {return v.is_security;}).length ?? 0;
   updateSecurity.value = securityUpdateCount;
-  update.value = updateCount - securityUpdateCount;
+  update.value = tumUpdate === null ? updateCount : updateCount - securityUpdateCount;
   recommendList.value = await fetchRecommend();
   loading.value = false;
 });
