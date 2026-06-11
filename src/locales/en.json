@@ -35,6 +35,13 @@
         "greeting": "All updates are common ones",
         "button": "Update"
     },
+    "unknownSecurityUpdate": {
+        "title": "Updates are available",
+        "status1": "There are ",
+        "status2": " updates available",
+        "greeting": "Security classification is unavailable; review update details",
+        "button": "Update"
+    },
     "securityUpdate": {
         "title": "Attention!",
         "status1": "There are ",
