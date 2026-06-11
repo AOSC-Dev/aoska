@@ -1,0 +1,25 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-STORAGE-SUMMARY"
+title = "Storage Summary"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska MAY expose a storage summary through `pm_storage_summary` when omactl provides storage or installed-size primitives.
+
+aoska MUST obtain package-manager-derived storage primitives through `omactl query storage --json`, installed inventory payloads, or future omactl JSON capabilities that explicitly supersede them.
+
+aoska MUST join omactl runtime size data with aoska catalog membership to compute app-store presentation groups such as aoska-manageable software, other oma-managed software, non-oma-managed space, and free space.
+
+aoska MUST NOT treat static catalog metadata as authoritative for installed size, disk free space, package ownership, or package-manager-managed storage.
+
+aoska MUST label estimated or unavailable storage values distinctly from exact values when omactl marks them as estimated or unavailable.
+
+aoska MUST keep storage summary failure separate from install, update, remove, and refresh operation failure.
+
+aoska MAY hide storage summary details when required omactl storage capabilities are absent.
+
+**Rationale:** The update/uninstall design needs storage presentation, but only omactl can provide runtime package and disk facts while aoska can provide catalog grouping."""

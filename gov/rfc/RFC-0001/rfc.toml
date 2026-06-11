@@ -19,8 +19,14 @@ clauses = [
     "clauses/C-CLI-ONLY-INTEGRATION.toml",
     "clauses/C-CAPABILITY-CHECKS.toml",
     "clauses/C-JSON-CONSUMPTION.toml",
+    "clauses/C-TAURI-COMMAND-SURFACE.toml",
     "clauses/C-UPDATE-FLOWS.toml",
+    "clauses/C-INSTALLED-INVENTORY-SELECTION.toml",
+    "clauses/C-REFRESH-CANCEL-FLOWS.toml",
     "clauses/C-OPERATION-FLOWS.toml",
+    "clauses/C-OPERATION-EVENTS-LOGS.toml",
+    "clauses/C-STORAGE-SUMMARY.toml",
+    "clauses/C-COMPATIBILITY-WRAPPERS.toml",
     "clauses/C-ERROR-HANDLING.toml",
     "clauses/C-STATIC-CATALOG.toml",
 ]
@@ -29,3 +35,8 @@ clauses = [
 version = "0.1.0"
 date = "2026-06-11"
 notes = "Initial draft"
+
+[[changelog]]
+version = "0.1.1"
+date = "2026-06-12"
+notes = "Extend consumer package-manager command, inventory, operation, storage, and compatibility wrapper requirements"

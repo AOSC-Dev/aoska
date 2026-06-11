@@ -1,0 +1,31 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-REFRESH-CANCEL-FLOWS"
+title = "Refresh, Check, and Cancel Flows"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska MUST obtain update-check or metadata-refresh scheduling through `omactl run refresh --json` or a future capability that explicitly supersedes `run.refresh.v1`.
+
+aoska MUST require `run.refresh.v1` before enabling a refresh/check action that schedules package-manager work.
+
+aoska MUST treat a successful refresh/check start response as scheduling success, not as refresh completion.
+
+aoska MUST retain the returned refresh/check unit identifier until the terminal result has been read or the operation has been cancelled and surfaced.
+
+aoska MUST use `omactl status --json <unit>` and `omactl result --json <unit>` to present refresh/check progress and terminal state.
+
+aoska MUST obtain refresh/check logs through omactl log commands rather than by invoking `journalctl` directly.
+
+aoska MUST cancel package-manager operations by invoking `omactl cancel --json <unit>` or a future capability that explicitly supersedes `unit.cancel.v1`.
+
+aoska MUST require `unit.cancel.v1` before enabling cancel controls for refresh, install, update, or remove operations.
+
+aoska MUST distinguish user-cancelled operations from failed operations when omactl exposes a cancelled terminal state.
+
+aoska SHOULD refresh package state after refresh/check, install, update, remove, or cancel flows reach a terminal state.
+
+**Rationale:** The GUI needs checking, progress, cancellation, and recovery states without owning systemd or package-manager lifetime semantics directly."""

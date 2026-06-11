@@ -1,0 +1,25 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-COMPATIBILITY-WRAPPERS"
+title = "Compatibility Wrapper Deprecation"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska MAY keep compatibility Tauri commands with historical names during frontend migration.
+
+aoska MUST implement any retained `fetch_update_count`, `fetch_update_detail`, `fetch_update_all`, `fetch_update_tum`, `fetch_tum_update`, or other `fetch_update_*` package-manager compatibility wrapper by delegating to the new package-manager backend layer that consumes omactl JSON.
+
+aoska MUST implement any retained `oma_*` package-manager compatibility wrapper by delegating to the new package-manager backend layer that consumes omactl JSON.
+
+aoska MUST NOT keep compatibility wrappers that directly call oma internal Rust crates, parse human-oriented command output, or invoke `journalctl` directly.
+
+aoska MUST mark compatibility wrappers as deprecated in code comments or generated API documentation when they remain after the package-manager backend layer is introduced.
+
+aoska MUST remove compatibility wrappers after frontend callers migrate to the `pm_*` command surface, unless a later RFC explicitly extends their lifetime.
+
+aoska SHOULD keep compatibility wrapper response shapes as small adapters over the canonical `pm_*` responses rather than as independent business logic.
+
+**Rationale:** Temporary wrappers reduce migration risk, but the old command names must not preserve the old integration boundary or become a second package-manager API."""

@@ -14,6 +14,10 @@ aoska MUST compute update counts from omactl query or plan responses rather than
 
 aoska MUST obtain upgrade preview details by invoking `omactl plan upgrade --json` before presenting a machine-derived upgrade plan.
 
+aoska MUST obtain selected upgrade preview details by invoking `omactl plan upgrade --json <package>...` before presenting a machine-derived selected upgrade plan.
+
+aoska MUST preserve the selected package list as structured process arguments rather than as a shell fragment.
+
 aoska MUST obtain install preview details by invoking `omactl plan install --json <package>...` before presenting a machine-derived install plan.
 
 aoska MUST obtain remove preview details by invoking `omactl plan remove --json <package>...` before presenting a machine-derived remove plan.

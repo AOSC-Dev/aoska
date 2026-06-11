@@ -1,0 +1,29 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-OPERATION-EVENTS-LOGS"
+title = "Operation Events and Logs"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska MUST obtain accumulated operation logs by invoking `omactl logs --json <unit>` through the package-manager backend layer.
+
+aoska MUST obtain live operation log streams by invoking `omactl logs --json --follow <unit>` through the package-manager backend layer when live logs are presented.
+
+aoska MUST consume live omactl log output as JSON Lines where each line is one complete JSON event envelope.
+
+aoska MUST validate each JSON Lines event before emitting it to the frontend as a structured package-manager event.
+
+aoska MUST NOT invoke `journalctl` directly for package-manager operation logs, progress, status, or event streaming.
+
+aoska MUST NOT parse human-readable `journalctl`, `systemctl`, `oma`, or omactl text output to derive package operation events.
+
+aoska MUST preserve the operation unit identifier on emitted frontend events so consumers can correlate events with the operation that produced them.
+
+aoska SHOULD tolerate unknown fields in operation log/event envelopes.
+
+aoska SHOULD surface malformed omactl event output as an integration error without treating the package operation itself as successful.
+
+**Rationale:** omactl owns the journal/systemd boundary; aoska owns typed frontend events derived from omactl JSON and JSON Lines."""

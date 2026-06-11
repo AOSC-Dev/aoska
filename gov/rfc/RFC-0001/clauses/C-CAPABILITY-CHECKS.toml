@@ -14,15 +14,23 @@ aoska MUST require the capabilities response to be a successful omactl JSON enve
 
 aoska MUST require `query.upgradable.v1` before enabling the update-list flow.
 
+aoska MUST require `query.installed.v1` before enabling installed inventory, update/uninstall rows, or selected remove flows derived from package-manager state.
+
 aoska MUST require `query.package-detail.v1` before enabling package-detail data that is derived from APT or oma state.
 
 aoska MUST require `plan.upgrade.v1`, `plan.install.v1`, and `plan.remove.v1` before enabling upgrade, install, or remove preview flows respectively.
 
 aoska MUST require `run.upgrade.v1`, `run.install.v1`, and `run.remove.v1` before enabling upgrade, install, or remove execution flows respectively.
 
+aoska MUST require `run.refresh.v1` before enabling package metadata refresh or check-update flows that schedule omactl work.
+
+aoska MUST require `unit.cancel.v1` before enabling operation cancellation controls.
+
 aoska MUST require `unit.status.v1`, `unit.result.v1`, and `unit.logs.v1` before presenting scheduled operation progress, terminal results, or operation logs respectively.
 
 aoska MAY enable live package search only when `query.search.v1` is present.
+
+aoska MAY enable package-manager-derived storage summaries only when `query.storage.v1` or an equivalent future storage capability is present.
 
 aoska MUST enable TUM/security grouping only when `plan.tum.v1` is present and the relevant plan response reports that TUM data is available.
 

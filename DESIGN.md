@@ -270,6 +270,13 @@
   - Static catalog metadata remains owned by aoska.
   - omactl should provide structured JSON for package-management state, operation starts, unit status, unit results, and unit logs.
 - Package-management/API requirements implied by the design:
+  - Tauri package-manager commands should use the `pm_*` surface rather than raw `fetch_update_*` or `oma_*` command names.
+  - Capability and query command group: `pm_capabilities`, `pm_update_summary`, `pm_list_updates`, `pm_list_installed`, and `pm_package_state`.
+  - Planning command group: `pm_plan_update`, `pm_plan_install`, and `pm_plan_remove`.
+  - Operation start command group: `pm_start_update`, `pm_start_install`, `pm_start_remove`, and `pm_start_refresh`.
+  - Operation observation command group: `pm_operation_status`, `pm_operation_result`, `pm_operation_logs`, `pm_follow_operation_logs`, and `pm_cancel_operation`.
+  - Storage command group: `pm_storage_summary`, joining omactl runtime size data with aoska catalog membership.
+  - Temporary compatibility wrappers for old `fetch_update_*` and `oma_*` commands may exist only while delegating to the omactl JSON-backed `pm_*` layer and should be removed after frontend migration.
   - Query installed packages with source of management:
     - aoska-manageable software.
     - other oma-managed software.
