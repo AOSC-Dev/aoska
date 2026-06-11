@@ -1,0 +1,31 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-UPDATE-FLOWS"
+title = "Update Query and Planning Flows"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska MUST obtain the update-list package set by invoking `omactl query upgradable --json` or a future capability that explicitly supersedes `query.upgradable.v1`.
+
+aoska MUST compute update counts from omactl query or plan responses rather than from direct oma crates.
+
+aoska MUST obtain upgrade preview details by invoking `omactl plan upgrade --json` before presenting a machine-derived upgrade plan.
+
+aoska MUST obtain install preview details by invoking `omactl plan install --json <package>...` before presenting a machine-derived install plan.
+
+aoska MUST obtain remove preview details by invoking `omactl plan remove --json <package>...` before presenting a machine-derived remove plan.
+
+aoska MUST obtain package details derived from APT or oma state by invoking `omactl query package-detail --json <package>...`.
+
+aoska MUST obtain TUM and security-update grouping from omactl plan responses when `plan.tum.v1` is advertised and the plan response reports TUM data as available.
+
+aoska MUST distinguish unavailable TUM data from an empty security-update set.
+
+aoska MUST NOT present security-update counts as known when `plan.tum.v1` is absent or when the relevant plan response reports TUM data as unavailable.
+
+aoska MAY present a user-facing "security classification unavailable" state when TUM data is unavailable.
+
+**Rationale:** The update UI currently depends on oma crate-derived data. This clause defines the required replacement behavior for the CLI-contract migration and prevents aoska from confusing unknown security classification with zero security updates."""

@@ -1,0 +1,27 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-JSON-CONSUMPTION"
+title = "JSON Consumption"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska MUST parse omactl's aoska-facing JSON envelope for package-management operations.
+
+aoska MUST require `schema_version`, `ok`, and `kind` in aoska-facing JSON responses.
+
+aoska MUST reject package-management JSON documents whose `schema_version` is not `1` unless a future aoska RFC explicitly permits that schema version.
+
+aoska MUST dispatch successful payload parsing by the `kind` value returned by omactl.
+
+aoska MUST treat `ok: false` responses as structured errors rather than successful payloads.
+
+aoska MUST ignore unknown JSON fields in successful and failed omactl envelopes.
+
+aoska MUST NOT parse human-readable oma, omactl, systemctl, or journalctl output for package-management state or operation status.
+
+aoska SHOULD preserve the original omactl `kind` value in developer-facing diagnostics when payload parsing fails.
+
+**Rationale:** A single JSON parse path keeps the backend robust against localization, color output, pager output, and terminal formatting changes while allowing omactl to add fields compatibly."""

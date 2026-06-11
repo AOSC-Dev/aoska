@@ -1,0 +1,17 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-SUMMARY"
+title = "Summary"
+kind = "informative"
+status = "active"
+
+[content]
+text = """
+This RFC specifies how the aoska backend consumes package-management capabilities through the omactl CLI/JSON contract.
+
+**Scope:** This RFC covers aoska backend dependency boundaries, command invocation, capability checks, JSON parsing, error handling, update planning, package operation execution, unit state presentation, and static-catalog separation.
+
+**Out of scope:** This RFC does not define the omactl producer API, visual UI layout, static software catalog metadata, or concrete frontend component structure. The omactl producer contract is tracked in the omactl repository as `docs/rfc/RFC-0001.md` at `https://github.com/AOSC-Dev/omactl`; this repository-local RFC owns aoska's consumer obligations.
+
+**Rationale:** aoska should be a GUI and orchestration layer over omactl rather than a second package-manager frontend linked directly to oma internals."""

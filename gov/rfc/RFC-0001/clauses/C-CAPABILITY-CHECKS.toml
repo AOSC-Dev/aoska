@@ -1,0 +1,35 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-CAPABILITY-CHECKS"
+title = "Capability Checks"
+kind = "normative"
+status = "active"
+
+[content]
+text = """
+aoska MUST run `omactl capabilities --json` before enabling a package-management flow that depends on omactl.
+
+aoska MUST require the capabilities response to be a successful omactl JSON envelope with `schema_version` equal to `1`, `ok` equal to `true`, `kind` equal to `omactl.capabilities`, and `data.capabilities` as an array of strings.
+
+aoska MUST require `query.upgradable.v1` before enabling the update-list flow.
+
+aoska MUST require `query.package-detail.v1` before enabling package-detail data that is derived from APT or oma state.
+
+aoska MUST require `plan.upgrade.v1`, `plan.install.v1`, and `plan.remove.v1` before enabling upgrade, install, or remove preview flows respectively.
+
+aoska MUST require `run.upgrade.v1`, `run.install.v1`, and `run.remove.v1` before enabling upgrade, install, or remove execution flows respectively.
+
+aoska MUST require `unit.status.v1`, `unit.result.v1`, and `unit.logs.v1` before presenting scheduled operation progress, terminal results, or operation logs respectively.
+
+aoska MAY enable live package search only when `query.search.v1` is present.
+
+aoska MUST enable TUM/security grouping only when `plan.tum.v1` is present and the relevant plan response reports that TUM data is available.
+
+aoska MUST treat a missing capability required by the current flow as an integration error.
+
+aoska SHOULD present a user-facing diagnostic when omactl or oma is too old for the requested package-management flow.
+
+aoska SHOULD include the missing capability identifier in developer-facing diagnostics.
+
+**Rationale:** The migration moves failures from compile-time crate availability to runtime CLI capability availability, so aoska needs explicit capability gates."""
