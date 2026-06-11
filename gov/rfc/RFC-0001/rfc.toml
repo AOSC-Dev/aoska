@@ -3,7 +3,7 @@
 [govctl]
 id = "RFC-0001"
 title = "aoska backend consumption of omactl package operations"
-version = "0.1.0"
+version = "0.1.1"
 status = "draft"
 phase = "spec"
 owners = ["@wxiwnd"]

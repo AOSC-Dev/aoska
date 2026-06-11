@@ -12,9 +12,9 @@ aoska MUST obtain the update-list package set by invoking `omactl query upgradab
 
 aoska MUST compute update counts from omactl query or plan responses rather than from direct oma crates.
 
-aoska MUST obtain upgrade preview details by invoking `omactl plan upgrade --json` before presenting a machine-derived upgrade plan.
+aoska MUST obtain all-upgrade preview details by invoking `omactl plan upgrade --json` before presenting a machine-derived all-upgrade plan.
 
-aoska MUST obtain selected upgrade preview details by invoking `omactl plan upgrade --json <package>...` before presenting a machine-derived selected upgrade plan.
+aoska MUST obtain selected-upgrade preview details by invoking `omactl plan upgrade --json <package>...` before presenting a machine-derived selected-upgrade plan, and MUST gate that flow on `plan.upgrade.selected.v1`.
 
 aoska MUST preserve the selected package list as structured process arguments rather than as a shell fragment.
 
