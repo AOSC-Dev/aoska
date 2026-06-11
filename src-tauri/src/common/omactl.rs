@@ -2,11 +2,9 @@ use crate::common::omactl_types::{
     OmactlCapabilitiesPayload, OmactlEnvelope, OmactlErrorPayload, OmactlUnitPayload,
     PmCapabilities, PmOperationStart, PmUpdateSummary, SCHEMA_VERSION,
 };
-use crate::common::utils::run_cmd;
 use anyhow::{anyhow, bail, Context, Result};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
-use std::path::Path;
 use std::process::Command;
 use thiserror::Error;
 
@@ -46,17 +44,24 @@ pub enum OmactlJsonError {
     MissingData { kind: String },
 }
 
-pub fn is_busy() -> bool {
-    let lock_path = "/run/lock/oma.lock";
-    Path::new(lock_path).exists()
-}
-
 fn run_omactl(args: &[String]) -> Result<String> {
-    run_cmd({
-        let mut c = Command::new("omactl");
-        c.args(args);
-        c
-    })
+    let out = Command::new("omactl")
+        .args(args)
+        .output()
+        .context("failed to spawn omactl")?;
+    let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+    if !stdout.trim().is_empty() {
+        return Ok(stdout);
+    }
+    if out.status.success() {
+        return Ok(stdout);
+    }
+    let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+    bail!(
+        "omactl failed without JSON: status={:?} stderr={}",
+        out.status.code(),
+        stderr
+    )
 }
 
 fn parse_json<T>(stdout: &str, expected_kinds: &[&str]) -> Result<T>
@@ -74,6 +79,10 @@ where
         .into());
     }
 
+    if !envelope.ok {
+        return Err(omactl_error(envelope.kind, envelope.error).into());
+    }
+
     let accepted = accepted_kinds(expected_kinds);
     if !accepted.iter().any(|k| k == &envelope.kind) {
         return Err(OmactlJsonError::UnexpectedKind {
@@ -81,10 +90,6 @@ where
             expected: accepted,
         }
         .into());
-    }
-
-    if !envelope.ok {
-        return Err(omactl_error(envelope.kind, envelope.error).into());
     }
 
     let kind = envelope.kind;
@@ -139,6 +144,13 @@ fn run_args(action: &str, packages: &[String], assume_yes: bool) -> Vec<String> 
     args
 }
 
+fn push_unit(args: &mut Vec<String>, unit: Option<&str>) {
+    if let Some(unit) = unit {
+        args.push("--unit".to_string());
+        args.push(unit.to_string());
+    }
+}
+
 pub fn capabilities() -> Result<PmCapabilities> {
     let raw = json_value(&args(&["capabilities", "--json"]), &["omactl.capabilities"])?;
     let payload: OmactlCapabilitiesPayload =
@@ -147,6 +159,19 @@ pub fn capabilities() -> Result<PmCapabilities> {
         capabilities: payload.capabilities,
         raw,
     })
+}
+
+pub fn require_capability(capability: &str) -> Result<()> {
+    let capabilities = capabilities()?;
+    if capabilities
+        .capabilities
+        .iter()
+        .any(|item| item == capability)
+    {
+        Ok(())
+    } else {
+        bail!("missing omactl capability: {capability}")
+    }
 }
 
 pub fn query_installed() -> Result<Value> {
@@ -182,27 +207,58 @@ pub fn update_summary() -> Result<PmUpdateSummary> {
     })
 }
 
-pub fn run_upgrade(packages: &[String], assume_yes: bool) -> Result<PmOperationStart> {
-    run_operation(
-        &run_args("upgrade", packages, assume_yes),
-        &["omactl.run.upgrade"],
-    )
+pub fn plan_upgrade(packages: &[String]) -> Result<Value> {
+    let mut args = args(&["plan", "upgrade", "--json"]);
+    args.extend(packages.iter().cloned());
+    json_value(&args, &["omactl.plan.upgrade"])
 }
 
-pub fn run_install(packages: &[String], assume_yes: bool) -> Result<PmOperationStart> {
+pub fn plan_install(packages: &[String]) -> Result<Value> {
     if packages.is_empty() {
         bail!("packages is empty");
     }
-    run_operation(
-        &run_args("install", packages, assume_yes),
-        &["omactl.run.install"],
-    )
+    let mut args = args(&["plan", "install", "--json"]);
+    args.extend(packages.iter().cloned());
+    json_value(&args, &["omactl.plan.install"])
+}
+
+pub fn plan_remove(packages: &[String]) -> Result<Value> {
+    if packages.is_empty() {
+        bail!("packages is empty");
+    }
+    let mut args = args(&["plan", "remove", "--json"]);
+    args.extend(packages.iter().cloned());
+    json_value(&args, &["omactl.plan.remove"])
+}
+
+pub fn run_upgrade(
+    packages: &[String],
+    assume_yes: bool,
+    unit: Option<&str>,
+) -> Result<PmOperationStart> {
+    let mut args = run_args("upgrade", packages, assume_yes);
+    push_unit(&mut args, unit);
+    run_operation("upgrade", &args)
+}
+
+pub fn run_install(
+    packages: &[String],
+    assume_yes: bool,
+    unit: Option<&str>,
+) -> Result<PmOperationStart> {
+    if packages.is_empty() {
+        bail!("packages is empty");
+    }
+    let mut args = run_args("install", packages, assume_yes);
+    push_unit(&mut args, unit);
+    run_operation("install", &args)
 }
 
 pub fn run_remove(
     packages: &[String],
     remove_config: bool,
     assume_yes: bool,
+    unit: Option<&str>,
 ) -> Result<PmOperationStart> {
     if packages.is_empty() {
         bail!("packages is empty");
@@ -211,18 +267,27 @@ pub fn run_remove(
     if remove_config {
         args.insert(3, "--remove-config".to_string());
     }
-    run_operation(&args, &["omactl.run.remove"])
+    push_unit(&mut args, unit);
+    run_operation("remove", &args)
 }
 
-pub fn run_refresh() -> Result<PmOperationStart> {
-    run_operation(
-        &args(&["run", "refresh", "--json"]),
-        &["omactl.run.refresh"],
-    )
+pub fn run_refresh(purpose: &str, unit: Option<&str>) -> Result<PmOperationStart> {
+    let mut args = args(&["run", "refresh", "--json", "--purpose", purpose]);
+    push_unit(&mut args, unit);
+    run_operation("refresh", &args)
 }
 
-fn run_operation(args: &[String], expected_kinds: &[&str]) -> Result<PmOperationStart> {
-    let raw: Value = json_payload(args, expected_kinds)?;
+fn run_operation(operation: &str, args: &[String]) -> Result<PmOperationStart> {
+    let raw: Value = json_payload(args, &["omactl.operation.started"])?;
+    let returned_operation = raw
+        .get("operation")
+        .and_then(Value::as_str)
+        .ok_or_else(|| anyhow!("omactl operation response missing operation"))?;
+    if returned_operation != operation {
+        bail!(
+            "omactl operation response returned operation={returned_operation}, expected {operation}"
+        );
+    }
     let payload: OmactlUnitPayload =
         serde_json::from_value(raw.clone()).context("invalid omactl unit payload")?;
     Ok(PmOperationStart {
@@ -259,20 +324,59 @@ pub fn cancel(unit: &str) -> Result<Value> {
     )
 }
 
+pub fn validate_log_event(line: &str, unit: &str) -> Result<Value> {
+    let value: Value = serde_json::from_str(line).context("invalid omactl log event JSON")?;
+    let envelope: OmactlEnvelope =
+        serde_json::from_value(value.clone()).context("invalid omactl log event envelope")?;
+    if envelope.schema_version != SCHEMA_VERSION {
+        bail!(
+            "omactl log event schema_version={} expected {}",
+            envelope.schema_version,
+            SCHEMA_VERSION
+        );
+    }
+    if envelope.ok {
+        if envelope.kind != "omactl.unit.log-line" {
+            bail!("unexpected omactl log event kind: {}", envelope.kind);
+        }
+        let event_unit = envelope
+            .data
+            .as_ref()
+            .and_then(|data| data.get("unit"))
+            .and_then(Value::as_str)
+            .ok_or_else(|| anyhow!("omactl log event missing data.unit"))?;
+        if event_unit != unit {
+            bail!("omactl log event unit mismatch: {event_unit} != {unit}");
+        }
+    } else {
+        let _ = omactl_error(envelope.kind, envelope.error);
+    }
+    Ok(value)
+}
+
 /// Compatibility wrapper for the old command surface. Prefer pm_start_* commands.
-pub fn run_oma(args: &[&str], _wait: bool, _follow: bool, _unit: Option<&str>) -> Result<String> {
+pub fn run_oma(args: &[&str], wait: bool, follow: bool, unit: Option<&str>) -> Result<String> {
+    if wait || follow {
+        bail!("wait/follow are not supported by the omactl JSON compatibility wrapper");
+    }
     match args.split_first() {
         Some((&"upgrade", rest)) => {
             let packages = package_args(rest);
-            Ok(run_upgrade(&packages, contains_yes(rest))?.unit)
+            Ok(run_upgrade(&packages, contains_yes(rest), unit)?.unit)
         }
         Some((&"install", rest)) => {
             let packages = package_args(rest);
-            Ok(run_install(&packages, contains_yes(rest))?.unit)
+            Ok(run_install(&packages, contains_yes(rest), unit)?.unit)
         }
         Some((&"remove", rest)) => {
             let packages = package_args(rest);
-            Ok(run_remove(&packages, contains_remove_config(rest), contains_yes(rest))?.unit)
+            Ok(run_remove(
+                &packages,
+                contains_remove_config(rest),
+                contains_yes(rest),
+                unit,
+            )?
+            .unit)
         }
         Some((action, _)) => Err(anyhow!("unsupported omactl compatibility action: {action}")),
         None => Err(anyhow!("missing omactl compatibility action")),

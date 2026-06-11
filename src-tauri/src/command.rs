@@ -9,7 +9,7 @@ use crate::common::{
 
 use anyhow::Result;
 use once_cell::sync::Lazy;
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::process::{Command as StdCommand, Stdio};
@@ -162,14 +162,73 @@ pub async fn fetch_update_count(_app: tauri::State<'_, AppState>) -> Result<usiz
 
 #[tauri::command]
 pub async fn fetch_update_detail(_app: tauri::State<'_, AppState>) -> Result<Value, String> {
-    pm_list_updates().await
+    let updates = pm_list_updates().await?;
+    Ok(compat_oma_operation(&updates))
 }
 
 #[tauri::command]
 pub async fn fetch_tum_update(_app: tauri::State<'_, AppState>) -> Result<Vec<Value>, String> {
-    // TUM/security classification is intentionally unavailable until omactl exposes
-    // plan.tum.v1 data through the JSON contract consumed by pm_* commands.
-    Ok(Vec::new())
+    Err("TUM_UNAVAILABLE: omactl plan.tum.v1 is not advertised".to_string())
+}
+
+fn compat_oma_operation(updates: &Value) -> Value {
+    let packages = updates
+        .get("packages")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let install: Vec<Value> = packages
+        .iter()
+        .enumerate()
+        .map(|(index, pkg)| {
+            let name = pkg
+                .get("name")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_string();
+            let arch = pkg
+                .get("architecture")
+                .or_else(|| pkg.get("arch"))
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_string();
+            let name_without_arch = pkg
+                .get("name_without_arch")
+                .and_then(Value::as_str)
+                .map(str::to_string)
+                .unwrap_or_else(|| name.split(':').next().unwrap_or(&name).to_string());
+            json!({
+                "name": name,
+                "name_without_arch": name_without_arch,
+                "old_version": pkg.get("current_version").cloned().unwrap_or(Value::Null),
+                "new_version": pkg
+                    .get("new_version")
+                    .or_else(|| pkg.get("version"))
+                    .cloned()
+                    .unwrap_or_else(|| Value::String(String::new())),
+                "old_size": pkg.get("old_size").cloned().unwrap_or(Value::Null),
+                "new_size": pkg.get("new_size").and_then(Value::as_u64).unwrap_or(0),
+                "pkg_urls": [],
+                "sha256": pkg.get("sha256").cloned().unwrap_or(Value::Null),
+                "md5": pkg.get("md5").cloned().unwrap_or(Value::Null),
+                "sha512": pkg.get("sha512").cloned().unwrap_or(Value::Null),
+                "arch": arch,
+                "download_size": pkg.get("download_size").and_then(Value::as_u64).unwrap_or(0),
+                "op": 3,
+                "automatic": pkg.get("automatic").and_then(Value::as_bool).unwrap_or(false),
+                "index": index,
+            })
+        })
+        .collect();
+    json!({
+        "install": install,
+        "remove": [],
+        "disk_size_delta": 0,
+        "autoremovable": [0, 0],
+        "total_download_size": 0,
+        "suggest": [],
+        "recommend": [],
+    })
 }
 
 #[tauri::command]
@@ -177,10 +236,11 @@ pub async fn get_endpoint_base_url(app: tauri::State<'_, AppState>) -> Result<St
     Ok(app.base_url.clone())
 }
 
-// Report whether oma is currently busy.
+// Deprecated compatibility command. Busy state is exposed by structured omactl
+// operation errors such as OMA_BUSY, not by reading oma lock files in aoska.
 #[tauri::command]
 pub async fn oma_is_busy() -> Result<bool, String> {
-    Ok(omactl::is_busy())
+    Err("UNSUPPORTED_COMMAND: oma_is_busy is not available through omactl JSON".to_string())
 }
 
 fn join_blocking<T>(
@@ -196,37 +256,74 @@ pub async fn pm_capabilities() -> Result<PmCapabilities, String> {
     join_blocking(tokio::task::spawn_blocking(omactl::capabilities).await)
 }
 
+async fn require_pm_capability(capability: &'static str) -> Result<(), String> {
+    join_blocking(tokio::task::spawn_blocking(move || omactl::require_capability(capability)).await)
+}
+
 #[tauri::command]
 pub async fn pm_list_updates() -> Result<Value, String> {
+    require_pm_capability("query.upgradable.v1").await?;
     join_blocking(tokio::task::spawn_blocking(omactl::query_upgradable).await)
 }
 
 #[tauri::command]
 pub async fn pm_update_summary() -> Result<PmUpdateSummary, String> {
+    require_pm_capability("query.upgradable.v1").await?;
     join_blocking(tokio::task::spawn_blocking(omactl::update_summary).await)
 }
 
 #[tauri::command]
 pub async fn pm_list_installed() -> Result<Value, String> {
+    require_pm_capability("query.installed.v1").await?;
     join_blocking(tokio::task::spawn_blocking(omactl::query_installed).await)
 }
 
 #[tauri::command]
 pub async fn pm_package_state(packages: Vec<String>) -> Result<Value, String> {
+    require_pm_capability("query.package-detail.v1").await?;
     join_blocking(
         tokio::task::spawn_blocking(move || omactl::query_package_detail(&packages)).await,
     )
 }
 
 #[tauri::command]
+pub async fn pm_plan_update(packages: Option<Vec<String>>) -> Result<Value, String> {
+    let packages = packages.unwrap_or_default();
+    if packages.is_empty() {
+        require_pm_capability("plan.upgrade.v1").await?;
+    } else {
+        require_pm_capability("plan.upgrade.selected.v1").await?;
+    }
+    join_blocking(tokio::task::spawn_blocking(move || omactl::plan_upgrade(&packages)).await)
+}
+
+#[tauri::command]
+pub async fn pm_plan_install(packages: Vec<String>) -> Result<Value, String> {
+    require_pm_capability("plan.install.v1").await?;
+    join_blocking(tokio::task::spawn_blocking(move || omactl::plan_install(&packages)).await)
+}
+
+#[tauri::command]
+pub async fn pm_plan_remove(packages: Vec<String>) -> Result<Value, String> {
+    require_pm_capability("plan.remove.v1").await?;
+    join_blocking(tokio::task::spawn_blocking(move || omactl::plan_remove(&packages)).await)
+}
+
+#[tauri::command]
 pub async fn pm_start_update(
     packages: Option<Vec<String>>,
     assume_yes: Option<bool>,
+    unit: Option<String>,
 ) -> Result<PmOperationStart, String> {
     let packages = packages.unwrap_or_default();
+    if packages.is_empty() {
+        require_pm_capability("run.upgrade.v1").await?;
+    } else {
+        require_pm_capability("run.upgrade.selected.v1").await?;
+    }
     join_blocking(
         tokio::task::spawn_blocking(move || {
-            omactl::run_upgrade(&packages, assume_yes.unwrap_or(true))
+            omactl::run_upgrade(&packages, assume_yes.unwrap_or(true), unit.as_deref())
         })
         .await,
     )
@@ -236,10 +333,12 @@ pub async fn pm_start_update(
 pub async fn pm_start_install(
     packages: Vec<String>,
     assume_yes: Option<bool>,
+    unit: Option<String>,
 ) -> Result<PmOperationStart, String> {
+    require_pm_capability("run.install.v1").await?;
     join_blocking(
         tokio::task::spawn_blocking(move || {
-            omactl::run_install(&packages, assume_yes.unwrap_or(true))
+            omactl::run_install(&packages, assume_yes.unwrap_or(true), unit.as_deref())
         })
         .await,
     )
@@ -250,13 +349,16 @@ pub async fn pm_start_remove(
     packages: Vec<String>,
     remove_config: Option<bool>,
     assume_yes: Option<bool>,
+    unit: Option<String>,
 ) -> Result<PmOperationStart, String> {
+    require_pm_capability("run.remove.v1").await?;
     join_blocking(
         tokio::task::spawn_blocking(move || {
             omactl::run_remove(
                 &packages,
                 remove_config.unwrap_or(true),
                 assume_yes.unwrap_or(true),
+                unit.as_deref(),
             )
         })
         .await,
@@ -264,28 +366,45 @@ pub async fn pm_start_remove(
 }
 
 #[tauri::command]
-pub async fn pm_start_refresh() -> Result<PmOperationStart, String> {
-    join_blocking(tokio::task::spawn_blocking(omactl::run_refresh).await)
+pub async fn pm_start_refresh(
+    purpose: Option<String>,
+    unit: Option<String>,
+) -> Result<PmOperationStart, String> {
+    require_pm_capability("run.refresh.v1").await?;
+    let purpose = purpose.unwrap_or_else(|| "check-updates".to_string());
+    join_blocking(
+        tokio::task::spawn_blocking(move || omactl::run_refresh(&purpose, unit.as_deref())).await,
+    )
 }
 
 #[tauri::command]
 pub async fn pm_operation_status(unit: String) -> Result<Value, String> {
+    require_pm_capability("unit.status.v1").await?;
     join_blocking(tokio::task::spawn_blocking(move || omactl::status(&unit)).await)
 }
 
 #[tauri::command]
 pub async fn pm_operation_result(unit: String) -> Result<Value, String> {
+    require_pm_capability("unit.result.v1").await?;
     join_blocking(tokio::task::spawn_blocking(move || omactl::result(&unit)).await)
 }
 
 #[tauri::command]
 pub async fn pm_operation_logs(unit: String) -> Result<Value, String> {
+    require_pm_capability("unit.logs.v1").await?;
     join_blocking(tokio::task::spawn_blocking(move || omactl::logs(&unit)).await)
 }
 
 #[tauri::command]
 pub async fn pm_cancel_operation(unit: String) -> Result<Value, String> {
+    require_pm_capability("unit.cancel.v1").await?;
     join_blocking(tokio::task::spawn_blocking(move || omactl::cancel(&unit)).await)
+}
+
+#[tauri::command]
+pub async fn pm_follow_operation_logs(window: tauri::Window, unit: String) -> Result<(), String> {
+    require_pm_capability("unit.logs.v1").await?;
+    start_follow_operation_logs(window, unit, false)
 }
 
 // Start a system upgrade via omactl, returning the systemd unit name.
@@ -297,22 +416,14 @@ pub async fn start_upgrade(
     unit: Option<String>,
     assume_yes: Option<bool>,
 ) -> Result<String, String> {
-    let mut args: Vec<&str> = vec!["upgrade"];
-    if assume_yes.unwrap_or(true) {
-        args.push("--yes");
+    if wait.unwrap_or(false) || follow.unwrap_or(false) {
+        return Err(
+            "wait/follow are not supported by the omactl JSON compatibility wrapper".into(),
+        );
     }
-    if let Some(pkgs) = &packages {
-        if !pkgs.is_empty() {
-            args.extend(pkgs.iter().map(|s| s.as_str()));
-        }
-    }
-    omactl::run_oma(
-        &args,
-        wait.unwrap_or(false),
-        follow.unwrap_or(false),
-        unit.as_deref(),
-    )
-    .map_err(|e| e.to_string())
+    pm_start_update(packages, assume_yes, unit)
+        .await
+        .map(|started| started.unit)
 }
 
 // Start installing packages via omactl, returning the systemd unit name.
@@ -328,19 +439,14 @@ pub async fn start_install(
     if packages.is_empty() {
         return Err("packages is empty".to_string());
     }
-    let mut args: Vec<&str> = vec!["install"];
-    if assume_yes.unwrap_or(true) {
-        args.push("--yes");
+    if wait.unwrap_or(false) || follow.unwrap_or(false) {
+        return Err(
+            "wait/follow are not supported by the omactl JSON compatibility wrapper".into(),
+        );
     }
-    let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
-    args.extend(pkg_refs);
-    omactl::run_oma(
-        &args,
-        wait.unwrap_or(false),
-        follow.unwrap_or(false),
-        unit.as_deref(),
-    )
-    .map_err(|e| e.to_string())
+    pm_start_install(packages, assume_yes, unit)
+        .await
+        .map(|started| started.unit)
 }
 
 // Start removing packages via omactl, return the unit name.
@@ -357,22 +463,14 @@ pub async fn start_remove(
     if packages.is_empty() {
         return Err("packages is empty".to_string());
     }
-    let mut args: Vec<&str> = vec!["remove"];
-    if assume_yes.unwrap_or(true) {
-        args.push("--yes");
+    if wait.unwrap_or(false) || follow.unwrap_or(false) {
+        return Err(
+            "wait/follow are not supported by the omactl JSON compatibility wrapper".into(),
+        );
     }
-    if remove_config.unwrap_or(true) {
-        args.push("--remove_config");
-    }
-    let pkg_refs: Vec<&str> = packages.iter().map(|s| s.as_str()).collect();
-    args.extend(pkg_refs);
-    omactl::run_oma(
-        &args,
-        wait.unwrap_or(false),
-        follow.unwrap_or(false),
-        unit.as_deref(),
-    )
-    .map_err(|e| e.to_string())
+    pm_start_remove(packages, remove_config, assume_yes, unit)
+        .await
+        .map(|started| started.unit)
 }
 
 /// Fetch a unit's current status.
@@ -411,60 +509,118 @@ pub struct FollowerMsg {
     pub line: String,
 }
 
+#[derive(serde::Serialize, Clone)]
+pub struct FollowerErrorMsg {
+    pub unit: String,
+    pub message: String,
+}
+
+fn start_follow_operation_logs(
+    window: tauri::Window,
+    unit: String,
+    emit_legacy_oma_log: bool,
+) -> Result<(), String> {
+    let map = followers_map();
+    let mut guard = map.lock().unwrap();
+    if guard.contains_key(&unit) {
+        return Ok(());
+    }
+    let (tx, rx) = std::sync::mpsc::channel::<()>();
+    guard.insert(unit.clone(), tx);
+    drop(guard);
+
+    let win = window.clone();
+    thread::spawn(move || {
+        let mut cmd = StdCommand::new("omactl");
+        cmd.args(["logs", "--json", "--follow", &unit])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        if let Ok(mut child) = cmd.spawn() {
+            if let Some(stdout) = child.stdout.take() {
+                let reader = BufReader::new(stdout);
+                for line_res in reader.lines() {
+                    if rx.try_recv().is_ok() {
+                        break;
+                    }
+                    match line_res {
+                        Ok(line) => match omactl::validate_log_event(&line, &unit) {
+                            Ok(event) => {
+                                let _ = win.emit("pm-operation-log", event.clone());
+                                if emit_legacy_oma_log {
+                                    let event_line = event
+                                        .get("data")
+                                        .and_then(|data| data.get("line"))
+                                        .and_then(Value::as_str)
+                                        .unwrap_or(&line)
+                                        .to_string();
+                                    let _ = win.emit(
+                                        "oma-log",
+                                        FollowerMsg {
+                                            unit: unit.clone(),
+                                            line: event_line,
+                                        },
+                                    );
+                                }
+                            }
+                            Err(error) => {
+                                let _ = win.emit(
+                                    "pm-operation-log-error",
+                                    FollowerErrorMsg {
+                                        unit: unit.clone(),
+                                        message: error.to_string(),
+                                    },
+                                );
+                                break;
+                            }
+                        },
+                        Err(error) => {
+                            let _ = win.emit(
+                                "pm-operation-log-error",
+                                FollowerErrorMsg {
+                                    unit: unit.clone(),
+                                    message: error.to_string(),
+                                },
+                            );
+                            break;
+                        }
+                    }
+                }
+            }
+            let _ = child.kill();
+        } else {
+            let message = "failed to spawn omactl logs --json --follow".to_string();
+            let _ = win.emit(
+                "pm-operation-log-error",
+                FollowerErrorMsg {
+                    unit: unit.clone(),
+                    message: message.clone(),
+                },
+            );
+            if emit_legacy_oma_log {
+                let _ = win.emit(
+                    "oma-log",
+                    FollowerMsg {
+                        unit: unit.clone(),
+                        line: format!("<{message}>"),
+                    },
+                );
+            }
+        }
+        let map = followers_map();
+        let mut guard = map.lock().unwrap();
+        guard.remove(&unit);
+    });
+    Ok(())
+}
+
 /// Start following a unit's logs and emit them to the frontend in real-time.
 /// Event name: "oma-log".
 /// Payload JSON: { unit: String, line: String }
 /// If already (this wouldn't happen in design.) following the unit, returns Ok immediately.
 #[tauri::command]
 pub async fn follow_oma_logs(window: tauri::Window, unit: String) -> Result<(), String> {
-    let map = followers_map();
-    {
-        let mut guard = map.lock().unwrap();
-        if guard.contains_key(&unit) {
-            return Ok(()); // already following, return.
-        }
-        let (tx, rx) = std::sync::mpsc::channel::<()>();
-        guard.insert(unit.clone(), tx); // record.
-
-        let win = window.clone();
-        thread::spawn(move || {
-            let mut cmd = StdCommand::new("omactl");
-            cmd.args(["logs", "--json", "--follow", &unit.clone()])
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped());
-            if let Ok(mut child) = cmd.spawn() {
-                if let Some(stdout) = child.stdout.take() {
-                    let reader = BufReader::new(stdout);
-                    for line_res in reader.lines() {
-                        if rx.try_recv().is_ok() {
-                            break;
-                        }
-                        if let Ok(line) = line_res {
-                            let log_msg = FollowerMsg {
-                                unit: unit.clone(),
-                                line,
-                            };
-                            let _ = win.emit("oma-log", log_msg);
-                        } else {
-                            break;
-                        }
-                    }
-                }
-                let _ = child.kill();
-            } else {
-                let log_msg = FollowerMsg {
-                    unit: unit.clone(),
-                    line: "<failed to spawn omactl logs --json --follow>".to_string(),
-                };
-                let _ = win.emit("oma-log", log_msg);
-            }
-            // remove the map from Followers
-            let map = followers_map();
-            let mut guard = map.lock().unwrap();
-            guard.remove(&unit.clone());
-        });
-    }
-    Ok(())
+    require_pm_capability("unit.logs.v1").await?;
+    start_follow_operation_logs(window, unit, true)
 }
 
 /// Stop following a unit's logs.
