@@ -7,9 +7,9 @@
   />
   <div class="down-content">
     <div class="image-container">
-      <ImageCarousel 
-        :images="resolveAssetPath(packageDetail?.screenshot || [], packageName)" 
-        :autoplay="false" 
+      <ImageCarousel
+        :images="resolveAssetPath(packageDetail?.screenshot || [], packageName)"
+        :autoplay="false"
         :interval="4000"
       />
     </div>
@@ -19,7 +19,7 @@
           v-for="(v, k) in packageDetail?.package_flags"
           :key="k"
         >
-          <SoftwareFlags 
+          <SoftwareFlags
             v-if="v"
             :type="k" />
         </template>
@@ -99,15 +99,19 @@ const installSizeFormatted = computed(() => {
 
 <style scoped>
 .down-content {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(360px, 520px);
+  gap: 20px;
+  padding: 10px 20px 20px;
+  color: var(--color-text);
 }
 
 .image-container {
-  margin: 10px 10px 20px 20px;
-  width: calc(100% - 2px);
+  width: 100%;
   height: calc(100vh - 292px);
-  border: 1px solid #dadada;
-  border-radius: 5px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: #111;
 }
 
 .image-container img {
@@ -117,9 +121,8 @@ const installSizeFormatted = computed(() => {
 }
 
 .down-right {
-  width: 520px;
+  width: 100%;
   height: calc(100vh - 292px);
-  margin: 10px 20px 20px 10px;
   display: flex;
   flex-direction: column;
 }
@@ -134,8 +137,10 @@ const installSizeFormatted = computed(() => {
   width: calc(100% - 20px);
   margin-top: auto;
   padding: 10px;
-  border-radius: 5px;
-  background-color: #f3f3f3;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface-raised);
+  color: var(--color-text);
 }
 
 table {
@@ -171,8 +176,9 @@ table {
   font-size: 18px;
   border-radius: 5px;
   line-height: 36px;
-  background-color: #f3f3f3;
-  border: 1px solid black;
+  background-color: var(--color-button-grey);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
   text-align: center;
 }
 
@@ -183,8 +189,9 @@ table {
   font-size: 18px;
   border-radius: 5px;
   line-height: 36px;
-  background-color: rgb(250, 216, 185);
-  border: 1px solid black;
+  background-color: var(--color-button-yellow);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
   text-align: center;
 }
 

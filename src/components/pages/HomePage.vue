@@ -134,9 +134,10 @@ const showDetail = (name: string) => {
 <style scoped>
 .home-layout {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
   gap: 20px;
-  margin: 60px 20px 0 20px;
+  padding: 62px 20px 20px;
+  color: var(--color-text);
 }
 
 /* 上部区域 */
@@ -162,8 +163,9 @@ const showDetail = (name: string) => {
 }
 
 .app-title {
-  font-size: 26px;
-  margin-bottom: 5px;
+  color: var(--color-text);
+  font-size: 28px;
+  margin-bottom: 10px;
   font-weight: 500;
 }
 
@@ -174,14 +176,15 @@ const showDetail = (name: string) => {
 }
 
 .tip-content {
-  height: 300px;
+  min-height: 300px;
   margin-bottom: 20px;
   flex-shrink: 0;
 }
 
 .tip-title {
-  font-size: 26px;
-  margin-bottom: 5px;
+  color: var(--color-text);
+  font-size: 28px;
+  margin-bottom: 10px;
   font-weight: 500;
 }
 

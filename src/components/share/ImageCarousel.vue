@@ -118,8 +118,10 @@ watch(() => props.images, () => {
   display: flex;
   align-items: center;
   overflow: hidden;
-  border-radius: 5px;
+  border-radius: var(--radius-card);
+  background: #111;
 }
+
 
 .main-image {
   flex: 1;
@@ -167,7 +169,7 @@ watch(() => props.images, () => {
   transform: translateY(-50%);
   width: 40px;
   height: 40px;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.62);
   color: white;
   border: none;
   border-radius: 50%;
