@@ -17,7 +17,18 @@
     "title": "更新中心",
     "intro": "一站式更新安同 OS 与应用程序",
     "status1": "个可用系统更新，",
-    "status2": "个应用程序更新"
+    "status2": "个应用程序更新",
+    "managementEyebrow": "软件包管理",
+    "managementTitle": "更新与卸载",
+    "managementIntro": "选择需要处理的软件包，批量更新或卸载前会交给后端操作队列执行。",
+    "refresh": "查找更新",
+    "upgradable": "可更新",
+    "installed": "已安装",
+    "updateSelected": "更新选中",
+    "removeSelected": "卸载选中",
+    "loading": "正在读取软件包状态…",
+    "noUpdates": "暂无可用更新。",
+    "noInstalled": "没有可由 Aoska 管理的已安装软件。"
   },
   "welcome": {
     "sub-title": "四季流光，尽收眼底",
