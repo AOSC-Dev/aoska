@@ -16,6 +16,7 @@ execFileSync(tsc, ['-p', 'tsconfig.frontend-test.json', '--outDir', outDir], {
 
 const { createStubPackageManager } = require(path.join(outDir, 'utils', 'pmStub.js'));
 const { actionLabel, isDestructiveAction, operationHeading } = require(path.join(outDir, 'utils', 'pmPresentation.js'));
+const { selectedPackageNames, batchActionState } = require(path.join(outDir, 'utils', 'pmSelection.js'));
 
 async function main() {
   const pm = createStubPackageManager();
@@ -49,6 +50,15 @@ async function main() {
 
   const installStart = await pm.startInstall(['firefox']);
   assert.match(installStart.unit, /^aoska-stub-install-/);
+
+  const storage = await pm.storageSummary();
+  assert.ok(storage.totalUsedBytes > 0);
+  assert.ok(storage.segments.some((segment) => segment.id === 'aoska'));
+
+  const selection = new Set(['wechat']);
+  assert.deepEqual(selectedPackageNames(updates.packages, selection), ['wechat']);
+  assert.deepEqual(batchActionState('update', updates.packages, new Set()), { enabled: false, count: 0 });
+  assert.deepEqual(batchActionState('update', updates.packages, selection), { enabled: true, count: 1 });
 
   const updateStart = await pm.startUpdate(['wechat']);
   assert.match(updateStart.unit, /^aoska-stub-update-/);

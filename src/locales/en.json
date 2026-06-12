@@ -17,7 +17,18 @@
     "title": "Update Center",
     "intro": "You can upgrades system softwares an apps here",
     "status1": " system softwares and ",
-    "status2": " apps are ready for upgrade"
+    "status2": " apps are ready for upgrade",
+    "managementEyebrow": "Package management",
+    "managementTitle": "Updates & Uninstall",
+    "managementIntro": "Select packages to update or remove; mutating actions are scheduled through the backend operation queue.",
+    "refresh": "Check updates",
+    "upgradable": "Upgradable",
+    "installed": "Installed",
+    "updateSelected": "Update selected",
+    "removeSelected": "Remove selected",
+    "loading": "Reading package state…",
+    "noUpdates": "No updates are available.",
+    "noInstalled": "No Aoska-manageable installed apps."
   },
   "welcome": {
     "sub-title": "Seasons come...",
