@@ -15,6 +15,7 @@ execFileSync(tsc, ['-p', 'tsconfig.frontend-test.json', '--outDir', outDir], {
 });
 
 const { createStubPackageManager } = require(path.join(outDir, 'utils', 'pmStub.js'));
+const { actionLabel, isDestructiveAction, operationHeading } = require(path.join(outDir, 'utils', 'pmPresentation.js'));
 
 async function main() {
   const pm = createStubPackageManager();
@@ -36,6 +37,18 @@ async function main() {
   assert.equal(wechat.installed, true);
   assert.equal(wechat.upgradable, true);
   assert.equal(wechat.action.primary, 'update');
+
+  const firefox = await pm.packageState('firefox');
+  assert.equal(firefox.name, 'firefox');
+  assert.equal(firefox.installed, false);
+  assert.equal(firefox.action.primary, 'install');
+  assert.equal(actionLabel('install', 'zh'), '安装');
+  assert.equal(actionLabel('remove', 'zh'), '卸载');
+  assert.equal(isDestructiveAction('remove'), true);
+  assert.equal(operationHeading('install', 'running', 'zh'), '正在安装');
+
+  const installStart = await pm.startInstall(['firefox']);
+  assert.match(installStart.unit, /^aoska-stub-install-/);
 
   const updateStart = await pm.startUpdate(['wechat']);
   assert.match(updateStart.unit, /^aoska-stub-update-/);
