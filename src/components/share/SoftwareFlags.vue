@@ -1,14 +1,15 @@
 <template>
   <div class="software-flags">
-    <component :is="icons[type]" class="img"/>
+    <component :is="icons[normalizedType]" class="img"/>
     <div class="info">
-      <div class="title">{{ $t(`tags.${type}.title`) }}</div>
-      <div class="description">{{ $t(`tags.${type}.description`) }}</div>
+      <div class="title">{{ $t(`tags.${normalizedType}.title`) }}</div>
+      <div class="description">{{ $t(`tags.${normalizedType}.description`) }}</div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import VerifiedIcon from '../../assets/icons/verified.svg';
 import NonNativeIcon from '../../assets/icons/non-native.svg';
 import ServiceLimitedIcon from '../../assets/icons/service-limited.svg';
@@ -16,12 +17,14 @@ import UnofficialIcon from '../../assets/icons/unofficial.svg';
 import WindowsIcon from '../../assets/icons/windows.svg';
 import TelemetyIcon from '../../assets/icons/telemetry.svg';
 
-defineProps({
+const props = defineProps({
   type: {
     type: String,
-    validator: (value) => ['verified', 'non_native', 'service_limited', 'unofficial', 'windows_app', 'telemetry'].includes(value)
+    validator: (value) => ['verified', 'non_native', 'service_limited', 'unofficial', 'unoffical', 'windows_app', 'telemetry'].includes(value)
   }
 });
+
+const normalizedType = computed(() => props.type === 'unoffical' ? 'unofficial' : props.type);
 
 const icons = {
   "verified": VerifiedIcon,

@@ -20,7 +20,7 @@
         <span class="search-icon">⌕</span>
       </label>
 
-      <div class="window-controls">
+      <div v-if="isTauriRuntime" class="window-controls">
         <button class="win-btn" title="Minimize" @click="onMinimize()">⌄</button>
         <button class="win-btn" title="Maximize" @click="onMaximize()">⌃</button>
         <button class="win-btn close" title="Close" @click="onClose()">×</button>
@@ -32,6 +32,8 @@
 <script setup lang="ts">
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
+const isTauriRuntime = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+
 const navItems = [
   { to: "/home", label: "app.home" },
   { to: "/category/working", label: "app.working" },
@@ -42,11 +44,11 @@ const navItems = [
   { to: "/updates", label: "app.updates" },
 ];
 
-const appWindow = getCurrentWindow();
+const appWindow = isTauriRuntime ? getCurrentWindow() : null;
 
-const onMinimize = () => { appWindow.minimize(); };
-const onMaximize = () => { appWindow.toggleMaximize(); };
-const onClose = () => { appWindow.close(); };
+const onMinimize = () => { void appWindow?.minimize(); };
+const onMaximize = () => { void appWindow?.toggleMaximize(); };
+const onClose = () => { void appWindow?.close(); };
 </script>
 
 <style scoped>
