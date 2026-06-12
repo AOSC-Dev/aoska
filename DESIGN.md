@@ -16,6 +16,7 @@
   - Current shared/page components under `src/components/`.
   - Current theme tokens in `src/assets/styles/variables.css`.
   - Current package-management backend in `src-tauri/src/command.rs`, `src-tauri/src/common/omactl.rs`, and `src-tauri/src/common/omactl_types.rs`.
+  - Intended catalog repository `https://github.com/AOSC-Dev/aosc-os-asmr` (`aosc-os-asmr`), currently present locally as an empty repository skeleton.
   - Local governance drafts: `docs/rfc/RFC-0001.md` and `gov/adr/ADR-0001-*`.
 
 ## Brand
@@ -37,7 +38,7 @@
 
 - Goals:
   - Present aoska as an AOSC OS software store, not a full package-manager GUI.
-  - Let users discover apps through curated catalog metadata, categories, recommendations, and search.
+  - Let users discover apps through ASMR-backed curated catalog metadata, categories, recommendations, and search.
   - Let users install, remove, open, and update apps with clear safety boundaries.
   - Make system/package update status understandable: no updates, software updates, system updates, security updates, stale update state, failure, completion, and manual-action-required.
   - Support dark mode as a first-class visual target.
@@ -58,7 +59,7 @@
   - Users installing apps from mixed sources, including AOSC repositories, official installers/download pages, and compatibility layers.
 - User jobs:
   - Discover recommended or category-specific software.
-  - Search for an app.
+  - Search for an app from the ASMR catalog, including manually maintained entries that may not exist in the AOSC package repository.
   - Inspect app screenshots, description, metadata, support/compatibility flags, and source.
   - Install, open, update, or remove an app.
   - Review all installed/updatable software and batch update/remove selections.
@@ -232,7 +233,7 @@
   - Disable actions while another package-changing operation is active.
   - Disable `更新选中` / `卸载选中` until at least one eligible package is selected.
 - Offline/slow network:
-  - Search/catalog fetch and update checks should distinguish network failure from no updates.
+  - ASMR catalog fetch/search and update checks should distinguish network failure from no updates.
   - Service-limited flags may explain regional/network availability constraints for specific apps.
 
 ## Content voice
@@ -268,7 +269,8 @@
   - Search and update checks should provide responsive loading states.
 - Compatibility constraints:
   - Package-management state should come from omactl, not direct `oma-pm` or `oma-tum` dependencies.
-  - Static catalog metadata remains owned by aoska.
+  - Static catalog metadata is consumed from ASMR/aosc-os-asmr and remains separate from omactl.
+  - Search, categories, recommendations, app detail media, source labels, and manual/link-only entries must come from ASMR catalog data rather than omactl search.
   - omactl should provide structured JSON for package-management state, operation starts, unit status, unit results, and unit logs.
 - Package-management/API requirements implied by the design:
   - Tauri package-manager commands should use the `pm_*` surface rather than raw `fetch_update_*` or `oma_*` command names.
@@ -311,7 +313,7 @@
 
 ## Open questions
 
-- [ ] What is the canonical catalog schema for app source labels such as `官方安装包`, `官方下载页面`, `Flathub`, `安同 OS 软件仓库`, and `Snapcraft`?
+- [ ] What is the canonical ASMR catalog schema for app source labels such as `官方安装包`, `官方下载页面`, `Flathub`, `安同 OS 软件仓库`, and `Snapcraft`?
 - [ ] Which source types are installable directly by aoska, and which require a `下载页面` or manual operation?
 - [ ] What exact package grouping defines `系统更新` versus ordinary `软件更新`?
 - [ ] Which storage numbers can omactl/oma provide reliably, and which are estimated from the system disk?

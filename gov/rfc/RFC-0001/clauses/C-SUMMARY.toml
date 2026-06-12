@@ -10,8 +10,8 @@ status = "active"
 text = """
 This RFC specifies how the aoska backend consumes package-management capabilities through the omactl CLI/JSON contract.
 
-**Scope:** This RFC covers aoska backend dependency boundaries, command invocation, capability checks, JSON parsing, error handling, update planning, package operation execution, unit state presentation, and static-catalog separation.
+**Scope:** This RFC covers aoska backend dependency boundaries, command invocation, capability checks, JSON parsing, error handling, update planning, package operation execution, unit state presentation, and static-catalog separation. It also fixes the app-store search boundary: ASMR/static catalog data owns discovery/search, while omactl owns package-manager state and operations.
 
-**Out of scope:** This RFC does not define the omactl producer API, visual UI layout, static software catalog metadata, or concrete frontend component structure. The omactl producer contract is tracked in the omactl repository as `docs/rfc/RFC-0001.md` at `https://github.com/AOSC-Dev/omactl`; this repository-local RFC owns aoska's consumer obligations.
+**Out of scope:** This RFC does not define the ASMR catalog schema, the omactl producer API, visual UI layout, static software catalog metadata, or concrete frontend component structure. The omactl producer contract is tracked in the omactl repository as `docs/rfc/RFC-0001.md` at `https://github.com/AOSC-Dev/omactl`; this repository-local RFC owns aoska's consumer obligations.
 
 **Rationale:** aoska should be a GUI and orchestration layer over omactl rather than a second package-manager frontend linked directly to oma internals."""
