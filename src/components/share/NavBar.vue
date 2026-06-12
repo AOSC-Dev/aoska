@@ -15,10 +15,10 @@
       </RouterLink>
     </div>
     <div class="nav-right">
-      <label class="search-input" :aria-label="$t('app.search')">
-        <input :placeholder="$t('app.search')" />
-        <span class="search-icon">⌕</span>
-      </label>
+      <form class="search-input" :aria-label="$t('app.search')" role="search" @submit.prevent="submitSearch">
+        <input v-model="searchQuery" :placeholder="$t('app.search')" @keydown.enter.prevent="submitSearch" />
+        <button class="search-icon" type="submit" :aria-label="$t('app.search')">⌕</button>
+      </form>
 
       <div v-if="isTauriRuntime" class="window-controls">
         <button class="win-btn" title="Minimize" @click="onMinimize()">⌄</button>
@@ -30,9 +30,15 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { normalizeSearchQuery } from '../../utils/catalogSearch';
 
 const isTauriRuntime = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+const route = useRoute();
+const router = useRouter();
+const searchQuery = ref(typeof route.query.q === 'string' ? route.query.q : '');
 
 const navItems = [
   { to: "/home", label: "app.home" },
@@ -49,6 +55,20 @@ const appWindow = isTauriRuntime ? getCurrentWindow() : null;
 const onMinimize = () => { void appWindow?.minimize(); };
 const onMaximize = () => { void appWindow?.toggleMaximize(); };
 const onClose = () => { void appWindow?.close(); };
+
+watch(
+  () => route.query.q,
+  (query) => {
+    searchQuery.value = typeof query === 'string' ? query : '';
+  },
+);
+
+function submitSearch() {
+  const query = normalizeSearchQuery(searchQuery.value);
+  void router.push(query.length > 0
+    ? { path: '/view-all', query: { q: query } }
+    : { path: '/view-all' });
+}
 </script>
 
 <style scoped>
@@ -127,7 +147,11 @@ const onClose = () => { void appWindow?.close(); };
 
 .search-icon {
   padding: 0 7px;
+  border: 0;
+  background: transparent;
   color: rgba(255, 255, 255, 0.86);
+  cursor: pointer;
+  font-size: 16px;
 }
 
 .window-controls {

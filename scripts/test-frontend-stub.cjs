@@ -17,6 +17,27 @@ execFileSync(tsc, ['-p', 'tsconfig.frontend-test.json', '--outDir', outDir], {
 const { createStubPackageManager } = require(path.join(outDir, 'utils', 'pmStub.js'));
 const { actionLabel, isDestructiveAction, operationHeading } = require(path.join(outDir, 'utils', 'pmPresentation.js'));
 const { selectedPackageNames, batchActionState } = require(path.join(outDir, 'utils', 'pmSelection.js'));
+const { flattenCatalogPackages, searchCatalogPackages } = require(path.join(outDir, 'utils', 'catalogSearch.js'));
+
+const catalogIndex = {
+  version: 1,
+  generated_at: '2026-06-12T00:00:00.000Z',
+  packages: [
+    {
+      category: 'working',
+      packages: [
+        { name: 'wechat', intro: '用户超十亿的即时聊天软件', icon: 'wechat.png' },
+        { name: 'firefox', intro: '快速、安全的网页浏览器', icon: 'firefox.png' },
+      ],
+    },
+    {
+      category: 'games',
+      packages: [
+        { name: 'steam', intro: '数字游戏分发平台', icon: 'steam.png' },
+      ],
+    },
+  ],
+};
 
 async function main() {
   const pm = createStubPackageManager();
@@ -59,6 +80,12 @@ async function main() {
   assert.deepEqual(selectedPackageNames(updates.packages, selection), ['wechat']);
   assert.deepEqual(batchActionState('update', updates.packages, new Set()), { enabled: false, count: 0 });
   assert.deepEqual(batchActionState('update', updates.packages, selection), { enabled: true, count: 1 });
+
+  assert.deepEqual(flattenCatalogPackages(catalogIndex).map((pkg) => pkg.name), ['wechat', 'firefox', 'steam']);
+  assert.deepEqual(searchCatalogPackages(catalogIndex, '').map((pkg) => pkg.name), ['wechat', 'firefox', 'steam']);
+  assert.deepEqual(searchCatalogPackages(catalogIndex, 'FIRE').map((pkg) => pkg.name), ['firefox']);
+  assert.deepEqual(searchCatalogPackages(catalogIndex, '聊天').map((pkg) => pkg.name), ['wechat']);
+  assert.deepEqual(searchCatalogPackages(catalogIndex, 'not-present').map((pkg) => pkg.name), []);
 
   const updateStart = await pm.startUpdate(['wechat']);
   assert.match(updateStart.unit, /^aoska-stub-update-/);
