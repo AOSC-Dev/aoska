@@ -2,6 +2,46 @@
 
 This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
 
+## AOSC OS Development
+
+Install the Tauri and package-manager integration prerequisites:
+
+```sh
+oma install nodejs pnpm rustc cargo pkg-config webkit2gtk
+```
+
+`pkg-config` is the AOSC package that provides the `pkg-config` command (via
+`pkgconf`) required by the GTK/WebKit Rust bindings used by Tauri. Without it,
+release builds fail while compiling crates such as `glib-sys`.
+
+Install `omactl` before testing real package operations:
+
+```sh
+oma install omactl
+```
+
+Start aoska from an AOSC graphical terminal so polkit can show the password
+prompt for `systemd-run` operations:
+
+```sh
+pnpm install
+pnpm tauri dev
+```
+
+Build a release binary and distro packages:
+
+```sh
+pnpm tauri build
+```
+
+If AppImage helper downloads are unavailable, the native binary can still be
+compiled with:
+
+```sh
+cd src-tauri
+cargo build --release --bin aoska
+```
+
 ## Recommended IDE Setup
 
 - [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
