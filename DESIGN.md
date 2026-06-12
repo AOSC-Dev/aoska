@@ -15,7 +15,7 @@
   - Current routes in `src/router/index.ts`.
   - Current shared/page components under `src/components/`.
   - Current theme tokens in `src/assets/styles/variables.css`.
-  - Current package-management backend in `src-tauri/src/command.rs`, `src-tauri/src/common/oma.rs`, and `src-tauri/src/common/omactl.rs`.
+  - Current package-management backend in `src-tauri/src/command.rs`, `src-tauri/src/common/omactl.rs`, and `src-tauri/src/common/omactl_types.rs`.
   - Local governance drafts: `docs/rfc/RFC-0001.md` and `gov/adr/ADR-0001-*`.
 
 ## Brand
@@ -259,6 +259,7 @@
   - Frontend: Vue 3, Vite, TypeScript, vue-router, vue-i18n.
   - App shell: Tauri 2.
   - Styling is currently plain Vue/CSS; token work should extend `src/assets/styles/variables.css`.
+  - Frontend development should run against a deterministic stub package-manager backend outside Tauri, while real package operations remain behind the Tauri `pm_*` command surface.
 - Design-token constraints:
   - Current token file only has a few light background colors.
   - Dark mode requires explicit tokens for surfaces, text, borders, focus, warning, danger, success, info, and accent.
