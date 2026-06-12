@@ -1,5 +1,5 @@
 <template>
-  <div class="header" :style="{ backgroundImage: `url(${appBannerImg}), linear-gradient(to right, #e7e7e7, #f3f3f3)` }">
+  <div class="header" :style="{ backgroundImage: `linear-gradient(90deg, rgba(32,35,38,0.98), rgba(32,35,38,0.72), rgba(32,35,38,0.3)), url(${appBannerImg})` }">
     <div class="app-banner" >
       <img :src="appIcon" class="app-img" alt="App Icon">
       <div class="app-intro">
@@ -41,8 +41,10 @@ defineProps({
 .header {
   display: flex;
   height: 192px;
-  border-radius: 5px;
-  margin: 60px 20px 10px 20px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  margin: 62px 20px 10px;
   background-size: cover;
   background-position: center;
 }
@@ -61,10 +63,13 @@ defineProps({
 }
 
 .name {
+  color: var(--color-text);
   font-size: 40px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
 .intro {
+  color: var(--color-text-muted);
   font-size: 18px;
 }
 </style>

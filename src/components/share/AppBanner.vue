@@ -1,80 +1,75 @@
 <template>
-  <div class="banner">
-    <img :src="icon" alt="安同社区的logo">
-    <div>
+  <div class="banner" tabindex="0" role="button">
+    <img :src="icon" alt="" class="icon">
+    <div class="copy">
       <div class="name">{{ name }}</div>
-      <!-- <div class="info">{{ size }} | {{ version }}</div> -->
       <div class="intro">{{ intro }}</div>
-      </div>
-      <div class="button">{{ $t("appBanner.install") }}</div>
+    </div>
+    <div class="button">{{ $t("appBanner.install") }}</div>
   </div>
 </template>
 
 <script setup lang='ts'>
-// 接收参数
 defineProps<{
   name: string,
   intro: string,
   icon: string,
-  // version: string,
-  // size: string,
 }>();
 </script>
 
 <style scoped>
 .banner {
   display: flex;
+  align-items: center;
   width: 100%;
-  height: 80px;
-  background-color: white;
-  border-bottom: 1px solid black;
+  min-height: 82px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background-color: var(--color-surface);
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .banner:hover {
-  background-color: rgb(231, 231, 231);
+  background-color: var(--color-surface-hover);
 }
 
-img {
-  width: 60px;
-  height: 60px;
-  margin: 10px;
+.icon {
+  width: 58px;
+  height: 58px;
+  margin: 12px;
+  object-fit: contain;
+}
+
+.copy {
+  min-width: 0;
 }
 
 .name {
-  margin-top: 8px;
-  margin-left: 5px;
-  font-size: 24px;
-  line-height: 24px;
-}
-
-.info {
-  margin-top: 3px;
-  margin-left: 5px;
-  font-size: 16px;
-  line-height: 16px;
-  color: rgb(84, 84, 84);
+  color: var(--color-text);
+  font-size: 22px;
+  line-height: 26px;
 }
 
 .intro {
   margin-top: 4px;
-  margin-top: 3px;
-  margin-left: 5px;
-  font-size: 16px;
-  line-height: 16px;
+  color: var(--color-text-muted);
+  font-size: 15px;
 }
 
 .button {
-  margin: auto 15px 15px auto;
-  width: 120px;
+  margin: auto 15px auto auto;
+  min-width: 120px;
   height: 35px;
-  border: 1px solid black;
-  border-radius: 5px;
-  font-size: 20px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  background-color: var(--color-button-green);
+  font-size: 18px;
   text-align: center;
-  line-height: 35px;
+  line-height: 33px;
 }
 
 .button:hover {
-  background-color: rgb(206, 255, 214);
+  border-color: var(--color-text);
 }
 </style>

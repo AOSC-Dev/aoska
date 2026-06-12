@@ -1,88 +1,95 @@
 {
-    "app": {
-        "home": "Home",
-        "working": "Working",
-        "games": "Games",
-        "video": "Video",
-        "creating": "Creating",
-        "view-all": "View All",
-        "updates": "Updates"
+  "app": {
+    "home": "Home",
+    "working": "Working",
+    "games": "Games",
+    "video": "Video",
+    "creating": "Creating",
+    "view-all": "Search Results",
+    "updates": "Updates & Uninstall",
+    "search": "Search packages"
+  },
+  "home": {
+    "appTitle": "Popular Apps",
+    "tipTitle": "Tips"
+  },
+  "updates": {
+    "title": "Update Center",
+    "intro": "You can upgrades system softwares an apps here",
+    "status1": " system softwares and ",
+    "status2": " apps are ready for upgrade"
+  },
+  "welcome": {
+    "sub-title": "Seasons come...",
+    "title": "AOSC 2024 wallpaper gallary"
+  },
+  "noUpdate": {
+    "title": "All is well!",
+    "status": "All system coponent is latest",
+    "greeting": "Wish you a good day",
+    "button": "Update"
+  },
+  "systemUpdate": {
+    "title": "Update is available!",
+    "status1": "There are ",
+    "status2": " updates available",
+    "greeting": "All updates are common ones",
+    "button": "Update"
+  },
+  "unknownSecurityUpdate": {
+    "title": "Updates are available",
+    "status1": "There are ",
+    "status2": " updates available",
+    "greeting": "Security classification is unavailable; review update details",
+    "button": "Update"
+  },
+  "securityUpdate": {
+    "title": "Attention!",
+    "status1": "There are ",
+    "status2": " security updates",
+    "greeting1": "",
+    "greeting2": " updates in total is available",
+    "button": "Update"
+  },
+  "appBanner": {
+    "install": "install"
+  },
+  "pages": {
+    "ranking": "Ranking:",
+    "name": "Name",
+    "download": "Most download",
+    "update": "Update time"
+  },
+  "tags": {
+    "unofficial": {
+      "title": "Unofficial",
+      "description": "Not optimized yet, function may be limited."
     },
-    "home": {
-        "appTitle": "Popular Apps",
-        "tipTitle": "Tips"
+    "verified": {
+      "title": "Quality Verified",
+      "description": "Tested by maintainers, fully functional."
     },
-    "updates": {
-        "title": "Update Center",
-        "intro": "You can upgrades system softwares an apps here",
-        "status1": " system softwares and ",
-        "status2": " apps are ready for upgrade"
+    "non_native": {
+      "title": "Non-Native",
+      "description": "Requires emulator translation."
     },
-    "welcome": {
-        "sub-title": "Seasons come...",
-        "title": "AOSC 2024 wallpaper gallary"
+    "windows_app": {
+      "title": "Windows® Program",
+      "description": "Designed for Windows® system, runs via wine."
     },
-    "noUpdate": {
-        "title": "All is well!",
-        "status": "All system coponent is latest",
-        "greeting": "Wish you a good day",
-        "button": "Update"
+    "telemetry": {
+      "title": "Telemety",
+      "description": "Known to collect user data, please review settings."
     },
-    "systemUpdate": {
-        "title": "Update is available!",
-        "status1": "There are ",
-        "status2": " updates available",
-        "greeting": "All updates are common ones",
-        "button": "Update"
-    },
-    "unknownSecurityUpdate": {
-        "title": "Updates are available",
-        "status1": "There are ",
-        "status2": " updates available",
-        "greeting": "Security classification is unavailable; review update details",
-        "button": "Update"
-    },
-    "securityUpdate": {
-        "title": "Attention!",
-        "status1": "There are ",
-        "status2": " security updates",
-        "greeting1": "",
-        "greeting2": " updates in total is available",
-        "button": "Update"
-    },
-    "appBanner": {
-        "install": "install"
-    },
-    "pages": {
-        "ranking": "Ranking:",
-        "name": "Name",
-        "download": "Most download",
-        "update": "Update time"
-    },
-    "tags": {
-        "unofficial": {
-            "title": "Unofficial",
-            "description": "Not optimized yet, function may be limited."
-        },
-        "verified": {
-            "title": "Quality Verified",
-            "description": "Tested by maintainers, fully functional."
-        },
-        "non_native": {
-            "title": "Non-Native",
-            "description": "Requires emulator translation."
-        },
-        "windows_app": {
-            "title": "Windows® Program",
-            "description": "Designed for Windows® system, runs via wine."
-        },
-        "telemetry": {
-            "title": "Telemety",
-            "description": "Known to collect user data, please review settings."
-        },
-        "service_limited": {
-            "title": "Service Limited",
-            "description": "Service may be limited by location."
-        }
+    "service_limited": {
+      "title": "Service Limited",
+      "description": "Service may be limited by location."
     }
+  },
+  "checkingUpdate": {
+    "title": "Checking for updates",
+    "status": "Elapsed 00:00",
+    "greeting": "Reading package state",
+    "button": "Cancel"
+  }
 }

@@ -2,40 +2,36 @@
   <div class="navigator" data-tauri-drag-region>
     <div class="nav-left">
       <RouterLink
-v-for="item in navItems" :key="item.to" :to="item.to" custom v-slot="{ href, isActive, navigate }"
-        class="router-link">
+        v-for="item in navItems"
+        :key="item.to"
+        :to="item.to"
+        custom
+        v-slot="{ href, isActive, navigate }"
+        class="router-link"
+      >
         <a :href="href" :class="{ active: isActive }" @click="navigate">
           {{ $t(item.label) }}
         </a>
       </RouterLink>
     </div>
     <div class="nav-right">
-      <div class="search-input">
-        <input class="search-input" :placeholder="$t('app.search')" />
-      </div>
-      
+      <label class="search-input" :aria-label="$t('app.search')">
+        <input :placeholder="$t('app.search')" />
+        <span class="search-icon">⌕</span>
+      </label>
+
       <div class="window-controls">
-        <button class="win-btn" title="Minimize" @click="onMinimize()">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-            <path d="M6 10l6 6 6-6" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-        <button class="win-btn" title="Maximize" @click="onMaximize()">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-            <path d="M6 14l6-6 6 6" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-        <button class="win-btn" title="Close" @click="onClose()">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="white">
-            <path d="M6 6l12 12M18 6L6 18" stroke="white" stroke-width="2" stroke-linecap="round" />
-          </svg>
-        </button>
+        <button class="win-btn" title="Minimize" @click="onMinimize()">⌄</button>
+        <button class="win-btn" title="Maximize" @click="onMaximize()">⌃</button>
+        <button class="win-btn close" title="Close" @click="onClose()">×</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { getCurrentWindow } from '@tauri-apps/api/window';
+
 const navItems = [
   { to: "/home", label: "app.home" },
   { to: "/category/working", label: "app.working" },
@@ -46,7 +42,6 @@ const navItems = [
   { to: "/updates", label: "app.updates" },
 ];
 
-import { getCurrentWindow } from '@tauri-apps/api/window';
 const appWindow = getCurrentWindow();
 
 const onMinimize = () => { appWindow.minimize(); };
@@ -54,99 +49,108 @@ const onMaximize = () => { appWindow.toggleMaximize(); };
 const onClose = () => { appWindow.close(); };
 </script>
 
-<style>
+<style scoped>
 .navigator {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  height: 40px;
-  background-color: rgb(0, 53, 5);
+  height: 42px;
+  background:
+    linear-gradient(90deg, rgba(2, 47, 17, 0.96), rgba(8, 83, 27, 0.84)),
+    radial-gradient(circle at 75% 10%, rgba(255, 255, 255, 0.16), transparent 30%);
   position: fixed;
   top: 0;
   left: 0;
   z-index: 9999;
-  padding: 10px 10px;
-  box-sizing: border-box;
-  border-radius: 5px 5px 0px 0px;
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-.router-link {
-  height: 100%;
-}
-
-.nav-left {
+.nav-left,
+.nav-right {
   display: flex;
   align-items: center;
 }
 
 .navigator a {
-  display: inline-block;
-  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 10px;
   color: white;
-  font-size: 18px;
-  line-height: 40px;
-  margin: 0 5px;
-  padding: 0 8px;
-  height: 100%;
+  font-size: 17px;
+  text-decoration: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
   transition: background 0.2s, box-shadow 0.2s;
 }
 
 .navigator a:hover {
-  background-color: #00000080;
+  background-color: rgba(0, 0, 0, 0.24);
 }
 
 .navigator a.active {
-  box-shadow: inset 0 -5px 0 0 rgb(29, 148, 178);
+  box-shadow: inset 0 -4px 0 0 var(--color-accent);
 }
 
 .nav-right {
-  display: flex;
-  align-items: center;
   gap: 10px;
 }
 
-.nav-right input {
-  height: 24px;
+.search-input {
+  display: flex;
+  align-items: center;
+  width: 260px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-control);
+  background-color: rgba(0, 0, 0, 0.16);
+  color: white;
+}
+
+.search-input input {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
   padding: 0 8px;
-  font-size: 14px;
-  border-radius: 4px;
-  border: none;
+  border: 0;
   outline: none;
+  background: transparent;
+  color: white;
+}
+
+.search-input input::placeholder {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.search-icon {
+  padding: 0 7px;
+  color: rgba(255, 255, 255, 0.86);
 }
 
 .window-controls {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-left: 10px;
 }
 
 .win-btn {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
+  border: 0;
   border-radius: 50%;
-  border: none;
-  background-color: transparent;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
   cursor: pointer;
-  transition: background-color 0.2s;
+  line-height: 20px;
 }
 
 .win-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.22);
 }
 
-.search-input {
-  background-color: transparent;
-  color: white;
-  border: 1px solid #a8bca8;
-  border-radius: 5px;
-  width: 218px;
-  height: 24px;
+.win-btn.close {
+  background: rgba(255, 255, 255, 0.86);
+  color: #0f3a19;
 }
-
 </style>

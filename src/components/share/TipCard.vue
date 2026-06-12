@@ -1,5 +1,5 @@
 <template>
-  <div class="card">
+  <div class="card" tabindex="0" role="button">
     <div class="date">
       <div class="day">{{ day }}</div>
       <div class="month">{{ month }}</div>
@@ -12,7 +12,6 @@
 </template>
 
 <script setup lang="ts">
-// 接收参数
 defineProps<{
   month: string,
   day: number,
@@ -25,27 +24,26 @@ defineProps<{
 .card {
   position: relative;
   width: 100%;
-  height: 72px;
-  border-radius: 5px;
+  min-height: 78px;
+  border-radius: var(--radius-card);
   display: flex;
   overflow: hidden;
   cursor: pointer;
+  background-color: var(--color-surface);
 }
 
 .card::before {
   content: "";
   position: absolute;
-  top: 0; left: 0; bottom: 0;
-  width: 72px;
-  background-color: #f7f7f7;
-  border-radius: 5px;
+  inset: 0 auto 0 0;
+  width: 78px;
+  background-color: var(--color-surface-raised);
   transition: width 0.3s ease;
   z-index: 0;
 }
 
 .card:hover::before {
   width: 100%;
-  border-radius: 5px;
 }
 
 .card > * {
@@ -54,40 +52,51 @@ defineProps<{
 }
 
 .date {
-  width: 72px;
-  height: 72px;
-  margin-right: 8px;
-  background-color: #f7f7f7;
-  border-radius: 5px;
+  width: 78px;
+  min-width: 78px;
+  min-height: 78px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 5px
+  gap: 5px;
 }
 
 .day {
-  font-size: 30px;
+  color: var(--color-text);
+  font-size: 28px;
   line-height: 28px;
   text-align: center;
 }
 
 .month {
-  font-size: 16px;
-  line-height: 16px;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  line-height: 15px;
   text-align: center;
 }
 
+.content {
+  min-width: 0;
+  padding: 15px 12px 12px 10px;
+}
+
 .title {
-  font-size: 20px;
+  color: var(--color-text);
+  font-size: 19px;
   line-height: 20px;
-  margin: 15px 0 10px 5px;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .intro {
+  margin-top: 8px;
+  color: var(--color-text-muted);
   font-size: 14px;
   line-height: 14px;
-  margin-left: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
 </style>

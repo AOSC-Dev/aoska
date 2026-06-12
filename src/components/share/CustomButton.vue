@@ -1,7 +1,7 @@
 <template>
-  <button 
-    :class="['button', size, color]" 
-    :style="{ 
+  <button
+    :class="['button', size, color]"
+    :style="{
       width: width ? (isNaN(width) ? width : width + 'px') : null,
       height: height ? (isNaN(height) ? height : height + 'px') : null,
       lineHeight: height ? (isNaN(height) ? height : height + 'px') : null
@@ -21,7 +21,7 @@ defineProps({
   color: {
     type: String,
     default: '',
-    validator: (value) => ['green', 'grey', 'yellow', 'red', ''].includes(value)
+    validator: (value) => ['green', 'grey', 'yellow', 'red', 'blue', ''].includes(value)
   },
   width: {
     type: [String, Number],
@@ -37,16 +37,33 @@ defineProps({
 <style scoped>
 .button {
   margin: auto 15px 15px auto;
-  border: 1px solid black;
-  border-radius: 5px;
+  min-width: 128px;
+  min-height: 35px;
+  padding: 0 18px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background-color: var(--color-button-grey);
+  color: var(--color-text);
   font-size: 18px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 128px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.button:hover {
+  border-color: var(--color-text);
+  background-color: var(--color-surface-hover);
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
 }
 
 .small {
+  min-width: 96px;
   font-size: 14px;
 }
 
@@ -54,19 +71,28 @@ defineProps({
   font-size: 18px;
 }
 
+.large {
+  min-height: 42px;
+  font-size: 20px;
+}
+
 .green {
-  background-color: #ceffd6;
+  background-color: var(--color-button-green);
 }
 
 .grey {
-  background-color: #f3f3f3;
+  background-color: var(--color-button-grey);
 }
 
 .yellow {
-  background-color: #fad8b9;
+  background-color: var(--color-button-yellow);
 }
 
 .red {
-  background-color: #ffd9ce;
+  background-color: var(--color-button-red);
+}
+
+.blue {
+  background-color: var(--color-button-blue);
 }
 </style>

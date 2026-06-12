@@ -51,15 +51,18 @@ const showDetail = (name: string) => {
 
 <style scoped>
 .working {
-  margin: 60px 20px 20px 20px;
+  margin: 0;
+  padding: 62px 20px 20px;
+  color: var(--color-text);
 }
 
 .ranking {
   height: 40px;
   font-size: 18px;
   line-height: 40px;
-  background-color: rgb(206, 233, 255);
-  border-radius: 5px 5px 0 0;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-info);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
 }
 
 .ranking span {
