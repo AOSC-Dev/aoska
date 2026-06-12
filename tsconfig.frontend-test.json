@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "rootDir": "src",
+    "types": [],
+    "noEmit": false
+  },
+  "include": [
+    "src/types/pm.ts",
+    "src/utils/pmStub.ts"
+  ]
+}
