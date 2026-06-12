@@ -32,7 +32,7 @@ aoska MUST require `unit.cancel.v1` before enabling operation cancellation contr
 
 aoska MUST require `unit.status.v1`, `unit.result.v1`, and `unit.logs.v1` before presenting scheduled operation progress, terminal results, or operation logs respectively.
 
-aoska MAY enable live package search only when `query.search.v1` is present.
+aoska MUST NOT gate app-store search, category browsing, recommendations, or ASMR catalog detail rendering on any omactl capability.
 
 aoska MAY enable package-manager-derived storage summaries only when `query.storage.v1` or an equivalent future storage capability is present.
 
@@ -44,4 +44,4 @@ aoska SHOULD present a user-facing diagnostic when omactl or oma is too old for 
 
 aoska SHOULD include the missing capability identifier in developer-facing diagnostics.
 
-**Rationale:** The migration moves failures from compile-time crate availability to runtime CLI capability availability, so aoska needs explicit capability gates."""
+**Rationale:** The migration moves failures from compile-time crate availability to runtime CLI capability availability, so aoska needs explicit capability gates. Catalog discovery remains a separate ASMR concern and should fail as catalog/network state rather than as an omactl integration error."""
