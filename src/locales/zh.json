@@ -69,7 +69,12 @@
     "ranking": "排序方式：",
     "name": "软件名称",
     "download": "最多下载",
-    "update": "最近更新"
+    "update": "最近更新",
+    "allApps": "全部软件",
+    "searchResults": "搜索结果",
+    "resultCount": "{count} 个结果",
+    "emptySearch": "没有找到匹配的软件包。",
+    "emptyCatalog": "暂无可显示的软件包。"
   },
   "tags": {
     "unofficial": {

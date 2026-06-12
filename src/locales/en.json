@@ -69,7 +69,12 @@
     "ranking": "Ranking:",
     "name": "Name",
     "download": "Most download",
-    "update": "Update time"
+    "update": "Update time",
+    "allApps": "All apps",
+    "searchResults": "Search results",
+    "resultCount": "{count} results",
+    "emptySearch": "No matching packages found.",
+    "emptyCatalog": "No packages to show."
   },
   "tags": {
     "unofficial": {
