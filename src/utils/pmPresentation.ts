@@ -57,11 +57,13 @@ export function operationHeading(
 ): string {
   const normalized = normalizeLocale(locale);
   if (normalized === 'en') {
+    if (state === 'unknown') return 'Operation status unavailable';
     if (state === 'succeeded') return `${operationLabels.en[operation]} complete`;
     if (state === 'failed') return `${operationLabels.en[operation]} failed`;
     if (state === 'cancelled') return `${operationLabels.en[operation]} cancelled`;
     return operationLabels.en[operation];
   }
+  if (state === 'unknown') return '无法确认操作状态';
   if (state === 'succeeded') return `${operationLabels.zh[operation]}完成`;
   if (state === 'failed') return `${operationLabels.zh[operation]}失败`;
   if (state === 'cancelled') return `${operationLabels.zh[operation]}已取消`;

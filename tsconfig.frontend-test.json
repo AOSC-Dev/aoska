@@ -13,6 +13,8 @@
   "include": [
     "src/types/pm.ts",
     "src/utils/pmStub.ts",
+    "src/utils/pmTauri.ts",
+    "src/utils/pmOperations.ts",
     "src/utils/pmPresentation.ts",
     "src/utils/pmSelection.ts",
     "src/utils/catalogSearch.ts"

@@ -1,0 +1,18 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-QUERIES"
+title = "Package queries and security metadata"
+kind = "normative"
+status = "active"
+since = "0.1.0"
+
+[content]
+text = """
+`UpdatesList()` returns an OmaOperation with `install` and `remove` arrays, download/disk totals, `has_important_updates`, and `tum`. aoska MUST normalize these fields without treating a missing array as a successful empty update list.
+
+For a catalog package, aoska MUST use `Search(name)` and match the exact result name. `full_match` alone is insufficient because it can match virtual package providers. `Avail`, `Installed`, and `Upgrade` determine installation state; `old_version` is the installed version and `new_version` is the candidate. `GetDescription` returns plain text and MUST NOT be interpreted as package-state JSON.
+
+TUM conventional entries identify package names; cumulative entries refer to topics. aoska MUST deduplicate security package matches against the update set. Empty or unusable TUM data MUST remain unknown because amo can return an empty list after failing to load security metadata. Counts MUST NOT double-count security updates as additional ordinary updates.
+
+amo 0.6.1 has no complete installed-package enumeration. `Search("")` fails and MUST NOT be used as an installed inventory. The full installed list and storage summary MUST remain unavailable until the daemon exposes suitable data."""

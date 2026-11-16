@@ -3,7 +3,7 @@
 ## Source of truth
 
 - Status: Draft
-- Last refreshed: 2026-06-12
+- Last refreshed: 2026-11-17
 - Primary product surfaces:
   - Home / recommendations.
   - Category, view-all, and search-result browsing.
@@ -15,9 +15,10 @@
   - Current routes in `src/router/index.ts`.
   - Current shared/page components under `src/components/`.
   - Current theme tokens in `src/assets/styles/variables.css`.
-  - Current package-management backend in `src-tauri/src/command.rs`, `src-tauri/src/common/omactl.rs`, and `src-tauri/src/common/omactl_types.rs`.
+  - The amo D-Bus integration behind `src-tauri/src/command.rs` and the frontend `PackageManagerClient`.
   - Intended catalog repository `https://github.com/AOSC-Dev/aosc-os-asmr` (`aosc-os-asmr`), currently present locally as an empty repository skeleton.
-  - Local governance drafts: `docs/rfc/RFC-0001.md` and `gov/adr/ADR-0001-*`.
+  - Current integration contract: `docs/rfc/RFC-0002.md` and `gov/adr/ADR-0002-*`; these supersede the omactl drafts.
+  - [amo 0.6.1 D-Bus interface](https://github.com/AOSC-Dev/amo/tree/v0.6.1), checked against the installed test-machine service.
 
 ## Brand
 
@@ -48,7 +49,7 @@
   - Make aoska responsible for dependency resolution, TUM/security matching, or APT package-management semantics.
 - Success signals:
   - Users can tell what is installed, what is updatable, what is safe/official/supported, and what operation is currently running.
-  - Package-management UI can be driven by structured data from omactl.
+  - Package-management UI can be driven by structured data from amo.
   - Screens remain readable with imperfect app screenshots and banners.
 
 ## Personas and jobs
@@ -96,7 +97,7 @@
 
 - Principle 1: Separate catalog metadata from package-manager state.
   - Catalog metadata owns app descriptions, screenshots, banners, categories, source labels, flags, and links.
-  - omactl/oma-derived state owns installed state, upgradable state, operation plans, unit status, logs, results, TUM/security classification, and storage/package counts.
+  - amo-derived state owns per-package installation state, updates, transaction plans, progress, results, and TUM metadata. Full installed inventory and storage totals require future daemon capabilities.
 - Principle 2: Prefer structured state over text parsing.
   - UI states should be derived from typed backend data, not terminal output.
 - Principle 3: Make risk visible before action.
@@ -216,15 +217,15 @@
 ## Interaction states
 
 - Loading:
-  - Checking updates: elapsed time, progress indicator if available, cancel action.
-  - Running operation: unit-backed progress/log stream when available.
+  - Checking updates: elapsed time and progress indicator if available; show cancellation only when the backend supports it.
+  - Running operation: amo request progress and the matching final result.
   - Catalog/network fetch: skeletons or placeholders.
 - Empty:
   - No updates: show last check time and `查找更新`.
   - Empty search/category: explain no matching app and offer clear navigation back.
 - Error:
   - Update failed: show a concise reason when known.
-  - Network, permission, package-manager-busy, unsupported capability, systemd failure, and oma execution failure should map to distinct UI states.
+  - Network, permission, package-manager-busy, unsupported capability, D-Bus connection failure, and package execution failure should map to distinct UI states.
   - Manual terminal action should be explicit when GUI cannot safely continue.
 - Success:
   - Update complete: show completion time and acknowledgement.
@@ -262,50 +263,29 @@
   - Styling is currently plain Vue/CSS; token work should extend `src/assets/styles/variables.css`.
   - Frontend development should run against a deterministic stub package-manager backend outside Tauri, while real package operations remain behind the Tauri `pm_*` command surface.
 - Design-token constraints:
-  - Current token file only has a few light background colors.
-  - Dark mode requires explicit tokens for surfaces, text, borders, focus, warning, danger, success, info, and accent.
+  - Extend the existing dark tokens for surfaces, text, borders, focus, warning, danger, success, info, and accent.
 - Performance constraints:
   - Avoid loading all heavy screenshots/media before the detail page needs them.
   - Search and update checks should provide responsive loading states.
 - Compatibility constraints:
-  - Package-management state should come from omactl, not direct `oma-pm` or `oma-tum` dependencies.
-  - Static catalog metadata is consumed from ASMR/aosc-os-asmr and remains separate from omactl.
-  - Search, categories, recommendations, app detail media, source labels, and manual/link-only entries must come from ASMR catalog data rather than omactl search.
-  - omactl should provide structured JSON for package-management state, operation starts, unit status, unit results, and unit logs.
-- Package-management/API requirements implied by the design:
-  - Tauri package-manager commands should use the `pm_*` surface rather than raw `fetch_update_*` or `oma_*` command names.
-  - Capability and query command group: `pm_capabilities`, `pm_update_summary`, `pm_list_updates`, `pm_list_installed`, and `pm_package_state`.
-  - Planning command group: `pm_plan_update`, `pm_plan_install`, and `pm_plan_remove`.
-  - Operation start command group: `pm_start_update`, `pm_start_install`, `pm_start_remove`, and `pm_start_refresh`.
-  - Operation observation command group: `pm_operation_status`, `pm_operation_result`, `pm_operation_logs`, `pm_follow_operation_logs`, and `pm_cancel_operation`.
-  - Capability-conditional storage command group: `pm_storage_summary`, joining omactl runtime size data with aoska catalog membership only when omactl advertises storage or equivalent installed-size capabilities; otherwise the UI should hide storage summary details rather than treating them as failed package operations.
-  - Temporary compatibility wrappers for old `fetch_update_*` and `oma_*` commands may exist only while delegating to the omactl JSON-backed `pm_*` layer and should be removed after frontend migration.
-  - When package-manager storage capabilities are available, query installed packages with source of management:
-    - aoska-manageable software.
-    - other oma-managed software.
-    - non-oma-managed space.
-    - free space.
-  - Query upgradable packages with old version, new version, size/download size, package key, and whether the package is eligible for update/remove/open actions.
-  - Query app/package detail state for a catalog app:
-    - installed/openable.
-    - upgradable.
-    - installed version.
-    - install size.
-    - package source.
-  - Plan install/remove/update before action where possible; selected update planning is enabled only when omactl advertises selected-upgrade planning capability.
-  - Start install/remove/update for selected package lists; selected update execution is enabled only when omactl advertises selected-upgrade execution capability.
-  - Distinguish scheduling success from operation success.
-  - Follow unit logs and expose operation result.
-  - Report update check status:
-    - checking.
-    - no updates.
-    - normal updates.
-    - security updates.
-    - system updates.
-    - stale last update.
-    - failure reason.
-    - manual action required.
-  - Preserve `name_without_arch` or an equivalent package key for matching TUM package names to update entries.
+  - Package management uses the system D-Bus service `io.aosc.Amo`, object `/io/aosc/Amo`, interface `io.aosc.Amo1` through the Tauri `pm_*` surface.
+  - ASMR owns discovery, categories, recommendations, media, and external/manual entries. Its availability must not depend on amo queries succeeding.
+  - Keep package-manager internals outside the GUI: no direct `oma-pm`/`oma-tum` dependencies or CLI fallback.
+- Package-management behavior:
+  - Use `Search(name)` to obtain an exact catalog package's `Avail`, `Installed`, or `Upgrade` state. Candidate versions do not prove installation; `GetDescription` is plain text.
+  - Use `UpdatesList` for the update plan and TUM data. Deduplicate security package matches, including cumulative topics. Empty or unusable TUM data means classification is unknown.
+  - Use `GetTransaction` to show all affected installations, upgrades, removals, download size, and disk delta before confirmation.
+  - Submit the confirmed selection to `ApplyChanges`. Its boolean argument means full upgrade; selected updates use the install list with that flag false.
+  - Subscribe to progress and results before starting a request. Keep the returned u64 ID as a decimal string across the frontend boundary.
+  - Treat only a matching `ResultReport` as terminal success/failure. Method returns and progress completion markers do not establish success.
+  - Keep mutation controls busy while an operation is running; refresh package state after the terminal result. Surface daemon, authorization, and observation failures.
+  - The operation dialog reads status and logs retained by the Rust adapter. These records belong to the current aoska process; amo 0.6.1 has no historical operation query.
+- Current amo 0.6.1 limits:
+  - No full installed-package inventory, storage summary, cancellation, or application-launch API. Hide or disable those controls through `pm_capabilities`.
+  - Installed catalog apps can still be updated or removed from their detail page.
+  - `Search("")` is not an inventory API. Do not replace the missing installed list with an incomplete search result or CLI query.
+  - Most progress events have no request ID; the matching result signal determines completion.
+  - User-visible package configuration prompts use amo's debconf path and require a desktop helper.
 - Test/screenshot expectations:
   - Future UI changes should include dark-mode screenshots for home, app detail, update/uninstall, and operation states.
   - Verify text readability over non-ideal screenshots.
@@ -316,7 +296,7 @@
 - [ ] What is the canonical ASMR catalog schema for app source labels such as `官方安装包`, `官方下载页面`, `Flathub`, `安同 OS 软件仓库`, and `Snapcraft`?
 - [ ] Which source types are installable directly by aoska, and which require a `下载页面` or manual operation?
 - [ ] What exact package grouping defines `系统更新` versus ordinary `软件更新`?
-- [ ] Which storage numbers can omactl/oma provide reliably, and which are estimated from the system disk?
+- [ ] When will amo expose complete installed-package inventory and storage statistics, and how will estimated values be identified?
 - [ ] What are the final icon assets for dark mode flags and toolbar controls?
 - [ ] Should the update page support uninstalling software that was not originally installed by aoska? If yes, what confirmation copy is required?
 - [ ] What is the minimum supported window size?

@@ -3,10 +3,13 @@
     <section class="hero-grid">
       <UpdateCard
         class="update-status"
-        :update="summary?.total ?? 0"
+        :update="Math.max(0, (summary?.total ?? 0) - (summary?.security ?? 0))"
         :update-security="summary?.security ?? 0"
         :security-classification-available="summary?.securityClassificationAvailable ?? true"
         :is-loading="loading"
+        :error="errorMessage"
+        :disabled="operationBusy || (!errorMessage && !(summary?.total ? canUpdateAll : canRefresh))"
+        @action="handleSummaryAction"
       />
       <StorageSummary
         v-if="storage"
@@ -21,13 +24,13 @@
           <h1>{{ $t('updates.managementTitle') }}</h1>
           <p class="intro">{{ $t('updates.managementIntro') }}</p>
         </div>
-        <button class="refresh" type="button" :disabled="operationBusy" @click="refresh">
+        <button class="refresh" type="button" :disabled="operationBusy || !canRefresh" @click="refresh">
           {{ $t('updates.refresh') }}
         </button>
       </header>
 
-      <div v-if="errorMessage" class="error">
-        {{ errorMessage }}
+      <div v-if="errorMessage || operationError" class="error" role="alert">
+        {{ errorMessage || operationError }}
       </div>
 
       <div class="toolbar">
@@ -44,6 +47,7 @@
           <button
             type="button"
             role="tab"
+            v-if="hasInstalledInventory"
             :aria-selected="activeTab === 'installed'"
             :class="{ active: activeTab === 'installed' }"
             @click="activeTab = 'installed'"
@@ -57,7 +61,7 @@
             v-if="activeTab === 'updates'"
             type="button"
             class="primary"
-            :disabled="!updateBatch.enabled || operationBusy"
+            :disabled="!updateBatch.enabled || operationBusy || !canUpdateSelected"
             @click="runBatchUpdate"
           >
             {{ $t('updates.updateSelected') }} ({{ updateBatch.count }})
@@ -66,7 +70,7 @@
             v-else
             type="button"
             class="danger"
-            :disabled="!removeBatch.enabled || operationBusy"
+            :disabled="!removeBatch.enabled || operationBusy || !canRemove"
             @click="runBatchRemove"
           >
             {{ $t('updates.removeSelected') }} ({{ removeBatch.count }})
@@ -77,6 +81,7 @@
       <div v-if="loading" class="list-state">
         {{ $t('updates.loading') }}
       </div>
+      <div v-else-if="errorMessage" class="list-state">软件包状态暂不可用，请重试。</div>
       <div v-else-if="visiblePackages.length === 0" class="list-state">
         {{ activeTab === 'updates' ? $t('updates.noUpdates') : $t('updates.noInstalled') }}
       </div>
@@ -86,13 +91,16 @@
           :key="pkg.name"
           :pkg="pkg"
           :selected="activeSelection.has(pkg.name)"
+          :disabled="operationBusy"
+          :can-update="canUpdateSelected"
+          :can-remove="canRemove"
           @toggle="toggleSelection(activeTab, $event)"
           @action="handleRowAction"
         />
       </div>
     </section>
 
-    <OperationDialog :operation="activeOperation" @close="closeOperationDialog" />
+    <OperationDialog :operation="activeOperation" :plan="plan" :submitting="submitting" :error="operationError" @confirm="confirm" @finished="finished" @close="close" />
   </main>
 </template>
 
@@ -101,8 +109,10 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import OperationDialog from '../share/OperationDialog.vue';
 import UpdateCard from '../share/UpdateCard.vue';
-import type { PackageOperationKind, PmOperationStart, PmPackageRecord, PmStorageSummary, PmUpdateSummary } from '../../types/pm';
+import type { PackageOperationKind, PmPackageRecord, PmStorageSummary, PmUpdateSummary, PmCapabilities } from '../../types/pm';
 import { getPackageManager } from '../../utils/pmClient';
+import { loadPackageInventory } from '../../utils/pmOperations';
+import { usePackageOperation } from '../../utils/usePackageOperation';
 import { batchActionState, selectedPackageNames } from '../../utils/pmSelection';
 import PackageOperationRow from './Updates/PackageOperationRow.vue';
 import StorageSummary from './Updates/StorageSummary.vue';
@@ -112,7 +122,14 @@ type RowOperation = Extract<PackageOperationKind, 'update' | 'remove'> | 'open';
 
 const router = useRouter();
 const loading = ref(true);
-const operationBusy = ref(false);
+const capabilities = ref<PmCapabilities | null>(null);
+const supports = (name: string) => capabilities.value?.capabilities.includes(name) ?? false;
+const hasInstalledInventory = computed(() => supports('query.installed.v1'));
+const canUpdateAll = computed(() => supports('run.upgrade.v1') && supports('plan.upgrade.v1'));
+const canRefresh = computed(() => supports('run.refresh.v1'));
+const canUpdateSelected = computed(() => supports('run.upgrade.selected.v1') && supports('plan.upgrade.selected.v1'));
+const canRemove = computed(() => supports('run.remove.v1') && supports('plan.remove.v1'));
+const { plan, activeOperation, submitting, locked: operationBusy, error: operationError, prepare, confirm, refresh, finished, close } = usePackageOperation(loadPackageState);
 const errorMessage = ref('');
 const activeTab = ref<ActiveTab>('updates');
 const summary = ref<PmUpdateSummary | null>(null);
@@ -121,7 +138,7 @@ const installed = ref<PmPackageRecord[]>([]);
 const storage = ref<PmStorageSummary | null>(null);
 const selectedUpdates = ref<Set<string>>(new Set());
 const selectedInstalled = ref<Set<string>>(new Set());
-const activeOperation = ref<PmOperationStart | null>(null);
+
 
 const visiblePackages = computed(() => activeTab.value === 'updates' ? updates.value : installed.value);
 const activeSelection = computed(() => activeTab.value === 'updates' ? selectedUpdates.value : selectedInstalled.value);
@@ -137,16 +154,13 @@ async function loadPackageState() {
   errorMessage.value = '';
   try {
     const pm = getPackageManager();
-    const [nextSummary, nextUpdates, nextInstalled, nextStorage] = await Promise.all([
-      pm.updateSummary(),
-      pm.listUpdates(),
-      pm.listInstalled(),
-      pm.storageSummary(),
-    ]);
-    summary.value = nextSummary;
-    updates.value = nextUpdates.packages;
-    installed.value = nextInstalled.packages;
-    storage.value = nextStorage;
+    const inventory = await loadPackageInventory(pm);
+    capabilities.value = inventory.capabilities;
+    summary.value = inventory.summary;
+    updates.value = inventory.updates;
+    installed.value = inventory.installed;
+    storage.value = inventory.storage;
+    if (!hasInstalledInventory.value) activeTab.value = 'updates';
     selectedUpdates.value = filterSelection(selectedUpdates.value, updates.value);
     selectedInstalled.value = filterSelection(selectedInstalled.value, installed.value);
   } catch (error) {
@@ -172,14 +186,10 @@ function toggleSelection(tab: ActiveTab, name: string) {
   source.value = next;
 }
 
-async function refresh() {
-  operationBusy.value = true;
-  try {
-    activeOperation.value = await getPackageManager().startRefresh();
-    await loadPackageState();
-  } finally {
-    operationBusy.value = false;
-  }
+async function handleSummaryAction() {
+  if (errorMessage.value) { await loadPackageState(); return; }
+  if (summary.value?.total) await startOperation('update', []);
+  else await refresh();
 }
 
 async function runBatchUpdate() {
@@ -203,20 +213,9 @@ async function handleRowAction(operation: RowOperation, name: string) {
 }
 
 async function startOperation(operation: Extract<PackageOperationKind, 'update' | 'remove'>, packages: string[]) {
-  operationBusy.value = true;
-  try {
-    const pm = getPackageManager();
-    activeOperation.value = operation === 'update'
-      ? await pm.startUpdate(packages)
-      : await pm.startRemove(packages);
-  } finally {
-    operationBusy.value = false;
-  }
-}
-
-async function closeOperationDialog() {
-  activeOperation.value = null;
-  await loadPackageState();
+  const capability = operation === 'remove' ? 'remove' : packages.length ? 'upgrade.selected' : 'upgrade';
+  if (!supports(`run.${capability}.v1`) || !supports(`plan.${capability}.v1`)) return;
+  await prepare(operation, packages);
 }
 </script>
 

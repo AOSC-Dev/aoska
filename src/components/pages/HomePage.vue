@@ -7,6 +7,8 @@
       <UpdateCard
         class="update"
         :is-loading="loading"
+        :error="updateError"
+        @action="router.push('/updates')"
         :update="update"
         :update-security="updateSecurity"
         :security-classification-available="securityClassificationAvailable"
@@ -17,6 +19,7 @@
     <div class="down-content">
       <div class="app-content">
         <div class="app-title">{{ $t("home.appTitle") }}</div>
+        <p v-if="catalogError" role="alert">{{ catalogError }}</p>
         <div class="apps">
           <AppCard
             v-for="(app, index) in recommendList?.packages"
@@ -54,9 +57,10 @@ import UpdateCard from '../share/UpdateCard.vue';
 import AppCard from '../share/AppCard.vue';
 import TipCard from '../share/TipCard.vue';
 import router from '../../router';
-import { fetchRecommend, fetchTumUpdate, fetchUpdateCount } from '../../utils/wrapper';
+import { fetchRecommend } from '../../utils/wrapper';
 import { RecommendIndex } from '../../types/home';
 import { resolveAssetPath } from '../../utils/url';
+import { getPackageManager } from '../../utils/pmClient';
 
 // 总升级与安全升级数
 const loading = ref(true);
@@ -64,20 +68,16 @@ const update = ref(0);
 const updateSecurity = ref(0);
 const securityClassificationAvailable = ref(true);
 
-onBeforeMount(async () => {
-  const updateCount = await fetchUpdateCount();
-  const tumUpdate = await fetchTumUpdate();
-  const securityUpdateCount =
-    tumUpdate
-      ?.filter((v) => v.is_security)
-      .reduce((sum, v) => sum + v.package_count, 0) ?? 0;
-  securityClassificationAvailable.value = tumUpdate !== null;
-  updateSecurity.value = securityUpdateCount;
-  update.value = tumUpdate === null ? updateCount : updateCount - securityUpdateCount;
-  recommendList.value = await fetchRecommend();
-  loading.value = false;
+const updateError = ref('');
+const catalogError = ref('');
+onBeforeMount(() => {
+  void fetchRecommend().then(value => { recommendList.value = value; }).catch(cause => { catalogError.value = String(cause); });
+  void getPackageManager().updateSummary().then(summary => {
+    securityClassificationAvailable.value = summary.securityClassificationAvailable;
+    updateSecurity.value = summary.security ?? 0;
+    update.value = Math.max(0, summary.total - updateSecurity.value);
+  }).catch(cause => { updateError.value = String(cause); }).finally(() => { loading.value = false; });
 });
-
 
 // 技巧指南列表
 const tipList = [

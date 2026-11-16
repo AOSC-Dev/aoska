@@ -14,6 +14,8 @@ execFileSync(tsc, ['-p', 'tsconfig.frontend-test.json', '--outDir', outDir], {
   stdio: 'inherit',
 });
 
+const { createTauriPackageManager } = require(path.join(outDir, 'utils', 'pmTauri.js'));
+const { observeOperation, loadPackageInventory, createPackageOperationFlow } = require(path.join(outDir, 'utils', 'pmOperations.js'));
 const { createStubPackageManager } = require(path.join(outDir, 'utils', 'pmStub.js'));
 const { actionLabel, isDestructiveAction, operationHeading } = require(path.join(outDir, 'utils', 'pmPresentation.js'));
 const { selectedPackageNames, batchActionState } = require(path.join(outDir, 'utils', 'pmSelection.js'));
@@ -40,13 +42,165 @@ const catalogIndex = {
 };
 
 async function main() {
+  const calls = [];
+  const id = '87025131895291905';
+  const adapter = createTauriPackageManager(async (command, args) => {
+    calls.push({ command, args });
+    if (command === 'pm_package_state') return { packages: [{ name: 'firefox', version: '160', installed: false, upgradable: false, openable: false, aoska_manageable: true }] };
+    if (command === 'pm_start_remove') return { id, operation: 'remove', packages: args.packages, started_at: '2026-11-17T00:00:00Z' };
+    if (command === 'pm_operation_status') return { id, operation: 'remove', state: 'succeeded' };
+    throw new Error('unsupported test command: ' + command);
+  });
+  const unknownPackage = await createTauriPackageManager(async () => ({ packages: [{ name: 'missing', installed: false, upgradable: false, aoskaManageable: false, requiresManualAction: true }] })).packageState('missing');
+  assert.equal(unknownPackage.action.primary, 'manual');
+  assert.ok(unknownPackage.action.disabledReason);
+  const multiarch = await createTauriPackageManager(async () => ({ packages: [{ name: 'libc:arm64', name_without_arch: 'libc', displayName: 'libc', installed: true, upgradable: true }] })).listUpdates();
+  assert.equal(multiarch.packages[0].name, 'libc:arm64');
+  assert.deepEqual(selectedPackageNames(multiarch.packages, new Set(['libc:arm64'])), ['libc:arm64']);
+  assert.equal(operationHeading('install', 'unknown', 'zh'), '无法确认操作状态');
+  const candidate = await adapter.packageState('firefox');
+  assert.equal(candidate.installed, false);
+  assert.equal(candidate.openable, false);
+  assert.equal(candidate.action.primary, 'install');
+  const sparsePackage = await createTauriPackageManager(async () => ({ packages: [{
+    name: 'firefox', displayName: 'Firefox', packageName: 'firefox', currentVersion: null,
+    newVersion: '160.0', installed: false, upgradable: false, openable: false, aoskaManageable: true,
+  }] })).packageState('firefox');
+  assert.equal(sparsePackage.currentVersion, undefined);
+  assert.equal(sparsePackage.source, undefined);
+  assert.equal(sparsePackage.homepage, undefined);
+  assert.equal(sparsePackage.architecture, undefined);
+  assert.equal(sparsePackage.currentVersion ?? 'catalog-version', 'catalog-version');
+  assert.equal(sparsePackage.source ?? '安同 OS 软件仓库', '安同 OS 软件仓库');
+  assert.equal(sparsePackage.homepage ?? 'https://example.org', 'https://example.org');
+  assert.equal(sparsePackage.newVersion, '160.0');
+  const sparsePlan = await createTauriPackageManager(async () => ({
+    install: [{ name: 'firefox', currentVersion: null, newVersion: '160.0' }],
+    remove: [{ name: 'old-package' }], totalDownloadSize: 0, diskSizeDelta: 0,
+  })).planInstall(['firefox']);
+  assert.equal(sparsePlan.install[0].currentVersion, undefined);
+  assert.equal(sparsePlan.install[0].newVersion, '160.0');
+  assert.equal(sparsePlan.remove[0].currentVersion, undefined);
+  assert.equal(sparsePlan.remove[0].newVersion, undefined);
+  const started = await adapter.startRemove(['firefox']);
+  assert.equal(started.id, id);
+  assert.deepEqual(calls.at(-1), { command: 'pm_start_remove', args: { packages: ['firefox'] } });
+  await adapter.operationStatus(id);
+  assert.deepEqual(calls.at(-1).args, { id });
+  await assert.rejects(createTauriPackageManager(async () => ({})).startInstall(['firefox']), /id/i);
+  await assert.rejects(createTauriPackageManager(async () => { throw new Error('denied'); }).startInstall(['firefox']), /denied/);
+
+  const inventory = await loadPackageInventory({
+    capabilities: async () => ({ kind: 'tauri', capabilities: ['query.upgradable.v1'] }),
+    updateSummary: async () => ({ total: 1 }),
+    listUpdates: async () => ({ packages: [{ name: 'firefox' }] }),
+    listInstalled: async () => { throw new Error('unsupported installed query'); },
+    storageSummary: async () => { throw new Error('unsupported storage query'); },
+  });
+  assert.equal(inventory.updates.length, 1);
+  assert.deepEqual(inventory.installed, []);
+  assert.equal(inventory.storage, null);
+
+  let polls = 0;
+  let finished = 0;
+  let errors = 0;
+  let next;
+  let cleared = 0;
+  const scheduler = { schedule: callback => { next = callback; return 1; }, clear: () => { cleared++; } };
+  const stop = observeOperation({
+    operationStatus: async () => {
+      polls++;
+      if (polls === 1) throw new Error('temporary disconnect');
+      return { id, operation: 'refresh', state: polls === 2 ? 'running' : 'succeeded' };
+    },
+    operationLogs: async () => ({ id, lines: ['metadata refreshed'] }),
+  }, id, { update: () => {}, error: () => { errors++; }, finished: () => { finished++; } }, scheduler);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(errors, 1);
+  await next();
+  assert.equal(finished, 0);
+  await next();
+  assert.equal(finished, 1);
+  stop();
+  assert.ok(cleared > 0);
+  let resolvePending;
+  let updatesAfterStop = 0;
+  const stopPending = observeOperation({
+    operationStatus: () => new Promise(resolve => { resolvePending = resolve; }),
+    operationLogs: async () => ({ id, lines: [] }),
+  }, id, { update: () => { updatesAfterStop++; }, error: () => {}, finished: () => { updatesAfterStop++; } }, scheduler);
+  stopPending();
+  resolvePending({ id, operation: 'refresh', state: 'failed', message: 'permission denied' });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(updatesAfterStop, 0);
+  let failure;
+  observeOperation({
+    operationStatus: async () => ({ id, operation: 'install', state: 'failed', message: 'permission denied' }),
+    operationLogs: async () => ({ id, lines: [] }),
+  }, id, { update: () => {}, error: () => {}, finished: status => { failure = status.message; } }, scheduler);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(failure, 'permission denied');
+
+  let unknownFinished = 0;
+  let unknownState;
+  const stopUnknown = observeOperation({
+    operationStatus: async () => ({ id, operation: 'refresh', state: 'unknown', message: 'Connection lost; task may still be running.' }),
+    operationLogs: async () => ({ id, lines: [] }),
+  }, id, { update: status => { unknownState = status; }, error: () => {}, finished: () => { unknownFinished++; } }, scheduler);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(unknownFinished, 0);
+  assert.equal(unknownState.state, 'unknown');
+  assert.match(unknownState.message, /may still be running/);
+  stopUnknown();
+
+  let starts = 0;
+  let reloads = 0;
+  const state = { plan: null, activeOperation: null, busy: false, submitting: false, error: '' };
+  const selectedPlan = { operation: 'install', packages: ['firefox'], install: [{ name: 'firefox' }, { name: 'dependency' }], remove: [], totalDownloadSize: 10, diskSizeDelta: 20 };
+  const flow = createPackageOperationFlow({
+    planInstall: async () => selectedPlan,
+    startInstall: async packages => { starts++; return { id, operation: 'install', packages }; },
+  }, state, async () => { reloads++; });
+  await flow.prepare('install', ['firefox']);
+  assert.equal(starts, 0);
+  assert.equal(state.plan.install.length, 2);
+  flow.close();
+  assert.equal(starts, 0);
+  await flow.prepare('install', ['firefox']);
+  await flow.confirm();
+  assert.equal(starts, 1);
+  assert.equal(state.busy, true);
+  flow.close();
+  assert.equal(state.activeOperation.id, id);
+  await flow.confirm();
+  assert.equal(starts, 1);
+  await flow.finished();
+  assert.equal(reloads, 1);
+  assert.equal(state.busy, false);
+  const denied = createPackageOperationFlow({
+    planInstall: async () => selectedPlan,
+    startInstall: async () => { throw new Error('authorization denied'); },
+  }, state, async () => {});
+  await denied.prepare('install', ['firefox']);
+  await denied.confirm();
+  assert.match(state.error, /authorization denied/);
+  assert.equal(state.busy, false);
+  assert.equal(state.submitting, false);
+  assert.equal(state.plan, selectedPlan);
+  denied.close();
+  const rejected = createPackageOperationFlow({ planRemove: async () => { throw new Error('plan rejected'); } }, state, async () => {});
+  await rejected.prepare('remove', ['firefox']);
+  assert.equal(state.plan, null);
+  assert.match(state.error, /plan rejected/);
+  assert.equal(state.submitting, false);
+
   const pm = createStubPackageManager();
 
   const capabilities = await pm.capabilities();
   assert.equal(capabilities.kind, 'stub');
   assert.ok(capabilities.capabilities.includes('stub.backend.v1'));
   assert.ok(capabilities.capabilities.includes('run.install.v1'));
-  assert.ok(capabilities.capabilities.includes('unit.logs.v1'));
+  assert.ok(capabilities.capabilities.includes('operation.logs.v1'));
 
   const updates = await pm.listUpdates();
   const summary = await pm.updateSummary();
@@ -70,7 +224,7 @@ async function main() {
   assert.equal(operationHeading('install', 'running', 'zh'), '正在安装');
 
   const installStart = await pm.startInstall(['firefox']);
-  assert.match(installStart.unit, /^aoska-stub-install-/);
+  assert.match(installStart.id, /^aoska-stub-install-/);
 
   const storage = await pm.storageSummary();
   assert.ok(storage.totalUsedBytes > 0);
@@ -88,10 +242,10 @@ async function main() {
   assert.deepEqual(searchCatalogPackages(catalogIndex, 'not-present').map((pkg) => pkg.name), []);
 
   const updateStart = await pm.startUpdate(['wechat']);
-  assert.match(updateStart.unit, /^aoska-stub-update-/);
-  const updateLogs = await pm.operationLogs(updateStart.unit);
+  assert.match(updateStart.id, /^aoska-stub-update-/);
+  const updateLogs = await pm.operationLogs(updateStart.id);
   assert.ok(updateLogs.lines.some((line) => line.includes('wechat')));
-  const updateCancel = await pm.cancelOperation(updateStart.unit);
+  const updateCancel = await pm.cancelOperation(updateStart.id);
   assert.ok(['already_terminal', 'cancelled'].includes(updateCancel.state));
 
   console.log('frontend stub backend tests passed');

@@ -4,6 +4,7 @@
       class="checkbox"
       type="checkbox"
       :checked="selected"
+      :disabled="disabled"
       :aria-label="pkg.displayName"
       @change="$emit('toggle', pkg.name)"
     />
@@ -24,13 +25,13 @@
     </div>
     <div class="size">{{ size }}</div>
     <div class="row-actions">
-      <button v-if="pkg.upgradable" type="button" class="link update" @click="$emit('action', 'update', pkg.name)">
+      <button v-if="pkg.upgradable && canUpdate" :disabled="disabled" type="button" class="link update" @click="$emit('action', 'update', pkg.name)">
         {{ localeZh ? '更新' : 'Update' }}
       </button>
-      <button v-if="pkg.installed" type="button" class="link remove" @click="$emit('action', 'remove', pkg.name)">
+      <button v-if="pkg.installed && canRemove" :disabled="disabled" type="button" class="link remove" @click="$emit('action', 'remove', pkg.name)">
         {{ localeZh ? '卸载' : 'Remove' }}
       </button>
-      <button v-if="pkg.openable" type="button" class="link open" @click="$emit('action', 'open', pkg.name)">
+      <button v-if="pkg.openable" :disabled="disabled" type="button" class="link open" @click="$emit('action', 'open', pkg.name)">
         {{ localeZh ? '打开' : 'Open' }}
       </button>
     </div>
@@ -45,6 +46,9 @@ import type { PackageOperationKind, PmPackageRecord } from '../../../types/pm';
 const props = defineProps<{
   pkg: PmPackageRecord;
   selected: boolean;
+  disabled?: boolean;
+  canUpdate?: boolean;
+  canRemove?: boolean;
 }>();
 
 defineEmits<{

@@ -1,0 +1,16 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-DBUS-BOUNDARY"
+title = "D-Bus integration boundary"
+kind = "normative"
+status = "active"
+since = "0.1.0"
+
+[content]
+text = """
+aoska MUST obtain package state, transaction plans, and operation results through amo's D-Bus interface. It MUST NOT fall back to omactl, direct oma commands, dpkg output, or linked oma package-management crates for these operations.
+
+The Rust backend MUST validate required JSON fields and preserve D-Bus errors and daemon failure messages for diagnostics. It MUST distinguish service unavailability, invalid responses, authorization failures, busy operations, and unsupported capabilities when the response permits that distinction.
+
+`pm_capabilities` MUST report only functionality supported by the connected interface and the aoska adapter. amo 0.6.1 has no capability/version property: these are consumer capabilities, not a claim that amo implements the former omactl protocol. Catalog browsing MUST remain usable when package-manager queries fail."""
