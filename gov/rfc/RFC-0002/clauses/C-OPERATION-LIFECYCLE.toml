@@ -1,0 +1,18 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-OPERATION-LIFECYCLE"
+title = "Request observation and completion"
+kind = "normative"
+status = "active"
+since = "0.1.0"
+
+[content]
+text = """
+aoska MUST subscribe to `Status` and `ResultReport` before calling `ApplyChanges` or `Refresh`, so a fast result cannot be missed. Their return value is a u64 request ID. Rust MUST match IDs as u64 and expose them to JavaScript as decimal strings because the values exceed Number's safe integer range.
+
+Only a `ResultReport` with the matching request ID determines success or failure. Its status is `"Success"` or `{"Failed": "reason"}`. A `Status` event saying `finished`, an `AllDone` download event, or a method return MUST NOT end the operation: cache refresh can still fail afterward.
+
+Most `Status` payloads have no request ID. aoska MAY show them as daemon progress while observing its accepted request, but MUST NOT use them to establish another request's result. Local records MUST keep the accepted ID, state, progress diagnostics, and terminal reason for the frontend. Lost observation MUST be reported as unknown or failed observation rather than successful completion.
+
+The frontend MUST retain its busy state until a matching terminal result, surface failures, and refresh package state after completion. Closing a dialog MUST NOT be treated as daemon cancellation. amo 0.6.1 has no cancellation or historical-result query, so cancellation controls MUST be unavailable and the UI MUST NOT promise recovery of prior-process operation history."""

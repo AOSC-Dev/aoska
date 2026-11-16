@@ -7,6 +7,7 @@
         <div class="greeting"><div class="skeleton skeleton-greeting"></div></div>
         <div class="button"><div class="skeleton skeleton-button"></div></div>
       </div>
+      <div v-else-if="error" key="error" class="card-content"><div class="title">无法获取更新状态</div><p class="status" role="alert">{{ error }}</p><button class="button" type="button" :disabled="disabled" @click="$emit('action')">重试</button></div>
       <div v-else key="content" class="card-content">
         <div class="title">{{ $t(`${prefix}.title`) }}</div>
         <div class="status">
@@ -28,7 +29,7 @@
             {{ $t(`${prefix}.greeting`) }}
           </template>
         </div>
-        <button class="button" type="button">{{ $t(`${prefix}.button`) }}</button>
+        <button class="button" type="button" :disabled="disabled" @click="$emit('action')">{{ $t(`${prefix}.button`) }}</button>
       </div>
     </transition>
   </div>
@@ -37,7 +38,11 @@
 <script setup lang='ts'>
 import { computed } from 'vue';
 
+defineEmits<{ action: [] }>();
+
 const props = defineProps({
+  error: String,
+  disabled: Boolean,
   update: {
     type: Number,
     default: 0
@@ -61,6 +66,7 @@ const hasSecurityUpdate = computed(() => props.updateSecurity > 0);
 const hasUnknownSecurityClassification = computed(() => hasUpdates.value && !props.securityClassificationAvailable);
 
 const updateClass = computed(() => {
+  if (props.error) return 'unknown-security-update';
   if (props.isLoading) return 'checking-update';
   if (props.updateSecurity > 0) return 'security-update';
   if (props.update > 0 && !props.securityClassificationAvailable) return 'unknown-security-update';

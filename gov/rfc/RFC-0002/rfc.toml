@@ -1,0 +1,33 @@
+#:schema ../../schema/rfc.schema.json
+
+[govctl]
+id = "RFC-0002"
+title = "aoska package management through amo D-Bus"
+version = "0.1.0"
+status = "draft"
+phase = "spec"
+owners = ["@wxiwnd"]
+created = "2026-11-17"
+supersedes = "RFC-0001"
+
+[[sections]]
+title = "Scope"
+clauses = ["clauses/C-SUMMARY.toml"]
+
+[[sections]]
+title = "Consumer contract"
+clauses = [
+    "clauses/C-DBUS-BOUNDARY.toml",
+    "clauses/C-QUERIES.toml",
+    "clauses/C-TRANSACTIONS.toml",
+    "clauses/C-OPERATION-LIFECYCLE.toml",
+]
+
+[[sections]]
+title = "Verification"
+clauses = ["clauses/C-VALIDATION.toml"]
+
+[[changelog]]
+version = "0.1.0"
+date = "2026-11-17"
+notes = "Replace the omactl draft with the amo 0.6.1 D-Bus consumer contract"

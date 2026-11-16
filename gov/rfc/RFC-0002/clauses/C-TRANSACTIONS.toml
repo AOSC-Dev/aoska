@@ -1,0 +1,16 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-TRANSACTIONS"
+title = "Transaction preview and execution"
+kind = "normative"
+status = "active"
+since = "0.1.0"
+
+[content]
+text = """
+Before a package change, aoska MUST obtain `GetTransaction(install, remove, upgrade)` and show the planned installations, upgrades, removals, download size, and disk delta for user confirmation. The confirmed package selection MUST be passed to `ApplyChanges` with the same parameter meaning. A failed preview MUST NOT start an operation.
+
+The boolean `upgrade` means a full system upgrade. Selected updates MUST use `install = selected package names`, an empty remove list, and `upgrade = false`. Install uses the same path; remove uses the remove list and `upgrade = false`. Full upgrades use empty install/remove lists and `upgrade = true` only for an explicit full-upgrade action. The boolean MUST NOT be interpreted as assume-yes or purge.
+
+Authorization belongs to amo and Polkit. aoska MUST allow the normal desktop authorization flow and surface rejection; it MUST NOT use sudo to bypass it. Package configuration prompts need the debconf interface used by amo. Scheduling success MUST NOT be presented as operation success."""

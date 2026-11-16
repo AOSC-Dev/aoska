@@ -72,7 +72,7 @@ export interface PmTumUpdateInfo {
 }
 
 export interface PmOperationStart {
-  unit: string;
+  id: string;
   operation: PackageOperationKind;
   packages: string[];
   startedAt: string;
@@ -89,23 +89,24 @@ export type PmOperationState =
   | 'unknown';
 
 export interface PmOperationStatus {
-  unit: string;
+  id: string;
   operation: PackageOperationKind;
   state: PmOperationState;
   startedAt?: string;
   finishedAt?: string;
   message?: string;
+  progress?: number;
   raw?: unknown;
 }
 
 export interface PmOperationLogs {
-  unit: string;
+  id: string;
   lines: string[];
   raw?: unknown;
 }
 
 export interface PmCancelResult {
-  unit: string;
+  id: string;
   state: 'cancelled' | 'already_terminal';
   raw?: unknown;
 }
@@ -124,6 +125,23 @@ export interface PmStorageSummary {
   estimated: boolean;
 }
 
+export interface PmPlanPackage {
+  name: string;
+  currentVersion?: string;
+  newVersion?: string;
+  downloadSize?: number;
+  installedSize?: number;
+}
+
+export interface PmOperationPlan {
+  operation: Exclude<PackageOperationKind, 'refresh'>;
+  packages: string[];
+  install: PmPlanPackage[];
+  remove: PmPlanPackage[];
+  totalDownloadSize: number;
+  diskSizeDelta: number;
+}
+
 export interface PackageManagerClient {
   capabilities(): Promise<PmCapabilities>;
   updateSummary(): Promise<PmUpdateSummary>;
@@ -132,11 +150,14 @@ export interface PackageManagerClient {
   packageState(name: string): Promise<PmPackageState>;
   tumUpdates(): Promise<PmTumUpdateInfo[] | null>;
   storageSummary(): Promise<PmStorageSummary | null>;
+  planUpdate(packages: string[]): Promise<PmOperationPlan>;
+  planInstall(packages: string[]): Promise<PmOperationPlan>;
+  planRemove(packages: string[]): Promise<PmOperationPlan>;
   startUpdate(packages: string[]): Promise<PmOperationStart>;
   startInstall(packages: string[]): Promise<PmOperationStart>;
   startRemove(packages: string[]): Promise<PmOperationStart>;
   startRefresh(): Promise<PmOperationStart>;
-  operationStatus(unit: string): Promise<PmOperationStatus>;
-  operationLogs(unit: string): Promise<PmOperationLogs>;
-  cancelOperation(unit: string): Promise<PmCancelResult>;
+  operationStatus(id: string): Promise<PmOperationStatus>;
+  operationLogs(id: string): Promise<PmOperationLogs>;
+  cancelOperation(id: string): Promise<PmCancelResult>;
 }

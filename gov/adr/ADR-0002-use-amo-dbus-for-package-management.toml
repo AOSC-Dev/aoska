@@ -1,0 +1,20 @@
+#:schema ../schema/adr.schema.json
+
+[govctl]
+id = "ADR-0002"
+title = "Use amo D-Bus for package management"
+status = "accepted"
+date = "2026-11-17"
+refs = ["ADR-0001", "RFC-0002"]
+
+[content]
+context = """
+amo replaces omactl as the oma package-management daemon. The deployed amo 0.6.1 exposes io.aosc.Amo1 on the system bus, with query and planning methods, asynchronous operation starts, and progress/result signals. The omactl CLI contract proposed in [[ADR-0001]] no longer describes the runtime integration."""
+decision = """
+aoska will use amo through zbus in the Tauri backend. The frontend keeps the pm_* command surface and PackageManagerClient. ASMR continues to own catalog discovery and presentation metadata.
+
+[[RFC-0002]] defines the consumer mapping. Rust retains u64 request IDs and serializes them as decimal strings for JavaScript. Matching ResultReport signals determine operation completion. Package changes require a transaction preview, user confirmation, and amo's Polkit authorization."""
+consequences = """
+Package management no longer depends on an omactl executable or on systemd unit/log parsing. Dependency resolution and execution remain in the installed oma stack.
+
+amo 0.6.1 does not expose cancellation, operation history, full installed inventory, storage summaries, or application launching. aoska must leave these capabilities unavailable. Ordinary progress signals lack request IDs, so only matching ResultReport messages can establish a request's final result. Observation records are local to the current aoska process; reconnecting cannot recover daemon history."""

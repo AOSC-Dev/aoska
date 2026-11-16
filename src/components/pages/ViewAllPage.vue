@@ -18,8 +18,8 @@
     </div>
     <template v-else>
       <AppBanner
-        v-for="(app, index) in packages"
-        :key="index"
+        v-for="(app, appIndex) in packages"
+        :key="appIndex"
         :name="app.name"
         :intro="app.intro"
         :icon="resolveAssetPath(app.icon, app.name)"

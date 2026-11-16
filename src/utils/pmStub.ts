@@ -5,6 +5,7 @@ import type {
   PmCancelResult,
   PmCapabilities,
   PmOperationLogs,
+  PmOperationPlan,
   PmOperationStart,
   PmOperationState,
   PmOperationStatus,
@@ -17,7 +18,7 @@ import type {
 } from '../types/pm';
 
 interface StubOperation {
-  unit: string;
+  id: string;
   operation: PackageOperationKind;
   packages: string[];
   state: PmOperationState;
@@ -105,15 +106,19 @@ const stubCapabilities = [
   'query.upgradable.v1',
   'query.package-detail.v1',
   'storage.summary.v1',
+  'plan.upgrade.v1',
+  'plan.upgrade.selected.v1',
+  'plan.install.v1',
+  'plan.remove.v1',
   'run.upgrade.v1',
   'run.upgrade.selected.v1',
   'run.install.v1',
   'run.remove.v1',
   'run.refresh.v1',
-  'unit.status.v1',
-  'unit.result.v1',
-  'unit.logs.v1',
-  'unit.cancel.v1',
+  'operation.status.v1',
+  'operation.result.v1',
+  'operation.logs.v1',
+  'operation.cancel.v1',
 ];
 
 function clone<T>(value: T): T {
@@ -154,27 +159,38 @@ export function createStubPackageManager(): PackageManagerClient {
 
   function makeOperation(operation: PackageOperationKind, requested: string[]): PmOperationStart {
     const packages = requirePackages(requested, operation);
-    const unit = `aoska-stub-${operation}-${operationId++}.service`;
+    const id = `aoska-stub-${operation}-${operationId++}`;
     const startedAt = new Date(STUB_NOW).toISOString();
     const logs = [
       `[stub] scheduled ${operation}`,
       packages.length > 0 ? `[stub] packages: ${packages.join(', ')}` : '[stub] refresh package metadata',
       '[stub] operation is safe; no real package manager was touched',
     ];
-    operations.set(unit, {
-      unit,
+    operations.set(id, {
+      id,
       operation,
       packages,
       state: 'running',
       startedAt,
       logs,
     });
-    return { unit, operation, packages: clone(packages), startedAt };
+    return { id, operation, packages: clone(packages), startedAt };
   }
 
-  function operation(unit: string): StubOperation {
-    const found = operations.get(unit);
-    if (!found) throw new Error(`unknown stub operation: ${unit}`);
+  function plan(kind: PmOperationPlan['operation'], requested: string[]): PmOperationPlan {
+    const names = requested.length ? requested : stubPackages.filter(pkg => pkg.upgradable).map(pkg => pkg.name);
+    const packages = requirePackages(names, kind);
+    const entries = packages.map(name => {
+      const pkg = stubPackages.find(item => item.name === name);
+      return { name, currentVersion: pkg?.currentVersion, newVersion: pkg?.newVersion, downloadSize: pkg?.downloadSize };
+    });
+    return { operation: kind, packages: requested, install: kind === 'remove' ? [] : entries,
+      remove: kind === 'remove' ? entries : [], totalDownloadSize: kind === 'remove' ? 0 : entries.reduce((sum, pkg) => sum + (pkg.downloadSize ?? 0), 0), diskSizeDelta: 0 };
+  }
+
+  function operation(id: string): StubOperation {
+    const found = operations.get(id);
+    if (!found) throw new Error(`unknown stub operation: ${id}`);
     return found;
   }
 
@@ -272,6 +288,10 @@ export function createStubPackageManager(): PackageManagerClient {
       };
     },
 
+    async planUpdate(packages) { return plan('update', packages); },
+    async planInstall(packages) { return plan('install', packages); },
+    async planRemove(packages) { return plan('remove', packages); },
+
     async startUpdate(packages: string[]): Promise<PmOperationStart> {
       return makeOperation('update', packages.length > 0 ? packages : stubPackages.filter((pkg) => pkg.upgradable).map((pkg) => pkg.name));
     },
@@ -288,10 +308,10 @@ export function createStubPackageManager(): PackageManagerClient {
       return makeOperation('refresh', ['metadata']);
     },
 
-    async operationStatus(unit: string): Promise<PmOperationStatus> {
-      const current = operation(unit);
+    async operationStatus(id: string): Promise<PmOperationStatus> {
+      const current = operation(id);
       return {
-        unit,
+        id,
         operation: current.operation,
         state: current.state,
         startedAt: current.startedAt,
@@ -300,20 +320,20 @@ export function createStubPackageManager(): PackageManagerClient {
       };
     },
 
-    async operationLogs(unit: string): Promise<PmOperationLogs> {
-      const current = operation(unit);
-      return { unit, lines: clone(current.logs) };
+    async operationLogs(id: string): Promise<PmOperationLogs> {
+      const current = operation(id);
+      return { id, lines: clone(current.logs) };
     },
 
-    async cancelOperation(unit: string): Promise<PmCancelResult> {
-      const current = operation(unit);
+    async cancelOperation(id: string): Promise<PmCancelResult> {
+      const current = operation(id);
       if (['succeeded', 'failed', 'cancelled'].includes(current.state)) {
-        return { unit, state: 'already_terminal' };
+        return { id, state: 'already_terminal' };
       }
       current.state = 'cancelled';
       current.finishedAt = new Date(STUB_NOW).toISOString();
       current.logs.push('[stub] operation cancelled');
-      return { unit, state: 'cancelled' };
+      return { id, state: 'cancelled' };
     },
   };
 }

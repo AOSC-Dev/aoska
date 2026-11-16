@@ -10,11 +10,13 @@
           <span v-else>{{ notInstalledCopy }}</span>
           <span v-if="packageState.upgradable"> · {{ updateCopy }}</span>
         </div>
+        <p v-if="packageState?.action.disabledReason" class="state-line" role="status">{{ packageState.action.disabledReason }}</p>
       </div>
     </div>
     <div class="actions">
       <CustomButton
         v-if="primaryAction !== 'none'"
+        :disabled="disabled || primaryAction === 'manual'"
         size="medium"
         :color="primaryColor"
         width="129"
@@ -26,6 +28,7 @@
       <CustomButton
         v-for="action in secondaryActions"
         :key="action"
+        :disabled="disabled"
         size="medium"
         color="grey"
         width="129"
@@ -50,14 +53,15 @@ const props = defineProps<{
   appIntro?: string;
   appBannerImg?: string;
   packageState?: PmPackageState | null;
+  disabled?: boolean;
 }>();
 
 defineEmits<{
   action: [action: PackagePrimaryAction];
 }>();
 
-const primaryAction = computed<PackagePrimaryAction>(() => props.packageState?.action.primary ?? 'install');
-const secondaryActions = computed<PackagePrimaryAction[]>(() => props.packageState?.action.secondary ?? ['download']);
+const primaryAction = computed<PackagePrimaryAction>(() => props.packageState?.action.primary ?? 'none');
+const secondaryActions = computed<PackagePrimaryAction[]>(() => props.packageState?.action.secondary ?? []);
 const primaryColor = computed(() => {
   if (isDestructiveAction(primaryAction.value)) return 'red';
   if (primaryAction.value === 'update') return 'blue';

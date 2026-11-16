@@ -3,11 +3,13 @@
 [govctl]
 id = "RFC-0001"
 title = "aoska backend consumption of omactl package operations"
-version = "0.1.1"
-status = "draft"
+version = "0.1.2"
+status = "deprecated"
 phase = "spec"
 owners = ["@wxiwnd"]
 created = "2026-06-11"
+updated = "2026-11-17"
+refs = ["RFC-0002"]
 
 [[sections]]
 title = "Summary"
@@ -40,3 +42,8 @@ notes = "Initial draft"
 version = "0.1.1"
 date = "2026-06-12"
 notes = "Extend consumer package-manager command, inventory, operation, storage, and compatibility wrapper requirements"
+
+[[changelog]]
+version = "0.1.2"
+date = "2026-11-17"
+notes = "Deprecated in favor of the amo D-Bus consumer contract in RFC-0002"

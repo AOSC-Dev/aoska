@@ -1,0 +1,14 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-SUMMARY"
+title = "Scope and upstream version"
+kind = "informative"
+status = "active"
+since = "0.1.0"
+
+[content]
+text = """
+This RFC supersedes [[RFC-0001]] and defines aoska's consumption of amo 0.6.1 through the system D-Bus. The upstream reference is AOSC-Dev/amo commit f81dfcd40e52b3c8d0029d458d7c3fddb4fd9a03 (tag v0.6.1): https://github.com/AOSC-Dev/amo/tree/f81dfcd40e52b3c8d0029d458d7c3fddb4fd9a03.
+
+The service is `io.aosc.Amo`, object `/io/aosc/Amo`, interface `io.aosc.Amo1`. aoska exposes its own typed `pm_*` commands to the frontend. ASMR owns app discovery, categories, recommendations, screenshots, and source metadata."""

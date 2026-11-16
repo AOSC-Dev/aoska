@@ -3,7 +3,8 @@
 [govctl]
 id = "ADR-0001"
 title = "Adopt omactl CLI contract for package-management integration"
-status = "proposed"
+status = "superseded"
+superseded_by = "ADR-0002"
 date = "2026-06-11"
 refs = ["RFC-0001"]
 

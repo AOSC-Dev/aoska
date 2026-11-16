@@ -5,8 +5,10 @@
     :app-icon="resolveAssetPath(packageDetail?.icon || '', packageName)"
     :app-banner-img="resolveAssetPath(packageDetail?.banner || '', packageName)"
     :package-state="packageState"
+    :disabled="operationBusy"
     @action="handlePackageAction"
   />
+  <p v-if="errorMessage || operationError" role="alert" class="package-error">{{ errorMessage || operationError }}</p>
   <div class="down-content">
     <div class="image-container">
       <ImageCarousel
@@ -56,7 +58,7 @@
       </div>
     </div>
   </div>
-  <OperationDialog :operation="activeOperation" @close="activeOperation = null" />
+  <OperationDialog :operation="activeOperation" :plan="plan" :submitting="submitting" :error="operationError" @confirm="confirm" @finished="finished" @close="close" />
 </template>
 
 <script setup lang="ts">
@@ -68,20 +70,37 @@ import AppHeader from "./AppPage/AppHeader.vue";
 import { useRoute } from "vue-router";
 import { fetchDetail } from "../../utils/wrapper";
 import { getPackageManager } from '../../utils/pmClient';
-import type { PackagePrimaryAction, PmOperationStart, PmPackageState } from '../../types/pm';
+import type { PackagePrimaryAction, PmPackageState, PmCapabilities } from '../../types/pm';
 import { PackageDetail } from "../../types/packages";
 import { resolveAssetPath } from '../../utils/url';
 import OperationDialog from '../share/OperationDialog.vue';
+import { usePackageOperation } from '../../utils/usePackageOperation';
 
 const route = useRoute();
 const packageName = ref<string>(route.params.pkgName as string);
 const packageDetail = ref<PackageDetail | null>(null);
 const packageState = ref<PmPackageState | null>(null);
-const activeOperation = ref<PmOperationStart | null>(null);
+const errorMessage = ref('');
+const capabilities = ref<PmCapabilities | null>(null);
+const { plan, activeOperation, submitting, locked: operationBusy, error: operationError, prepare, confirm, finished, close } = usePackageOperation(loadPackageState);
+
+async function loadPackageState() {
+  errorMessage.value = '';
+  try {
+    const pm = getPackageManager();
+    capabilities.value = await pm.capabilities();
+    packageState.value = await pm.packageState(packageName.value);
+  } catch (cause) {
+    errorMessage.value = String(cause);
+    packageState.value = null;
+  }
+}
 
 onMounted(async () => {
-  packageDetail.value = await fetchDetail(packageName.value);
-  packageState.value = await getPackageManager().packageState(packageName.value);
+  await Promise.all([
+    fetchDetail(packageName.value).then(detail => { packageDetail.value = detail; }).catch(cause => { errorMessage.value = String(cause); }),
+    loadPackageState(),
+  ]);
 });
 
 const installSizeFormatted = computed(() => {
@@ -89,16 +108,15 @@ const installSizeFormatted = computed(() => {
 });
 
 async function handlePackageAction(action: PackagePrimaryAction) {
-  const pm = getPackageManager();
-  if (action === 'install') {
-    activeOperation.value = await pm.startInstall([packageName.value]);
-  } else if (action === 'update') {
-    activeOperation.value = await pm.startUpdate([packageName.value]);
-  } else if (action === 'remove') {
-    activeOperation.value = await pm.startRemove([packageName.value]);
-  } else if (action === 'open' || action === 'download') {
-    openHomepage();
+  if (action === 'download' || action === 'open') { openHomepage(); return; }
+  if (!['install', 'update', 'remove'].includes(action) || operationBusy.value) return;
+  const kind = action as 'install' | 'update' | 'remove';
+  const capability = kind === 'update' ? 'upgrade.selected' : kind;
+  if (!capabilities.value?.capabilities.includes(`run.${capability}.v1`) || !capabilities.value.capabilities.includes(`plan.${capability}.v1`)) {
+    errorMessage.value = '当前包管理服务不支持此操作。';
+    return;
   }
+  await prepare(kind, [packageName.value]);
 }
 
 function openHomepage() {
@@ -108,6 +126,7 @@ function openHomepage() {
 </script>
 
 <style scoped>
+.package-error { margin: 12px 20px; padding: 12px; background: var(--color-danger); color: var(--color-text); overflow-wrap: anywhere; }
 .down-content {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(360px, 520px);

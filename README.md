@@ -1,46 +1,81 @@
-# Tauri + Vue + TypeScript
+# aoska
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+AOSC OS software store built with Tauri 2, Vue 3, and TypeScript. ASMR provides
+catalog metadata; amo provides package state and operations over the system D-Bus.
 
-## AOSC OS Development
+## AOSC OS development
 
-Install the Tauri and package-manager integration prerequisites:
+Install the development tools and desktop integration dependencies:
 
 ```sh
-oma install nodejs pnpm rustc cargo pkg-config webkit2gtk
+sudo oma install git nodejs pnpm rustc cargo make pkg-config webkit2gtk amo debconf-kde
 ```
 
-`pkg-config` is the AOSC package that provides the `pkg-config` command (via
-`pkgconf`) required by the GTK/WebKit Rust bindings used by Tauri. Without it,
-release builds fail while compiling crates such as `glib-sys`.
+`pkg-config` provides the compiler flags for GTK/WebKit. Run aoska in a graphical
+user session with a Polkit authentication agent so amo can request authorization
+for package changes. The KDE debconf helper handles package configuration prompts.
 
-Install `omactl` before testing real package operations:
+Check that amo is running and exposes its interface:
 
 ```sh
-oma install omactl
+systemctl status amo.service
+busctl --system introspect io.aosc.Amo /io/aosc/Amo
 ```
 
-Start aoska from an AOSC graphical terminal so polkit can show the password
-prompt for `systemd-run` operations:
+The integration targets [amo 0.6.1](https://github.com/AOSC-Dev/amo/tree/v0.6.1),
+interface `io.aosc.Amo1`. The consumer contract and version-specific limitations
+are recorded in [RFC-0002](docs/rfc/RFC-0002.md).
 
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
 pnpm tauri dev
 ```
 
-Build a release binary and distro packages:
+For browser-only frontend work, `pnpm dev` uses deterministic catalog and
+package-manager stubs. Tauri uses the real amo backend; installing, updating, or
+removing packages there changes the test system after confirmation and authorization.
+
+## Checks and builds
 
 ```sh
+pnpm run test:frontend:stub
+pnpm exec eslint src
+pnpm build
+cargo test --locked --manifest-path src-tauri/Cargo.toml --lib
 pnpm tauri build
 ```
 
-If AppImage helper downloads are unavailable, the native binary can still be
-compiled with:
+The Linux D-Bus regression test starts a private `dbus-daemon` and does not use the
+system package manager. The opt-in test in `src-tauri/tests/amo_live.rs` targets a
+real amo service: it refreshes metadata and, when `AOSKA_TEST_PACKAGE` is set,
+installs and removes that initially absent package after checking the plan contains
+no other changes. Run it explicitly from an authorized graphical session:
 
 ```sh
-cd src-tauri
-cargo build --release --bin aoska
+AOSKA_TEST_PACKAGE=sl cargo test --locked --manifest-path src-tauri/Cargo.toml --test amo_live -- --ignored --nocapture
 ```
+
+To build the native program without downloading bundle helpers:
+
+```sh
+pnpm exec tauri build --debug --no-bundle --ci -- --locked
+```
+
+For a release binary without distro packaging, run `pnpm build`, then
+`cargo build --locked --release --manifest-path src-tauri/Cargo.toml --bin aoska`.
+
+## Current package-manager capabilities
+
+amo supports package lookup, update lists, transaction previews, install/remove,
+selected or full upgrades, and metadata refresh. aoska follows each request until
+its matching `ResultReport` signal arrives. A successful method return only means
+the daemon accepted the request.
+
+amo 0.6.1 has no full installed-package inventory, storage summary, cancellation,
+application-launch, or operation-history API. Those controls are unavailable with
+this backend. Package details still support removal of an installed catalog app.
+An empty TUM list cannot distinguish unavailable security metadata from no matching
+security updates, so aoska keeps the classification unknown in that case.
 
 ## Recommended IDE Setup
 

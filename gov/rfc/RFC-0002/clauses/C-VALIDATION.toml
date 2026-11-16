@@ -1,0 +1,14 @@
+#:schema ../../../schema/clause.schema.json
+
+[govctl]
+id = "C-VALIDATION"
+title = "Integration verification"
+kind = "informative"
+status = "active"
+since = "0.1.0"
+
+[content]
+text = """
+Regression tests cover query/transaction mapping, installed versus candidate versions, request IDs above JavaScript's safe integer range, unrelated result IDs, failures, and the difference between progress completion and ResultReport. Frontend tests cover confirmation before execution, capability-dependent queries, and observation through terminal state.
+
+On an AOSC OS test machine, verify the real system-bus interface, package lookup, transaction preview, and a bounded operation with its matching result. Desktop validation should exercise Polkit and inspect the native Tauri window, including progress and failure presentation. Stub-only success does not establish daemon integration."""
