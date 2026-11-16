@@ -14,7 +14,7 @@
       {
         "title": "aoska",
         "decorations": false,
-        "transparent": true,
+        "transparent": false,
         "width": 1150,
         "height": 800
       }
