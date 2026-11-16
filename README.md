@@ -72,8 +72,10 @@ its matching `ResultReport` signal arrives. A successful method return only mean
 the daemon accepted the request.
 
 amo 0.6.1 has no full installed-package inventory, storage summary, cancellation,
-application-launch, or operation-history API. Those controls are unavailable with
-this backend. Package details still support removal of an installed catalog app.
+or operation-history API. Those controls are unavailable with this backend.
+Application launching needs separate desktop integration; this adapter does not
+infer launchability from installed package state. Package details still support
+removal of an installed catalog app.
 An empty TUM list cannot distinguish unavailable security metadata from no matching
 security updates, so aoska keeps the classification unknown in that case.
 
