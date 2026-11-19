@@ -135,7 +135,6 @@ dependencies = [
  "clap",
  "futures-util",
  "gio",
- "gtk",
  "httpmock",
  "regex",
  "reqwest",

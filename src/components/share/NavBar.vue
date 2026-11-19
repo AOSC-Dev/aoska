@@ -1,5 +1,5 @@
 <template>
-  <div class="navigator" data-tauri-drag-region>
+  <div class="navigator">
     <div class="nav-left">
       <RouterLink
         v-for="item in navItems"
@@ -19,12 +19,6 @@
         <input v-model="searchQuery" :placeholder="$t('app.search')" @keydown.enter.prevent="submitSearch" />
         <button class="search-icon" type="submit" :aria-label="$t('app.search')">⌕</button>
       </form>
-
-      <div v-if="isTauriRuntime" class="window-controls">
-        <button class="win-btn" title="Minimize" @click="onMinimize()">⌄</button>
-        <button class="win-btn" title="Maximize" @click="onMaximize()">⌃</button>
-        <button class="win-btn close" title="Close" @click="onClose()">×</button>
-      </div>
     </div>
   </div>
 </template>
@@ -32,10 +26,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import { normalizeSearchQuery } from '../../utils/catalogSearch';
 
-const isTauriRuntime = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 const route = useRoute();
 const router = useRouter();
 const searchQuery = ref(typeof route.query.q === 'string' ? route.query.q : '');
@@ -49,12 +41,6 @@ const navItems = [
   { to: "/view-all", label: "app.view-all" },
   { to: "/updates", label: "app.updates" },
 ];
-
-const appWindow = isTauriRuntime ? getCurrentWindow() : null;
-
-const onMinimize = () => { void appWindow?.minimize(); };
-const onMaximize = () => { void appWindow?.toggleMaximize(); };
-const onClose = () => { void appWindow?.close(); };
 
 watch(
   () => route.query.q,
@@ -152,31 +138,5 @@ function submitSearch() {
   color: rgba(255, 255, 255, 0.86);
   cursor: pointer;
   font-size: 16px;
-}
-
-.window-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.win-btn {
-  width: 22px;
-  height: 22px;
-  border: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  cursor: pointer;
-  line-height: 20px;
-}
-
-.win-btn:hover {
-  background-color: rgba(255, 255, 255, 0.22);
-}
-
-.win-btn.close {
-  background: rgba(255, 255, 255, 0.86);
-  color: #0f3a19;
 }
 </style>

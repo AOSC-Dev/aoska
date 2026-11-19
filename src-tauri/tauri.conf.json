@@ -12,9 +12,8 @@
   "app": {
     "windows": [
       {
-        "title": "aoska",
-        "create": false,
-        "decorations": false,
+        "title": "Aoska",
+        "decorations": true,
         "transparent": false,
         "width": 1150,
         "height": 800
