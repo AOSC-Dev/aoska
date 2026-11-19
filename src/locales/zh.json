@@ -10,7 +10,9 @@
     "search": "软件包搜索"
   },
   "home": {
-    "appTitle": "装机必备",
+    "moreGuides": "更多指南",
+    "retry": "重试",
+    "loading": "正在读取目录…",
     "tipTitle": "技巧指南"
   },
   "updates": {
@@ -30,10 +32,6 @@
     "catalogInstalled": "目录内已安装应用",
     "catalogScope": "仅显示软件中心目录中的已安装应用"
   },
-  "welcome": {
-    "sub-title": "四季流光，尽收眼底",
-    "title": "安同2024年历壁纸"
-  },
   "appBanner": {
     "install": "安装"
   },
@@ -47,6 +45,45 @@
     "resultCount": "{count} 个结果",
     "emptySearch": "没有找到匹配的软件包。",
     "emptyCatalog": "暂无可显示的软件包。"
+  },
+  "detail": {
+    "retryCatalog": "重试目录",
+    "retryState": "重试软件包状态",
+    "loading": "正在读取应用详情…",
+    "package": "软件包",
+    "publisher": "发行方",
+    "version": "软件版本",
+    "size": "安装大小",
+    "reviewed": "标记审核日期",
+    "website": "官方网站",
+    "download": "前往下载页面",
+    "report": "报告使用问题",
+    "unsupported": "当前包管理服务不支持此操作。",
+    "fields": {
+      "availability": "可用性",
+      "runtime": "运行环境",
+      "service": "服务可用性",
+      "telemetry": "遥测",
+      "support": "支持方"
+    },
+    "values": {
+      "verified": "已验证",
+      "unverified": "尚未验证",
+      "broken": "不可用",
+      "unknown": "未知",
+      "native": "原生",
+      "compatibility-layer": "非原生（兼容层）",
+      "windows": "Windows 应用程序",
+      "full": "完整",
+      "limited": "受限",
+      "unavailable": "不可用",
+      "present": "包含遥测",
+      "absent": "不含遥测",
+      "aosc": "安同开源社区",
+      "upstream": "上游",
+      "community": "社区",
+      "none": "无"
+    }
   },
   "tags": {
     "unofficial": {

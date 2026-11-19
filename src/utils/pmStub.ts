@@ -31,6 +31,17 @@ const STUB_NOW = '2026-06-12T08:00:00.000Z';
 
 const initialPackages: PmPackageRecord[] = [
   {
+    name: 'sample-app',
+    catalogName: 'sample-repository-app',
+    displayName: '仓库软件示例',
+    packageName: 'sample-app',
+    installed: false,
+    upgradable: false,
+    openable: false,
+    aoskaManageable: true,
+    newVersion: '1.0',
+  },
+  {
     name: 'wechat',
     displayName: '微信',
     packageName: 'wechat',
@@ -258,7 +269,7 @@ export function createStubPackageManager({
     },
 
     async listCatalogInstalled(): Promise<PmPackageList> {
-      return { packages: clone(sortedPackages(stubPackages.filter(pkg => pkg.installed && pkg.aoskaManageable))).map(pkg => ({...pkg, catalogName: pkg.name})) };
+      return { packages: clone(sortedPackages(stubPackages.filter(pkg => pkg.installed && pkg.aoskaManageable))).map(pkg => ({...pkg, catalogName: pkg.catalogName ?? pkg.name})) };
     },
 
     async listInstalled(): Promise<PmPackageList> {

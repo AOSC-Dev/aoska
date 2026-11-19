@@ -1,21 +1,85 @@
-use super::{amo_types::PmPackage, index::Index, packages::PackageBrief};
-use serde::Serialize;
-use std::collections::{HashMap, HashSet};
+use super::amo_types::PmPackage;
+use serde::{Deserialize, Serialize};
+use std::collections::{BTreeSet, HashMap};
 
-pub fn preferred_desktop_id<'a>(
-    index: Option<&'a str>,
-    detail: Option<&'a str>,
-) -> Option<&'a str> {
-    index.or(detail)
+#[derive(Deserialize)]
+pub struct CatalogIndex {
+    pub schema_version: u32,
+    apps: Vec<CatalogEntry>,
 }
 
-pub fn unique_entries(index: Index) -> Vec<PackageBrief> {
-    let mut names = HashSet::new();
+#[derive(Deserialize)]
+pub struct CatalogEntry {
+    pub id: String,
+    pub package_refs: Vec<String>,
+    pub desktop_id: Option<String>,
+    icon: Option<String>,
+    external: bool,
+    installer_kinds: Vec<String>,
+}
+
+impl CatalogIndex {
+    // For mixed installers the index includes expected names of external artifacts too.
+    pub fn mixed_ids(&self) -> Vec<String> {
+        self.apps
+            .iter()
+            .filter(|app| !app.external && app.mixed_installers())
+            .map(|app| app.id.clone())
+            .collect()
+    }
+
+    pub fn set_repository_refs(&mut self, id: &str, names: Vec<String>) {
+        if let Some(app) = self.apps.iter_mut().find(|app| app.id == id) {
+            app.package_refs = names;
+            app.installer_kinds.retain(|kind| kind == "aosc-repository");
+        }
+    }
+}
+
+impl CatalogEntry {
+    fn mixed_installers(&self) -> bool {
+        self.installer_kinds
+            .iter()
+            .any(|kind| kind == "aosc-repository")
+            && self
+                .installer_kinds
+                .iter()
+                .any(|kind| kind != "aosc-repository")
+    }
+
+    pub fn launch_candidates(&self, selected: Option<&str>) -> anyhow::Result<Vec<String>> {
+        match selected {
+            Some(name) if self.package_refs.iter().any(|package| package == name) => {
+                Ok(vec![name.to_owned()])
+            }
+            Some(_) => anyhow::bail!("Package does not belong to this catalog application"),
+            None => Ok(self.package_refs.clone()),
+        }
+    }
+}
+
+pub fn repository_entries(index: CatalogIndex) -> Vec<CatalogEntry> {
     index
-        .packages
+        .apps
         .into_iter()
-        .flat_map(|category| category.packages)
-        .filter(|entry| names.insert(entry.name.clone()))
+        .filter(|app| {
+            !app.external
+                && !app.package_refs.is_empty()
+                && !app.installer_kinds.is_empty()
+                && app
+                    .installer_kinds
+                    .iter()
+                    .all(|kind| kind == "aosc-repository")
+        })
+        .collect()
+}
+
+pub fn package_names(entries: &[CatalogEntry]) -> Vec<String> {
+    entries
+        .iter()
+        .flat_map(|app| app.package_refs.iter().cloned())
+        .collect::<BTreeSet<_>>()
+        .into_iter()
         .collect()
 }
 
@@ -30,97 +94,102 @@ pub struct CatalogApplication {
 }
 
 pub fn installed_entries(
-    entries: Vec<PackageBrief>,
+    entries: Vec<CatalogEntry>,
     states: Vec<PmPackage>,
     base_url: &str,
 ) -> anyhow::Result<Vec<CatalogApplication>> {
-    let mut states: HashMap<_, _> = states
+    let mut installed: HashMap<_, _> = states
         .into_iter()
+        .filter(|state| state.installed && state.aoska_manageable)
         .map(|state| (state.name.clone(), state))
         .collect();
     let base = reqwest::Url::parse(&format!("{}/", base_url.trim_end_matches('/')))?;
-    entries
-        .into_iter()
-        .filter_map(|entry| {
-            states
-                .remove(&entry.name)
-                .filter(|state| state.installed && state.aoska_manageable)
-                .map(|package| {
-                    let path = entry.icon.to_string_lossy();
-                    let icon = if path.starts_with("https://")
-                        || path.starts_with("http://")
-                        || path.starts_with("data:")
-                    {
-                        path.into_owned()
-                    } else {
-                        base.join(&format!("packages/{}/{}", entry.name, path))?
-                            .to_string()
-                    };
-                    Ok(CatalogApplication {
-                        package,
-                        catalog_name: entry.name,
-                        icon,
-                        desktop_id: entry.desktop_id,
-                    })
-                })
-        })
-        .collect()
+    let mut applications = Vec::new();
+    for app in entries {
+        for name in &app.package_refs {
+            if let Some(package) = installed.remove(name) {
+                let icon = app.icon.as_ref().map(|path| base.join(path)).transpose()?;
+                applications.push(CatalogApplication {
+                    package,
+                    catalog_name: app.id.clone(),
+                    icon: icon.map(String::from).unwrap_or_default(),
+                    desktop_id: app.desktop_id.clone(),
+                });
+            }
+        }
+    }
+    Ok(applications)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
+
+    fn index() -> CatalogIndex {
+        serde_json::from_value(json!({
+            "schema_version": 1,
+            "apps": [
+                {"id":"sample-repository-app","package_refs":["sample-app","sample-extra"],"icon":"apps/sample-repository-app/assets/icon.svg","desktop_id":"org.example.Sample.desktop","external":false,"installer_kinds":["aosc-repository"]},
+                {"id":"external-app","package_refs":["external-deb"],"external":true,"installer_kinds":["browser-assisted-deb"]},
+                {"id":"mixed","package_refs":["upstream-deb","repo-pkg"],"external":false,"installer_kinds":["direct-deb","aosc-repository"]}
+            ]
+        })).unwrap()
+    }
 
     #[test]
-    fn categories_are_joined_once_and_old_catalogs_remain_valid() {
-        let index: Index = serde_json::from_value(serde_json::json!({
-            "version":1,"generated_at":"2026-11-17T00:00:00Z",
-            "packages":[
-                {"category":"working","packages":[{"name":"firefox","intro":"Browser","icon":"assets/logo.png"}]},
-                {"category":"creating","packages":[{"name":"firefox","intro":"Browser","icon":"assets/logo.png"}]}
-            ]
-        })).unwrap();
-        let entries = unique_entries(index);
-        assert_eq!(entries.len(), 1);
-        assert!(entries[0].desktop_id.is_none());
+    fn repository_refs_exclude_external_artifacts_and_respect_package_selection() {
+        let mut index = index();
+        assert_eq!(index.mixed_ids(), ["mixed"]);
+        index.set_repository_refs("mixed", vec!["repo-pkg".into()]);
+        let entries = repository_entries(index);
+        assert_eq!(
+            package_names(&entries),
+            ["repo-pkg", "sample-app", "sample-extra"]
+        );
+        let app = &entries[0];
+        assert_eq!(
+            app.launch_candidates(Some("sample-extra")).unwrap(),
+            ["sample-extra"]
+        );
+        assert!(app.launch_candidates(Some("upstream-deb")).is_err());
+        assert_eq!(app.launch_candidates(None).unwrap(), app.package_refs);
+    }
+
+    #[test]
+    fn installed_rows_preserve_amo_package_keys_and_link_to_the_catalog_app() {
         let state = PmPackage {
-            name: "firefox".into(),
-            display_name: "firefox".into(),
-            package_name: "firefox:amd64".into(),
+            name: "sample-app".into(),
+            display_name: "Sample".into(),
+            package_name: "sample-app:amd64".into(),
             installed: true,
             upgradable: false,
             openable: false,
             aoska_manageable: true,
             requires_manual_action: false,
-            current_version: Some("159".into()),
-            new_version: Some("159".into()),
+            current_version: Some("1".into()),
+            new_version: Some("1".into()),
             installed_size: None,
             download_size: None,
             architecture: Some("amd64".into()),
             is_security: false,
         };
-        let rows =
-            installed_entries(entries.clone(), vec![state], "http://127.0.0.1:1234").unwrap();
-        assert_eq!(rows[0].package.package_name, "firefox:amd64");
+        let rows = installed_entries(
+            repository_entries(index()),
+            vec![state],
+            "http://127.0.0.1:8765/dist/v1",
+        )
+        .unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].package.package_name, "sample-app:amd64");
+        assert_eq!(rows[0].catalog_name, "sample-repository-app");
+        assert_eq!(
+            rows[0].desktop_id.as_deref(),
+            Some("org.example.Sample.desktop")
+        );
         assert_eq!(
             rows[0].icon,
-            "http://127.0.0.1:1234/packages/firefox/assets/logo.png"
+            "http://127.0.0.1:8765/dist/v1/apps/sample-repository-app/assets/icon.svg"
         );
-        assert!(installed_entries(entries, vec![], "http://127.0.0.1")
-            .unwrap()
-            .is_empty());
-    }
-
-    #[test]
-    fn explicit_catalog_ids_precede_the_package_name_fallback() {
-        assert_eq!(
-            preferred_desktop_id(None, Some("org.example.Editor.desktop")),
-            Some("org.example.Editor.desktop")
-        );
-        assert_eq!(
-            preferred_desktop_id(Some("chosen.desktop"), Some("old.desktop")),
-            Some("chosen.desktop")
-        );
-        assert_eq!(preferred_desktop_id(None, None), None);
     }
 }

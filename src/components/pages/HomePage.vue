@@ -1,84 +1,145 @@
 <template>
-
   <div class="home-layout">
+    <WelcomeCard
+      v-if="homepage?.hero"
+      class="welcome"
+      :image="homepage.hero.image"
+      :title="homepage.hero.title"
+      :subtitle="homepage.hero.subtitle"
+      @click="activateHero"
+    />
+    <UpdateCard
+      class="update"
+      :class="{ wide: !homepage?.hero }"
+      :is-loading="loading"
+      :error="updateError"
+      :update="update"
+      :update-security="updateSecurity"
+      :security-classification-available="securityClassificationAvailable"
+      @action="router.push('/updates')"
+    />
 
-    <div class="up-content">
-      <WelcomeCard class="welcome"></WelcomeCard>
-      <UpdateCard
-        class="update"
-        :is-loading="loading"
-        :error="updateError"
-        @action="router.push('/updates')"
-        :update="update"
-        :update-security="updateSecurity"
-        :security-classification-available="securityClassificationAvailable"
-      ></UpdateCard>
-    </div>
+    <p v-if="catalogError" class="catalog-state" role="alert">
+      {{ catalogError }}
+      <button type="button" @click="refresh++">{{ $t('home.retry') }}</button>
+    </p>
+    <p v-else-if="!homepage" class="catalog-state" role="status">{{ $t('home.loading') }}</p>
+    <p v-if="linkError" class="catalog-state" role="alert">{{ linkError }}</p>
 
-    <div class="down-content">
-      <div class="app-content">
-        <div class="app-title">{{ $t("home.appTitle") }}</div>
-        <p v-if="catalogError" role="alert">{{ catalogError }} <button type="button" @click="loadCatalog">重试</button></p>
+    <div v-if="collections.length" class="app-content">
+      <section
+        v-for="collection in collections"
+        :id="'collection-' + collection.id"
+        :key="collection.id"
+        tabindex="-1"
+      >
+        <h2>{{ collection.title }}</h2>
         <div class="apps">
           <AppCard
-            v-for="app in recommendList?.packages"
-            :key="app.name"
+            v-for="app in collection.apps"
+            :key="app.id"
             :name="app.name"
-            :intro="app.intro"
-            :image="resolveAssetPath(app.icon, app.name)"
-            @click="showDetail(app.name)"
-          ></AppCard>
+            :intro="app.summary"
+            :image="app.icon"
+            @click="openApp(app.id)"
+          />
         </div>
-      </div>
-      <div class="tip-content">
-        <div class="tip-title">{{ $t("home.tipTitle") }}</div>
-        <div class="tips">
-          <TipCard
-            v-for="(tip, index) in tipList"
-            :key="index"
-            :month="tip.month"
-            :day="tip.day"
-            :title="tip.title"
-            :intro="tip.intro"
-          ></TipCard>
-        </div>
-      </div>
+      </section>
     </div>
+
+    <section v-if="homepage && (homepage.guides.items.length || homepage.guides.more_url)" class="tip-content">
+      <header>
+        <h2>{{ $t('home.tipTitle') }}</h2>
+        <button v-if="homepage.guides.more_url" type="button" @click="openLink(homepage.guides.more_url)">
+          {{ $t('home.moreGuides') }}
+        </button>
+      </header>
+      <div class="tips">
+        <TipCard
+          v-for="guide in homepage.guides.items"
+          :key="guide.id"
+          :date="guide.date"
+          :title="guide.title"
+          :intro="guide.subtitle"
+          @click="openLink(guide.url)"
+        />
+      </div>
+    </section>
   </div>
 </template>
 
-
-<script setup lang='ts'>
-import { ref, onBeforeMount } from 'vue';
-
-import WelcomeCard from '../share/WelcomeCard.vue';
-import UpdateCard from '../share/UpdateCard.vue';
+<script setup lang="ts">
+import { computed, nextTick, onBeforeMount, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import router from '../../router';
+import { getCatalogHomepage } from '../../utils/asmrClient';
+import { openExternalPage } from '../../utils/desktopClient';
+import { getPackageManager } from '../../utils/pmClient';
 import AppCard from '../share/AppCard.vue';
 import TipCard from '../share/TipCard.vue';
-import router from '../../router';
-import { fetchRecommend } from '../../utils/wrapper';
-import type { RecommendIndex } from '../../types/home';
-import { resolveAssetPath } from '../../utils/url';
-import { getPackageManager } from '../../utils/pmClient';
+import UpdateCard from '../share/UpdateCard.vue';
+import WelcomeCard from '../share/WelcomeCard.vue';
 
-// 总升级与安全升级数
+const { locale } = useI18n();
+const homepage = ref<Awaited<ReturnType<typeof getCatalogHomepage>> | null>(null);
+const catalogError = ref('');
+const linkError = ref('');
+const refresh = ref(0);
+const showHeroCollection = ref(false);
+const collections = computed(() => {
+  const essentials = homepage.value?.essentials;
+  const result = essentials ? [essentials] : [];
+  const featured = homepage.value?.heroCollection;
+  if (showHeroCollection.value && featured && featured.id !== essentials?.id) result.push(featured);
+  return result;
+});
+
+watch([locale, refresh], async ([language], _, onCleanup) => {
+  let active = true;
+  onCleanup(() => { active = false; });
+  catalogError.value = '';
+  try {
+    const content = await getCatalogHomepage(language);
+    if (active) homepage.value = content;
+  } catch (cause) {
+    if (active) catalogError.value = String(cause);
+  }
+}, { immediate: true });
+
+function openApp(id: string) {
+  return router.push('/app/' + encodeURIComponent(id));
+}
+
+async function openLink(url: string) {
+  linkError.value = '';
+  try {
+    await openExternalPage(url);
+  } catch (cause) {
+    linkError.value = String(cause);
+  }
+}
+
+async function activateHero() {
+  const target = homepage.value?.hero?.target;
+  if (target?.app) {
+    await openApp(target.app);
+  } else if (target?.url) {
+    await openLink(target.url);
+  } else if (target?.collection) {
+    showHeroCollection.value = true;
+    await nextTick();
+    const section = document.getElementById('collection-' + target.collection);
+    section?.focus({ preventScroll: true });
+    section?.scrollIntoView({ block: 'start' });
+  }
+}
+
 const loading = ref(true);
 const update = ref(0);
 const updateSecurity = ref(0);
 const securityClassificationAvailable = ref(true);
-
 const updateError = ref('');
-const catalogError = ref('');
-const recommendList = ref<RecommendIndex | null>(null);
-async function loadCatalog() {
-  catalogError.value = '';
-  try {
-    recommendList.value = await fetchRecommend();
-  } catch (cause) {
-    catalogError.value = String(cause);
-  }
-}
-onBeforeMount(loadCatalog);
+
 onBeforeMount(async () => {
   try {
     const summary = await getPackageManager().updateSummary();
@@ -91,39 +152,6 @@ onBeforeMount(async () => {
     loading.value = false;
   }
 });
-
-// 技巧指南列表
-const tipList = [
-  {
-    month: "四月",
-    day: 23,
-    title: "龙架构如何运行 x86 程序？",
-    intro: "LATX 安装及使用指南"
-  },
-  {
-    month: "三月",
-    day: 17,
-    title: "开机时间为何漫长？",
-    intro: "手把手教您分析和调整系统服务配置"
-  },
-  {
-    month: "二月",
-    day: 22,
-    title: "Windows 时间错乱？",
-    intro: "调整时间配置，轻松同步双系统配置"
-  },
-  {
-    month: "二月",
-    day: 7,
-    title: "应用无法安装？",
-    intro: "安同维护者来帮您！"
-  },
-];
-
-const showDetail = (name: string) => {
-  router.push(`/app/${name}`);
-};
-
 </script>
 
 <style scoped>
@@ -135,57 +163,72 @@ const showDetail = (name: string) => {
   color: var(--color-text);
 }
 
-/* 上部区域 */
-.up-content {
-  display: contents; /* 让子元素直接继承 grid 列 */
-}
-
-.welcome {
+.welcome, .update {
   height: 200px;
 }
 
-.update {
-  height: 200px;
+.update, .tip-content {
+  grid-column: 2;
 }
 
-/* 下部区域 */
-.down-content {
-  display: contents; /* 同样继承 grid 列 */
+.update.wide {
+  grid-column: 1 / -1;
 }
 
 .app-content {
-  margin-bottom: 20px;
+  grid-column: 1;
 }
 
-.app-title {
-  color: var(--color-text);
-  font-size: 28px;
+.app-content section {
+  scroll-margin-top: 62px;
+}
+
+.app-content section + section {
+  margin-top: 24px;
+}
+
+.catalog-state {
+  grid-column: 1 / -1;
+}
+
+h2 {
   margin-bottom: 10px;
+  font-size: 28px;
   font-weight: 500;
 }
 
 .apps {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 15px;
 }
 
-.tip-content {
-  min-height: 300px;
-  margin-bottom: 20px;
-  flex-shrink: 0;
+.tip-content header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.tip-title {
-  color: var(--color-text);
-  font-size: 28px;
-  margin-bottom: 10px;
-  font-weight: 500;
+.tip-content header button {
+  color: var(--color-accent);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
 }
 
 .tips {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 12px;
+}
+
+@media (max-width: 760px) {
+  .home-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .update, .tip-content {
+    grid-column: 1;
+  }
 }
 </style>

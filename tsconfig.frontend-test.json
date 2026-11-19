@@ -11,6 +11,7 @@
     "noEmit": false
   },
   "include": [
+    "src/utils/asmr.ts",
     "src/types/pm.ts",
     "src/utils/pmStub.ts",
     "src/utils/pmTauri.ts",

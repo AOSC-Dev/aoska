@@ -31,9 +31,40 @@ pnpm install --frozen-lockfile
 pnpm tauri dev
 ```
 
-For browser-only frontend work, `pnpm dev` uses deterministic catalog and
-package-manager stubs. Tauri uses the real amo backend; installing, updating, or
-removing packages there changes the test system after confirmation and authorization.
+### ASMR catalog
+
+Aoska reads a built ASMR v1 directory over HTTP(S). To preview the ASMR examples,
+serve the generated directory from a second terminal. The helper binds to loopback
+and allows the browser preview to read JSON from a different port.
+
+```sh
+python3 scripts/serve-asmr.py ../aosc-os-asmr/examples/dist/v1
+```
+
+If the example output is missing, build it into a temporary directory and serve it:
+
+```sh
+catalog_dir=$(mktemp -d)
+python3 ../aosc-os-asmr/tools/asmr.py build --root ../aosc-os-asmr/examples --output "$catalog_dir/v1"
+python3 scripts/serve-asmr.py "$catalog_dir/v1"
+```
+
+Both clients default to `http://127.0.0.1:8765/` during this integration.
+Set the URL to the directory containing `index.json`. Subdirectory URLs work
+with or without a trailing slash.
+
+| Client | Example with a custom endpoint |
+| --- | --- |
+| Browser preview with mock package operations | `VITE_AOSKA_ASMR_URL=http://127.0.0.1:9000/catalog/v1/ pnpm dev` |
+| Native desktop client with amo | `AOSKA_ASMR_URL=http://127.0.0.1:9000/catalog/v1/ pnpm tauri dev` |
+
+The desktop override is read at launch. Vite reads its override at dev-server
+startup or build time. The homepage follows the pointer in `index.json`;
+collection cards use app IDs, and details load `apps/<id>.json` on demand.
+For an end-to-end preview, open the repository app and the assisted-download app
+from Essentials. Only the repository app has a package name for amo. In the
+browser preview its package operations use the local stub. A Tauri build can
+also use that stub by setting `VITE_AOSKA_PM_BACKEND=stub` at build time.
 
 ## Checks and builds
 
@@ -78,10 +109,8 @@ with that scope; it does not enumerate every system package. Installed apps can 
 removed individually or in a confirmed batch. Unknown package sizes remain unknown.
 
 Application launching uses GIO and registered visible Desktop Entries in the user
-session. Catalog `desktop_id` is optional (in the index or package information);
-otherwise aoska checks `package-name.desktop`. It never treats installation alone
-as proof that an application can be opened. Website and download links use the
-system URL opener and accept HTTP(S) URLs.
+session. Aoska resolves the selected repository package to `package-name.desktop`
+unless the index supplies an explicit `desktop_id`. Website and download links use the system URL opener and accept HTTP(S) URLs.
 
 Update cards retain successful checks/updates made through aoska, show a reminder
 after 14 days, and distinguish completion, failure, and unknown operation state.

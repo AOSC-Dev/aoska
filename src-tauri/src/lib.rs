@@ -8,10 +8,7 @@ pub fn run() {
         .manage(command::AppState::default())
         .manage(common::amo::AmoBackend::default())
         .invoke_handler(tauri::generate_handler![
-            command::fetch_by_category,
-            command::fetch_detail,
-            command::fetch_index,
-            command::fetch_recommend,
+            command::fetch_catalog_json,
             command::get_endpoint_base_url,
             command::pm_capabilities,
             command::pm_list_updates,

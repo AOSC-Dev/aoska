@@ -213,7 +213,7 @@ async function handleRowAction(operation: RowOperation, name: string) {
   if (operation === 'open') {
     const pkg = visiblePackages.value.find(pkg => pkg.name === name);
     if (!pkg?.catalogName) return;
-    try { await launchCatalogApp(pkg.catalogName); } catch (error) { errorMessage.value = String(error); }
+    try { await launchCatalogApp(pkg.catalogName, pkg.name); } catch (error) { errorMessage.value = String(error); }
     return;
   }
   await startOperation(operation, [name]);

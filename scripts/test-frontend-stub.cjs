@@ -224,6 +224,11 @@ async function runFrontendTests(outDir) {
   assert.equal(wechat.upgradable, true);
   assert.equal(wechat.action.primary, 'update');
 
+  const sample = await pm.packageState('sample-app');
+  assert.equal(sample.catalogName, 'sample-repository-app');
+  assert.equal(sample.action.primary, 'install');
+  assert.deepEqual((await pm.planInstall(['sample-app'])).packages, ['sample-app']);
+
   const firefox = await pm.packageState('firefox');
   assert.equal(firefox.name, 'firefox');
   assert.equal(firefox.installed, false);
@@ -264,6 +269,8 @@ async function runFrontendTests(outDir) {
   const launchCalls = [];
   await launchDesktopApplication('firefox', false, async (...args) => { launchCalls.push(args); });
   assert.deepEqual(launchCalls, [['app_launch', {catalogName:'firefox'}]]);
+  await launchDesktopApplication('editor-suite', false, async (...args) => { launchCalls.push(args); }, 'editor-gui');
+  assert.deepEqual(launchCalls.at(-1), ['app_launch', {catalogName:'editor-suite', packageName:'editor-gui'}]);
   await assert.rejects(launchDesktopApplication('firefox', true, async () => { throw new Error('must not invoke'); }), /浏览器预览/);
   const catalogPm = { ...pm, capabilities: async () => ({kind:'tauri',capabilities:['query.catalog-installed.v1']}), listInstalled: async () => { throw new Error('must not enumerate system'); }, listCatalogInstalled: async () => ({packages:[{name:'firefox:amd64',installed:true},{name:'firefox:amd64',installed:true},{name:'absent',installed:false}]}) };
   const catalogInventory = await loadPackageInventory(catalogPm);
@@ -328,7 +335,10 @@ async function runTests(suite = 'core') {
     execFileSync(path.join(repo, 'node_modules', '.bin', 'tsc'),
       ['-p', 'tsconfig.frontend-test.json', '--outDir', outDir],
       { cwd: repo, stdio: 'inherit' });
-    if (suite !== 'activity') await runFrontendTests(outDir);
+    if (suite !== 'activity') {
+      await runFrontendTests(outDir);
+      await require('./test-asmr.cjs').runCatalogTests(outDir);
+    }
     await require('./test-update-activity.cjs').runUpdateActivityTests(outDir);
   } finally {
     fs.rmSync(outDir, { recursive: true, force: true });

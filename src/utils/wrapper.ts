@@ -1,10 +1,6 @@
-import { invoke } from '@tauri-apps/api/core';
 import { InstallOperation, type OmaOperation, type TumUpdateInfo } from '../types/oma';
-import type { CategoryIndex, Index, RecommendIndex } from '../types/home';
-import type { PackageDetail } from '../types/packages';
 import type { PmPackageRecord } from '../types/pm';
-import { getPackageManager, shouldUseStubBackend } from './pmClient';
-import { stubByCategory, stubDetail, stubIndex, stubRecommend } from './catalogStub';
+import { getPackageManager } from './pmClient';
 
 function pmPackagesToOmaOperation(packages: PmPackageRecord[]): OmaOperation {
   return {
@@ -49,29 +45,4 @@ export async function fetchTumUpdate(): Promise<TumUpdateInfo[] | null> {
     }
     throw error;
   }
-}
-
-export async function fetchRecommend(): Promise<RecommendIndex> {
-  if (shouldUseStubBackend()) return stubRecommend();
-  return invoke<RecommendIndex>('fetch_recommend');
-}
-
-export async function fetchIndex(): Promise<Index> {
-  if (shouldUseStubBackend()) return stubIndex();
-  return invoke<Index>('fetch_index');
-}
-
-export async function fetchDetail(pkgName: string): Promise<PackageDetail> {
-  if (shouldUseStubBackend()) return stubDetail(pkgName);
-  return invoke<PackageDetail>('fetch_detail', { pkgName });
-}
-
-export async function fetchByCategory(category: string): Promise<CategoryIndex> {
-  if (shouldUseStubBackend()) return stubByCategory(category);
-  return invoke<CategoryIndex>('fetch_by_category', { category });
-}
-
-export async function getEndpointBaseUrl(): Promise<string> {
-  if (shouldUseStubBackend()) return typeof window === 'undefined' ? '/' : window.location.origin;
-  return invoke<string>('get_endpoint_base_url');
 }

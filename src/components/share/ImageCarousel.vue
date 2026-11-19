@@ -2,7 +2,7 @@
   <div class="image-carousel" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
     <!-- 主图显示区域 -->
     <div class="main-image-container">
-      <button class="nav-button prev" :class="{ visible: isHovering }" @click="prev">
+      <button v-if="images.length > 1" class="nav-button prev" :class="{ visible: isHovering }" @click="prev">
         &lt;
       </button>
       
@@ -13,17 +13,18 @@
               v-for="(image, index) in images" 
               v-show="currentIndex === index"
               :key="index"
-              :src="image"
+              :src="image.url"
+              :alt="image.alt"
             />
           </transition-group>
         </div>
       </div>
       
-      <button class="nav-button next" :class="{ visible: isHovering }" @click="next">
+      <button v-if="images.length > 1" class="nav-button next" :class="{ visible: isHovering }" @click="next">
         &gt;
       </button>
       
-      <div v-if="isHovering" class="indicators">
+      <div v-if="isHovering && images.length > 1" class="indicators">
         <div 
           v-for="(_, index) in images" 
           :key="index" 
@@ -40,7 +41,7 @@
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 
 const props = defineProps<{
-  images: string[];
+  images: { url: string; alt: string }[];
   autoplay?: boolean;
   interval?: number;
 }>();

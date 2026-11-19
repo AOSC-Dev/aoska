@@ -42,7 +42,7 @@ const searchQuery = ref(typeof route.query.q === 'string' ? route.query.q : '');
 
 const navItems = [
   { to: "/home", label: "app.home" },
-  { to: "/category/working", label: "app.working" },
+  { to: "/category/office", label: "app.working" },
   { to: "/category/games", label: "app.games" },
   { to: "/category/video", label: "app.video" },
   { to: "/category/creating", label: "app.creating" },
