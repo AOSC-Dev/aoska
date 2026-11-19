@@ -49,17 +49,30 @@ python3 ../aosc-os-asmr/tools/asmr.py build --root ../aosc-os-asmr/examples --ou
 python3 scripts/serve-asmr.py "$catalog_dir/v1"
 ```
 
-Both clients default to `http://127.0.0.1:8765/` during this integration.
-Set the URL to the directory containing `index.json`. Subdirectory URLs work
-with or without a trailing slash.
+Open **Settings** to select a catalog. **Automatic** follows the build channel:
 
-| Client | Example with a custom endpoint |
+| Build | Default catalog |
 | --- | --- |
-| Browser preview with mock package operations | `VITE_AOSKA_ASMR_URL=http://127.0.0.1:9000/catalog/v1/ pnpm dev` |
-| Native desktop client with amo | `AOSKA_ASMR_URL=http://127.0.0.1:9000/catalog/v1/ pnpm tauri dev` |
+| Tauri debug build or Vite dev server | Dev · `https://aosc-dev.github.io/aosc-os-asmr/v1/` (GitHub Pages) |
+| Tauri release build or Vite production build | Stable · `https://repo.aosc.io/asmr/v1/` (planned AOSC mirror path) |
 
-The desktop override is read at launch. Vite reads its override at dev-server
-startup or build time. The homepage follows the pointer in `index.json`;
+Select **Custom** and enter `http://127.0.0.1:8765/` to use the local example
+server above. Save, then open Home to load the selected catalog. Desktop
+preferences persist in the user’s Aoska configuration directory. Browser
+preferences persist for the preview’s origin. Selecting **Automatic** restores
+the build default. Stable publication is pending provisioning of the mirror path.
+
+An explicit environment URL takes precedence over the saved preference. Desktop
+reads `AOSKA_ASMR_URL` at launch; the browser preview reads
+`VITE_AOSKA_ASMR_URL` at Vite startup or build time. Use the directory
+containing `index.json`, for example:
+
+```sh
+AOSKA_ASMR_URL=http://127.0.0.1:8765/ pnpm tauri dev
+VITE_AOSKA_ASMR_URL=http://127.0.0.1:8765/ pnpm dev
+```
+
+The homepage follows the pointer in `index.json`;
 collection cards use app IDs, and details load `apps/<id>.json` on demand.
 For an end-to-end preview, open the repository app and the assisted-download app
 from Essentials. Only the repository app has a package name for amo. In the

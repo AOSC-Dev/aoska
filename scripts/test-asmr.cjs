@@ -3,7 +3,27 @@ const path = require('node:path');
 
 exports.runCatalogTests = async function runCatalogTests(outDir) {
   const { createAsmrCatalog } = require(path.join(outDir, 'utils/asmr.js'));
+  const { browserCatalogPreferences, channelUrls } = require(path.join(outDir, 'utils/catalogPreferences.js'));
+  const saved = new Map();
+  const storage = { getItem: key => saved.get(key) ?? null, setItem: (key, value) => saved.set(key, value) };
+  const dev = browserCatalogPreferences(storage, 'dev');
+  const stable = browserCatalogPreferences(storage, 'stable');
+  assert.equal(dev.get().effectiveUrl, channelUrls.dev);
+  assert.equal(stable.get().effectiveUrl, channelUrls.stable);
+  assert.equal(dev.save({ channel: 'stable' }).effectiveUrl, channelUrls.stable);
+  assert.equal(stable.save({ channel: 'dev' }).effectiveUrl, channelUrls.dev);
   const root = 'http://localhost:9000/examples/dist/v1/';
+  assert.equal(dev.save({ channel: 'custom', customUrl: root.slice(0, -1) }).effectiveUrl, root);
+  assert.equal(stable.get().effectiveUrl, root);
+  const forced = browserCatalogPreferences(storage, 'dev', 'https://example.org/local');
+  assert.equal(forced.get().effectiveUrl, 'https://example.org/local/');
+  assert.equal(forced.get().overridden, true);
+  for (const url of ['', 'file:///tmp/v1', 'https://example.org/?key=secret', 'http://user:pass@localhost/']) {
+    assert.throws(() => dev.save({ channel: 'custom', customUrl: url }));
+    assert.equal(dev.get().effectiveUrl, root);
+  }
+  assert.equal(forced.save({ channel: 'auto' }).overridden, true);
+  assert.equal(stable.get().effectiveUrl, channelUrls.stable);
   const caption = { en: { title: 'Guide' }, 'zh-CN': { title: '指南' } };
   const card = {
     id: 'editor',

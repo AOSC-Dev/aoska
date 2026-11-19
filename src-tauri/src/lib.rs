@@ -1,15 +1,25 @@
 pub mod command;
 pub mod common;
 
+use tauri::Manager;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(command::AppState::default())
+        .setup(|app| {
+            let preferences = common::config::CatalogPreferences::new(
+                app.path().app_config_dir()?,
+                std::env::var("AOSKA_ASMR_URL").ok(),
+            );
+            app.manage(command::AppState::new(preferences));
+            Ok(())
+        })
         .manage(common::amo::AmoBackend::default())
         .invoke_handler(tauri::generate_handler![
             command::fetch_catalog_json,
-            command::get_endpoint_base_url,
+            command::get_catalog_settings,
+            command::set_catalog_settings,
             command::pm_capabilities,
             command::pm_list_updates,
             command::pm_update_summary,

@@ -6,6 +6,7 @@ import ViewAllPage from "../components/pages/ViewAllPage.vue";
 import UpdatePage from "../components/pages/UpdatePage.vue";
 import AppPage from "../components/pages/AppPage.vue";
 import CategoryPage from "../components/pages/CategoryPage.vue";
+import SettingsPage from "../components/pages/SettingsPage.vue";
 
 // 创建路由器
 const router = createRouter({
@@ -31,6 +32,10 @@ const router = createRouter({
     {
       path: "/updates",
       component: UpdatePage
+    },
+    {
+      path: "/settings",
+      component: SettingsPage
     },
     {
       path: "/app/:pkgName",

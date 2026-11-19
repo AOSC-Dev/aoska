@@ -5,7 +5,7 @@ use crate::common::{
         PmPlan, PmUpdateSummary, TumUpdateInfo,
     },
     catalog::{installed_entries, repository_entries, CatalogEntry, CatalogIndex},
-    config::catalog_endpoint,
+    config::{CatalogPreferences, CatalogSelection, CatalogSettings},
     desktop,
     utils::fetch_data,
 };
@@ -14,14 +14,14 @@ use serde_json::Value;
 
 pub struct AppState {
     client: reqwest::Client,
-    base_url: String,
+    preferences: CatalogPreferences,
 }
 
-impl Default for AppState {
-    fn default() -> Self {
+impl AppState {
+    pub fn new(preferences: CatalogPreferences) -> Self {
         Self {
             client: reqwest::Client::new(),
-            base_url: catalog_endpoint(),
+            preferences,
         }
     }
 }
@@ -45,15 +45,15 @@ struct RepositoryPackage {
 }
 
 impl AppState {
-    async fn catalog_entries(&self) -> Result<Vec<CatalogEntry>> {
-        let mut index: CatalogIndex =
-            fetch_data(&self.client, &self.base_url, "index.json").await?;
+    async fn catalog_entries(&self) -> Result<(String, Vec<CatalogEntry>)> {
+        let base_url = self.preferences.read()?.effective_url;
+        let mut index: CatalogIndex = fetch_data(&self.client, &base_url, "index.json").await?;
         if index.schema_version != 1 {
             bail!("Unsupported ASMR index schema {}", index.schema_version);
         }
         for id in index.mixed_ids() {
             let detail: RepositoryDetail =
-                fetch_data(&self.client, &self.base_url, &format!("apps/{id}.json")).await?;
+                fetch_data(&self.client, &base_url, &format!("apps/{id}.json")).await?;
             if detail.id != id || detail.schema_version != 1 {
                 bail!("Invalid ASMR detail for {id}");
             }
@@ -66,7 +66,7 @@ impl AppState {
                 .collect();
             index.set_repository_refs(&id, names);
         }
-        Ok(repository_entries(index))
+        Ok((base_url, repository_entries(index)))
     }
 }
 
@@ -87,14 +87,25 @@ pub async fn fetch_catalog_json(
     {
         return Err("Expected a relative ASMR JSON path".into());
     }
-    fetch_data(&app.client, &app.base_url, &path)
+    let settings = app.preferences.read().map_err(|e| format!("{e:#}"))?;
+    fetch_data(&app.client, &settings.effective_url, &path)
         .await
         .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
-pub async fn get_endpoint_base_url(app: tauri::State<'_, AppState>) -> Result<String, String> {
-    Ok(app.base_url.clone())
+pub fn get_catalog_settings(app: tauri::State<'_, AppState>) -> Result<CatalogSettings, String> {
+    app.preferences.read().map_err(|e| format!("{e:#}"))
+}
+
+#[tauri::command]
+pub fn set_catalog_settings(
+    app: tauri::State<'_, AppState>,
+    selection: CatalogSelection,
+) -> Result<CatalogSettings, String> {
+    app.preferences
+        .save(selection)
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -155,7 +166,7 @@ pub async fn pm_package_state(
         .await
         .map_err(|error| format!("{error:#}"))?;
     if result.packages.iter().any(|pkg| pkg.installed) {
-        if let Ok(entries) = app.catalog_entries().await {
+        if let Ok((_, entries)) = app.catalog_entries().await {
             for package in result.packages.iter_mut().filter(|pkg| pkg.installed) {
                 let entry = entries
                     .iter()
@@ -178,7 +189,7 @@ pub async fn pm_list_catalog_installed(
     backend: tauri::State<'_, AmoBackend>,
 ) -> Result<Value, String> {
     async fn list(app: &AppState, backend: &AmoBackend) -> Result<Value> {
-        let entries = app
+        let (base_url, entries) = app
             .catalog_entries()
             .await
             .context("Cannot load the application catalog")?;
@@ -187,7 +198,7 @@ pub async fn pm_list_catalog_installed(
         }
         let names = crate::common::catalog::package_names(&entries);
         let states = backend.package_state(&names).await?;
-        let mut applications = installed_entries(entries, states.packages, &app.base_url)?;
+        let mut applications = installed_entries(entries, states.packages, &base_url)?;
         for application in &mut applications {
             match desktop::resolve(&application.package.name, application.desktop_id.as_deref()) {
                 Ok(Some(desktop)) => {
@@ -221,9 +232,8 @@ pub async fn app_launch(
         id: String,
         selected: Option<String>,
     ) -> Result<()> {
-        let entry = app
-            .catalog_entries()
-            .await?
+        let (_, entries) = app.catalog_entries().await?;
+        let entry = entries
             .into_iter()
             .find(|app| app.id == id)
             .context("Application is not in the repository catalog")?;

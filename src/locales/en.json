@@ -9,6 +9,26 @@
     "updates": "Updates & Uninstall",
     "search": "Search packages"
   },
+  "settings": {
+    "title": "Settings",
+    "source": "Application catalog source",
+    "channel": "Release channel",
+    "auto": "Automatic (this build uses {channel})",
+    "dev": "Dev · GitHub Pages",
+    "stable": "Stable · AOSC repository",
+    "custom": "Custom URL",
+    "url": "Catalog URL",
+    "urlHint": "Enter the HTTP or HTTPS URL of the directory containing index.json.",
+    "effective": "Current URL",
+    "override": "An environment variable sets the current URL. Your saved selection applies when the override is absent.",
+    "stablePending": "The Stable catalog is pending publication.",
+    "save": "Save settings",
+    "saving": "Saving…",
+    "saved": "Settings saved.",
+    "loading": "Loading settings…",
+    "loadError": "Could not read catalog settings: {reason}",
+    "saveError": "Could not save catalog settings: {reason}"
+  },
   "home": {
     "moreGuides": "More guides",
     "retry": "Retry",

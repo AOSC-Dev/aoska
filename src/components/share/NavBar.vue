@@ -19,6 +19,7 @@
         <input v-model="searchQuery" :placeholder="$t('app.search')" @keydown.enter.prevent="submitSearch" />
         <button class="search-icon" type="submit" :aria-label="$t('app.search')">⌕</button>
       </form>
+      <RouterLink to="/settings" active-class="active">{{ $t('settings.title') }}</RouterLink>
     </div>
   </div>
 </template>
@@ -89,6 +90,7 @@ function submitSearch() {
   color: white;
   font-size: 17px;
   text-decoration: none;
+  white-space: nowrap;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
   transition: background 0.2s, box-shadow 0.2s;
 }
@@ -101,14 +103,21 @@ function submitSearch() {
   box-shadow: inset 0 -4px 0 0 var(--color-accent);
 }
 
+.nav-left {
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
 .nav-right {
-  gap: 10px;
+  flex-shrink: 0;
+  gap: 6px;
 }
 
 .search-input {
   display: flex;
   align-items: center;
-  width: 260px;
+  width: clamp(100px, 18vw, 260px);
   height: 26px;
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: var(--radius-control);
