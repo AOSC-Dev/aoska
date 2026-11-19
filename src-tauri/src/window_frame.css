@@ -1,0 +1,28 @@
+#aoska-window.background {
+  background-color: #26342c;
+  border-radius: 12px;
+}
+
+#aoska-window decoration {
+  border: 1px solid #aab6ae;
+  border-radius: 12px;
+  padding: 0;
+  margin: 16px;
+  box-shadow: 0 5px 12px 1px rgba(0, 0, 0, 0.62);
+}
+
+#aoska-window #aoska-content {
+  margin: 4px;
+}
+
+#aoska-window.maximized,
+#aoska-window.fullscreen,
+#aoska-window.maximized decoration,
+#aoska-window.fullscreen decoration,
+#aoska-window.maximized #aoska-content,
+#aoska-window.fullscreen #aoska-content {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+}

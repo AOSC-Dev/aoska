@@ -13,6 +13,7 @@
     "windows": [
       {
         "title": "aoska",
+        "create": false,
         "decorations": false,
         "transparent": false,
         "width": 1150,
