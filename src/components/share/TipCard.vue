@@ -1,23 +1,29 @@
 <template>
-  <div class="card" tabindex="0" role="button">
-    <div class="date">
-      <div class="day">{{ day }}</div>
-      <div class="month">{{ month }}</div>
-    </div>
-    <div class="content">
-      <div class="title">{{ title }}</div>
-      <div class="intro">{{ intro }}</div>
-    </div>
-  </div>
+  <button class="card" type="button">
+    <time class="date" :datetime="date">
+      <span class="day">{{ day }}</span>
+      <span class="month">{{ month }}</span>
+    </time>
+    <span class="content">
+      <span class="title">{{ title }}</span>
+      <span v-if="intro" class="intro">{{ intro }}</span>
+    </span>
+  </button>
 </template>
 
 <script setup lang="ts">
-defineProps<{
-  month: string,
-  day: number,
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+
+const props = defineProps<{
+  date: string,
   title: string,
-  intro: string,
+  intro?: string,
 }>();
+const { locale } = useI18n();
+const day = computed(() => Number(props.date.slice(8)));
+const month = computed(() => new Intl.DateTimeFormat(locale.value, { month: "long", timeZone: "UTC" })
+  .format(new Date(props.date)));
 </script>
 
 <style scoped>
@@ -29,6 +35,8 @@ defineProps<{
   display: flex;
   overflow: hidden;
   cursor: pointer;
+  border: 0;
+  text-align: left;
   background-color: var(--color-surface);
 }
 
@@ -78,6 +86,10 @@ defineProps<{
 .content {
   min-width: 0;
   padding: 15px 12px 12px 10px;
+}
+
+.title, .intro {
+  display: block;
 }
 
 .title {

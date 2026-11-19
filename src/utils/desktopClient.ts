@@ -3,8 +3,8 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { shouldUseStubBackend } from './pmClient';
 import { externalPageUrl, launchDesktopApplication } from './desktopActions';
 
-export async function launchCatalogApp(catalogName: string): Promise<void> {
-  await launchDesktopApplication(catalogName, shouldUseStubBackend(), invoke);
+export async function launchCatalogApp(catalogName: string, packageName?: string): Promise<void> {
+  await launchDesktopApplication(catalogName, shouldUseStubBackend(), invoke, packageName);
 }
 
 export async function openExternalPage(value: string): Promise<void> {

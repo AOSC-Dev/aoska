@@ -1,119 +1,78 @@
 <template>
-  <div class="view-all">
+  <section class="view-all">
     <header class="page-header">
-      <div>
-        <p class="eyebrow">{{ searchQuery ? $t('pages.searchResults') : $t('pages.allApps') }}</p>
-        <h1>{{ searchQuery ? `“${searchQuery}”` : $t('app.view-all') }}</h1>
-      </div>
-      <p class="count">{{ $t('pages.resultCount', { count: packages.length }) }}</p>
+      <h1>{{ title }}</h1>
+      <p v-if="cards && !error">{{ $t('pages.resultCount', { count: packages.length }) }}</p>
     </header>
-    <div class="ranking">
-      <span>{{ $t("pages.ranking") }}</span>
-      <span>{{ $t("pages.name") }}</span>
-      <span>{{ $t("pages.download") }}</span>
-      <span>{{ $t("pages.update") }}</span>
-    </div>
-    <div v-if="!loading && packages.length === 0" class="empty-state">
+    <p v-if="error" role="alert">
+      {{ error }} <button type="button" @click="refresh++">{{ $t('home.retry') }}</button>
+    </p>
+    <p v-else-if="!cards" role="status">{{ $t('home.loading') }}</p>
+    <p v-else-if="!packages.length" class="empty-state">
       {{ searchQuery ? $t('pages.emptySearch') : $t('pages.emptyCatalog') }}
-    </div>
-    <template v-else>
-      <AppBanner
-        v-for="(app, appIndex) in packages"
-        :key="appIndex"
+    </p>
+    <div v-else class="results">
+      <AppCard
+        v-for="app in packages"
+        :key="app.id"
         :name="app.name"
-        :intro="app.intro"
-        :icon="resolveAssetPath(app.icon, app.name)"
-        @click="showDetail(app.name)"
-      ></AppBanner>
-    </template>
-  </div>
+        :intro="app.summary"
+        :image="app.icon"
+        @click="router.push('/app/' + encodeURIComponent(app.id))"
+      />
+    </div>
+  </section>
 </template>
 
-<script setup lang='ts'>
-import AppBanner from '../share/AppBanner.vue';
-import router from '../../router';
-import { computed, onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
-import { fetchIndex } from '../../utils/wrapper';
-import { resolveAssetPath } from "../../utils/url";
-import type { Index } from '../../types/home';
-import { searchCatalogPackages } from '../../utils/catalogSearch';
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRoute, useRouter } from 'vue-router';
+import AppCard from '../share/AppCard.vue';
+import { getCatalogCards } from '../../utils/asmrClient';
+import { normalizeSearchQuery } from '../../utils/catalogSearch';
 
+const props = defineProps<{ category?: string }>();
 const route = useRoute();
-const index = ref<Index | null>(null);
-const loading = ref(true);
+const router = useRouter();
+const { locale, t, te } = useI18n();
+const cards = ref<Awaited<ReturnType<typeof getCatalogCards>> | null>(null);
+const error = ref('');
+const refresh = ref(0);
 const searchQuery = computed(() => typeof route.query.q === 'string' ? route.query.q.trim() : '');
-const packages = computed(() => index.value ? searchCatalogPackages(index.value, searchQuery.value) : []);
-
-onMounted(async () => {
-  index.value = await fetchIndex();
-  loading.value = false;
+const title = computed(() => {
+  if (props.category) {
+    const key = props.category === 'office' ? 'app.working' : 'app.' + props.category;
+    return te(key) ? t(key) : props.category;
+  }
+  return searchQuery.value ? t('pages.searchResults') + ' · ' + searchQuery.value : t('pages.allApps');
+});
+const packages = computed(() => {
+  const query = normalizeSearchQuery(searchQuery.value);
+  return (cards.value ?? []).filter(app =>
+    (!props.category || app.categories.includes(props.category)) &&
+    (!query || [app.id, app.name, app.summary].some(field => field?.toLocaleLowerCase().includes(query)))
+  );
 });
 
-// 跳转到应用详情
-const showDetail = (name: string) => {
-  router.push(`/app/${name}`);
-};
+watch([locale, refresh], async ([language], _, onCleanup) => {
+  let active = true;
+  onCleanup(() => { active = false; });
+  cards.value = null;
+  error.value = '';
+  try {
+    const data = await getCatalogCards(language);
+    if (active) cards.value = data;
+  } catch (cause) {
+    if (active) error.value = String(cause);
+  }
+}, { immediate: true });
 </script>
 
 <style scoped>
-.view-all {
-  margin: 0;
-  padding: 62px 20px 20px;
-  color: var(--color-text);
-}
-
-.page-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 14px;
-  padding: 18px 20px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background-color: var(--color-surface);
-}
-
-.eyebrow {
-  margin: 0 0 6px;
-  color: var(--color-text-subtle);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-h1 {
-  margin: 0;
-  font-size: 30px;
-  line-height: 1.1;
-}
-
-.count {
-  margin: 0;
-  color: var(--color-text-muted);
-}
-
-.ranking {
-  height: 40px;
-  font-size: 18px;
-  line-height: 40px;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-info);
-  border-radius: var(--radius-card) var(--radius-card) 0 0;
-}
-
-.ranking span {
-  margin-left: 10px;
-}
-
-.empty-state {
-  padding: 46px 20px;
-  border: 1px dashed var(--color-border);
-  border-top: 0;
-  border-radius: 0 0 var(--radius-card) var(--radius-card);
-  background-color: var(--color-surface);
-  color: var(--color-text-muted);
-  text-align: center;
-}
+.view-all { margin: 0; padding: 62px 20px 20px; color: var(--color-text); }
+.page-header { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; margin-bottom: 14px; }
+.page-header h1 { font-size: 30px; }
+.page-header p, .empty-state { color: var(--color-text-muted); }
+.results { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 8px; }
 </style>

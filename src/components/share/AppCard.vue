@@ -1,18 +1,18 @@
 <template>
-  <div class="card" tabindex="0" role="button">
-    <img :src="image" class="app-icon" alt="" />
-    <div class="copy">
-      <div class="name">{{ name }}</div>
-      <div class="intro">{{ intro }}</div>
-    </div>
-  </div>
+  <button class="card" type="button">
+    <img v-if="image" :src="image" class="app-icon" alt="" />
+    <span class="copy">
+      <span class="name">{{ name }}</span>
+      <span v-if="intro" class="intro">{{ intro }}</span>
+    </span>
+  </button>
 </template>
 
 <script setup lang='ts'>
 defineProps<{
   name: string,
-  intro: string,
-  image: string
+  intro?: string,
+  image?: string | null
 }>();
 </script>
 
@@ -29,6 +29,7 @@ defineProps<{
   background-color: var(--color-surface-raised);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
   cursor: pointer;
+  text-align: left;
   transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
 }
 
@@ -47,6 +48,10 @@ defineProps<{
 
 .copy {
   min-width: 0;
+}
+
+.name, .intro {
+  display: block;
 }
 
 .name {

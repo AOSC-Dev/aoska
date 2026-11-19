@@ -10,7 +10,9 @@
     "search": "Search packages"
   },
   "home": {
-    "appTitle": "Popular Apps",
+    "moreGuides": "More guides",
+    "retry": "Retry",
+    "loading": "Loading catalog…",
     "tipTitle": "Tips"
   },
   "updates": {
@@ -30,10 +32,6 @@
     "catalogInstalled": "Installed catalog apps",
     "catalogScope": "Installed apps included in the software center catalog"
   },
-  "welcome": {
-    "sub-title": "Seasons come...",
-    "title": "AOSC 2024 wallpaper gallary"
-  },
   "appBanner": {
     "install": "install"
   },
@@ -47,6 +45,45 @@
     "resultCount": "{count} results",
     "emptySearch": "No matching packages found.",
     "emptyCatalog": "No packages to show."
+  },
+  "detail": {
+    "retryCatalog": "Retry catalog",
+    "retryState": "Retry package status",
+    "loading": "Loading app details…",
+    "package": "Package",
+    "publisher": "Publisher",
+    "version": "Version",
+    "size": "Installed size",
+    "reviewed": "Disclosures reviewed",
+    "website": "Website",
+    "download": "Visit download page",
+    "report": "Report a problem",
+    "unsupported": "The package manager does not support this action.",
+    "fields": {
+      "availability": "Availability",
+      "runtime": "Runtime",
+      "service": "Service availability",
+      "telemetry": "Telemetry",
+      "support": "Support"
+    },
+    "values": {
+      "verified": "Verified",
+      "unverified": "Unverified",
+      "broken": "Broken",
+      "unknown": "Unknown",
+      "native": "Native",
+      "compatibility-layer": "Compatibility layer",
+      "windows": "Windows application",
+      "full": "Full",
+      "limited": "Limited",
+      "unavailable": "Unavailable",
+      "present": "Present",
+      "absent": "Absent",
+      "aosc": "AOSC",
+      "upstream": "Upstream",
+      "community": "Community",
+      "none": "None"
+    }
   },
   "tags": {
     "unofficial": {

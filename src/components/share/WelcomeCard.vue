@@ -1,42 +1,55 @@
 <template>
-  <div class="welcome">
-    <div class="scrim">
-      <div class="sub-title">{{ $t("welcome.sub-title") }}</div>
-      <div class="title">{{ $t("welcome.title") }}</div>
-    </div>
-  </div>
+  <button class="welcome" type="button">
+    <img :src="image" alt="" />
+    <span class="scrim">
+      <span v-if="subtitle" class="sub-title">{{ subtitle }}</span>
+      <span class="title">{{ title }}</span>
+    </span>
+  </button>
 </template>
 
-<script setup lang='ts'></script>
+<script setup lang="ts">
+defineProps<{ image: string; title: string; subtitle?: string }>();
+</script>
 
 <style scoped>
 .welcome {
+  position: relative;
   overflow: hidden;
+  border: 0;
   border-radius: var(--radius-card);
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.08)),
-    radial-gradient(circle at 75% 30%, rgba(245, 180, 0, 0.28), transparent 24%),
-    linear-gradient(135deg, #102b18, #27311f 48%, #765615);
+  background: var(--color-surface);
   box-shadow: var(--shadow-card);
+  text-align: left;
+  cursor: pointer;
+  color: white;
+}
+
+img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .scrim {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   height: 100%;
-  padding: 66px 30px 24px;
+  padding: 24px 30px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.12));
 }
 
 .sub-title {
-  font-size: 28px;
-  color: var(--color-text);
-  font-weight: 600;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  font-size: 20px;
 }
 
 .title {
   margin-top: 4px;
   font-size: 38px;
-  color: var(--color-text);
   font-weight: 600;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 </style>

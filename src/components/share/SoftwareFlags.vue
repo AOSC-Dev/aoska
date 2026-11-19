@@ -1,77 +1,30 @@
 <template>
-  <div class="software-flags">
-    <component :is="icons[normalizedType]" class="img"/>
-    <div class="info">
-      <div class="title">{{ $t(`tags.${normalizedType}.title`) }}</div>
-      <div class="description">{{ $t(`tags.${normalizedType}.description`) }}</div>
-    </div>
-  </div>
+  <span class="software-flag">
+    <component v-if="icon" :is="icon" class="icon" aria-hidden="true" />
+    {{ $t(`detail.fields.${field}`) }} · {{ $t(`detail.values.${value}`) }}
+  </span>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue';
 import VerifiedIcon from '../../assets/icons/verified.svg';
 import NonNativeIcon from '../../assets/icons/non-native.svg';
 import ServiceLimitedIcon from '../../assets/icons/service-limited.svg';
-import UnofficialIcon from '../../assets/icons/unofficial.svg';
 import WindowsIcon from '../../assets/icons/windows.svg';
-import TelemetyIcon from '../../assets/icons/telemetry.svg';
+import TelemetryIcon from '../../assets/icons/telemetry.svg';
 
-const props = defineProps({
-  type: {
-    type: String,
-    validator: (value) => ['verified', 'non_native', 'service_limited', 'unofficial', 'unoffical', 'windows_app', 'telemetry'].includes(value)
-  }
-});
-
-const normalizedType = computed(() => props.type === 'unoffical' ? 'unofficial' : props.type);
-
+const props = defineProps<{ field: string; value: string }>();
 const icons = {
-  "verified": VerifiedIcon,
-  "non_native": NonNativeIcon,
-  "service_limited": ServiceLimitedIcon,
-  "unofficial": UnofficialIcon,
-  "windows_app": WindowsIcon,
-  "telemetry": TelemetyIcon
+  verified: VerifiedIcon,
+  'compatibility-layer': NonNativeIcon,
+  windows: WindowsIcon,
+  present: TelemetryIcon,
+  limited: ServiceLimitedIcon,
 };
+const icon = computed(() => icons[props.value as keyof typeof icons]);
 </script>
 
 <style scoped>
-.software-flags {
-  display: flex;
-  width: 100%;
-  min-height: 92px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-card);
-  background-color: var(--color-surface-raised);
-}
-
-.software-flags:hover {
-  border-color: var(--color-border);
-}
-
-.info {
-  min-width: 0;
-  padding: 16px 16px 16px 0;
-}
-
-.title {
-  color: var(--color-text);
-  font-size: 23px;
-  line-height: 30px;
-  font-weight: 500;
-}
-
-.description {
-  margin-top: 6px;
-  color: var(--color-text-muted);
-  line-height: 18px;
-}
-
-.img {
-  width: 58px;
-  height: 58px;
-  margin: 17px 20px;
-  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
-}
+.software-flag { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; background: var(--color-surface-raised); border: 1px solid var(--color-border); border-radius: var(--radius-card); }
+.icon { width: 18px; height: 18px; }
 </style>

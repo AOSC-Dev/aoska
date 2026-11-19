@@ -4,179 +4,92 @@ use crate::common::{
         PmCapabilities, PmOperationLogs, PmOperationStart, PmOperationStatus, PmPackageList,
         PmPlan, PmUpdateSummary, TumUpdateInfo,
     },
-    catalog::{installed_entries, preferred_desktop_id, unique_entries},
-    config::{ASM_ENDPOINT, ASM_INDEX_PATH, ASM_RECOMMEND_INDEX_PATH},
-    desktop::{self, DesktopApplication},
-    index::{CategoryIndex, Index, RecommendIndex},
-    packages::{Category, PackageDetail},
+    catalog::{installed_entries, repository_entries, CatalogEntry, CatalogIndex},
+    config::catalog_endpoint,
+    desktop,
     utils::fetch_data,
 };
 use anyhow::{bail, Context, Result};
 use serde_json::Value;
 
-#[cfg(debug_assertions)]
-use httpmock::prelude::*;
-
 pub struct AppState {
     client: reqwest::Client,
     base_url: String,
-    #[cfg(debug_assertions)]
-    _mock_server: MockServer,
-}
-
-#[allow(unreachable_code)]
-impl AppState {
-    pub fn prod() -> Self {
-        Self {
-            client: reqwest::Client::builder()
-                .user_agent("aoska/1.0")
-                .build()
-                .expect("Reqwest Client"),
-            base_url: ASM_ENDPOINT.to_string(),
-
-            #[cfg(debug_assertions)]
-            _mock_server: unreachable!(),
-        }
-    }
-
-    #[cfg(debug_assertions)]
-    pub fn dev() -> Self {
-        use httpmock::prelude::*;
-        use walkdir::WalkDir;
-
-        let server = MockServer::start();
-        for entry in WalkDir::new("mock_data")
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|e| {
-                e.file_type().is_file()
-                    && if let Some(ext) = e.path().extension() {
-                        matches!(
-                            ext.to_string_lossy().to_lowercase().as_str(),
-                            "json" | "png" | "jpg" | "jpeg"
-                        )
-                    } else {
-                        false
-                    }
-            })
-        {
-            let rel = entry.path().strip_prefix("mock_data").unwrap();
-            let url = format!("/{}", rel.to_string_lossy().replace('\\', "/"));
-
-            server.mock(|when, then| {
-                when.method(GET).path(url);
-
-                let content_type = match entry
-                    .path()
-                    .extension()
-                    .and_then(|ext| ext.to_str())
-                    .map(|ext| ext.to_lowercase())
-                    .as_deref()
-                {
-                    Some("json") => "application/json",
-                    Some("png") => "image/png",
-                    Some("jpg") | Some("jpeg") => "image/jpeg",
-                    _ => "application/octet-stream",
-                };
-
-                then.status(200)
-                    .header("content-type", content_type)
-                    .body_from_file(entry.path().to_string_lossy().to_string());
-            });
-        }
-
-        Self {
-            client: reqwest::Client::builder()
-                .user_agent("aoska/1.0")
-                .build()
-                .expect("Reqwest Client"),
-            base_url: server.base_url(),
-            _mock_server: server,
-        }
-    }
 }
 
 impl Default for AppState {
-    #[cfg(not(debug_assertions))]
     fn default() -> Self {
-        Self::prod()
+        Self {
+            client: reqwest::Client::new(),
+            base_url: catalog_endpoint(),
+        }
     }
+}
 
-    #[cfg(debug_assertions)]
-    fn default() -> Self {
-        Self::dev()
-    }
+#[derive(serde::Deserialize)]
+struct RepositoryDetail {
+    schema_version: u32,
+    id: String,
+    installers: Vec<Installer>,
+}
+
+#[derive(serde::Deserialize)]
+struct Installer {
+    kind: String,
+    package: Option<RepositoryPackage>,
+}
+
+#[derive(serde::Deserialize)]
+struct RepositoryPackage {
+    names: Vec<String>,
 }
 
 impl AppState {
-    async fn catalog_entries(&self) -> Result<Vec<crate::common::packages::PackageBrief>> {
-        let index: Index = fetch_data(&self.client, &self.base_url, ASM_INDEX_PATH).await?;
-        Ok(unique_entries(index))
-    }
-
-    async fn desktop_application(
-        &self,
-        name: &str,
-        index_id: Option<&str>,
-    ) -> Result<Option<DesktopApplication>> {
-        if index_id.is_some() {
-            return desktop::resolve(name, index_id);
+    async fn catalog_entries(&self) -> Result<Vec<CatalogEntry>> {
+        let mut index: CatalogIndex =
+            fetch_data(&self.client, &self.base_url, "index.json").await?;
+        if index.schema_version != 1 {
+            bail!("Unsupported ASMR index schema {}", index.schema_version);
         }
-        let detail: PackageDetail = fetch_data(
-            &self.client,
-            &self.base_url,
-            &format!("packages/{name}/meta.json"),
-        )
-        .await?;
-        desktop::resolve(
-            name,
-            preferred_desktop_id(index_id, detail.package_info.desktop_id.as_deref()),
-        )
+        for id in index.mixed_ids() {
+            let detail: RepositoryDetail =
+                fetch_data(&self.client, &self.base_url, &format!("apps/{id}.json")).await?;
+            if detail.id != id || detail.schema_version != 1 {
+                bail!("Invalid ASMR detail for {id}");
+            }
+            let names = detail
+                .installers
+                .into_iter()
+                .filter(|installer| installer.kind == "aosc-repository")
+                .filter_map(|installer| installer.package)
+                .flat_map(|package| package.names)
+                .collect();
+            index.set_repository_refs(&id, names);
+        }
+        Ok(repository_entries(index))
     }
 }
 
 #[tauri::command]
-pub async fn fetch_recommend(app: tauri::State<'_, AppState>) -> Result<RecommendIndex, String> {
-    fetch_data(&app.client, &app.base_url, ASM_RECOMMEND_INDEX_PATH)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub async fn fetch_by_category(
+pub async fn fetch_catalog_json(
     app: tauri::State<'_, AppState>,
-    category: String,
-) -> Result<CategoryIndex, String> {
-    let index_data: Index = fetch_data(&app.client, &app.base_url, ASM_INDEX_PATH)
-        .await
-        .map_err(|e| e.to_string())?;
-    let cat = category
-        .parse::<Category>()
-        .map_err(|_| format!("Unknown Category: {category}"))?;
-
-    index_data
-        .packages
-        .into_iter()
-        .find(|ci| ci.category == cat)
-        .ok_or_else(|| format!("Category {category} not found"))
-}
-
-#[tauri::command]
-pub async fn fetch_index(app: tauri::State<'_, AppState>) -> Result<Index, String> {
-    fetch_data(&app.client, &app.base_url, ASM_INDEX_PATH)
-        .await
-        .map_err(|e| e.to_string())
-}
-
-#[tauri::command]
-pub async fn fetch_detail(
-    app: tauri::State<'_, AppState>,
-    pkg_name: String,
-) -> Result<PackageDetail, String> {
-    let path = format!("packages/{pkg_name}/meta.json");
+    path: String,
+) -> Result<Value, String> {
+    if !path.ends_with(".json")
+        || !path.split('/').all(|part| {
+            !part.is_empty()
+                && part != "."
+                && part != ".."
+                && part
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b"+._-".contains(&b))
+        })
+    {
+        return Err("Expected a relative ASMR JSON path".into());
+    }
     fetch_data(&app.client, &app.base_url, &path)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:#}"))
 }
 
 #[tauri::command]
@@ -241,16 +154,16 @@ pub async fn pm_package_state(
         .package_state(&packages)
         .await
         .map_err(|error| format!("{error:#}"))?;
-    if let Ok(entries) = app.catalog_entries().await {
-        for package in &mut result.packages {
-            if package.installed {
-                if let Some(entry) = entries.iter().find(|entry| entry.name == package.name) {
-                    match app
-                        .desktop_application(&entry.name, entry.desktop_id.as_deref())
-                        .await
-                    {
+    if result.packages.iter().any(|pkg| pkg.installed) {
+        if let Ok(entries) = app.catalog_entries().await {
+            for package in result.packages.iter_mut().filter(|pkg| pkg.installed) {
+                let entry = entries
+                    .iter()
+                    .find(|app| app.package_refs.contains(&package.name));
+                if let Some(entry) = entry {
+                    match desktop::resolve(&package.name, entry.desktop_id.as_deref()) {
                         Ok(application) => package.openable = application.is_some(),
-                        Err(error) => eprintln!("Desktop lookup for {}: {error:#}", entry.name),
+                        Err(error) => eprintln!("Desktop lookup for {}: {error:#}", package.name),
                     }
                 }
             }
@@ -272,17 +185,11 @@ pub async fn pm_list_catalog_installed(
         if entries.is_empty() {
             return Ok(serde_json::json!({"packages":[]}));
         }
-        let names = entries
-            .iter()
-            .map(|entry| entry.name.clone())
-            .collect::<Vec<_>>();
+        let names = crate::common::catalog::package_names(&entries);
         let states = backend.package_state(&names).await?;
         let mut applications = installed_entries(entries, states.packages, &app.base_url)?;
         for application in &mut applications {
-            match app
-                .desktop_application(&application.catalog_name, application.desktop_id.as_deref())
-                .await
-            {
+            match desktop::resolve(&application.package.name, application.desktop_id.as_deref()) {
                 Ok(Some(desktop)) => {
                     application.package.openable = true;
                     application.package.display_name = desktop.name;
@@ -306,31 +213,43 @@ pub async fn app_launch(
     app: tauri::State<'_, AppState>,
     backend: tauri::State<'_, AmoBackend>,
     catalog_name: String,
+    package_name: Option<String>,
 ) -> Result<(), String> {
-    async fn launch(app: &AppState, backend: &AmoBackend, name: String) -> Result<()> {
+    async fn launch(
+        app: &AppState,
+        backend: &AmoBackend,
+        id: String,
+        selected: Option<String>,
+    ) -> Result<()> {
         let entry = app
             .catalog_entries()
             .await?
             .into_iter()
-            .find(|entry| entry.name == name)
-            .context("Application is not in the catalog")?;
-        let state = backend.package_state(std::slice::from_ref(&name)).await?;
-        if !state
+            .find(|app| app.id == id)
+            .context("Application is not in the repository catalog")?;
+        let names = entry.launch_candidates(selected.as_deref())?;
+        let states = backend.package_state(&names).await?;
+        let mut installed = states
             .packages
-            .iter()
-            .any(|package| package.installed && package.aoska_manageable)
-        {
+            .into_iter()
+            .filter(|pkg| pkg.installed && pkg.aoska_manageable)
+            .peekable();
+        if installed.peek().is_none() {
             bail!("Application is not installed");
         }
-        let application = app
-            .desktop_application(&name, entry.desktop_id.as_deref())
-            .await?
-            .context("Application has no registered desktop entry")?;
-        tokio::task::spawn_blocking(move || desktop::launch(&name, Some(&application.id)))
-            .await??;
-        Ok(())
+        for package in installed {
+            if let Some(application) = desktop::resolve(&package.name, entry.desktop_id.as_deref())?
+            {
+                tokio::task::spawn_blocking(move || {
+                    desktop::launch(&package.name, Some(&application.id))
+                })
+                .await??;
+                return Ok(());
+            }
+        }
+        bail!("Application has no registered desktop entry")
     }
-    launch(&app, &backend, catalog_name)
+    launch(&app, &backend, catalog_name, package_name)
         .await
         .map_err(|error| format!("{error:#}"))
 }
