@@ -1,9 +1,20 @@
 pub mod command;
 pub mod common;
+#[cfg(target_os = "linux")]
+mod window_frame;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            let builder =
+                tauri::WebviewWindowBuilder::from_config(app, &app.config().app.windows[0])?;
+            #[cfg(target_os = "linux")]
+            window_frame::build(builder)?;
+            #[cfg(not(target_os = "linux"))]
+            builder.build()?;
+            Ok(())
+        })
         .plugin(tauri_plugin_opener::init())
         .manage(command::AppState::default())
         .manage(common::amo::AmoBackend::default())
