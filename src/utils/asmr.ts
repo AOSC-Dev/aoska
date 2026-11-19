@@ -58,7 +58,7 @@ function appPath(id: string): string {
 
 export function catalogRoot(address: string): URL {
   const root = new URL(address);
-  if (!['http:', 'https:'].includes(root.protocol) || root.search || root.hash) {
+  if (!['http:', 'https:'].includes(root.protocol) || root.username || root.password || /[?#]/.test(root.href)) {
     throw new Error('ASMR requires an HTTP(S) directory URL');
   }
   if (!root.pathname.endsWith('/')) root.pathname += '/';

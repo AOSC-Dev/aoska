@@ -1,15 +1,16 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
-import { catalogRoot, createAsmrCatalog } from './asmr';
+import { createAsmrCatalog } from './asmr';
+import { getCatalogSettings } from './catalogSettings';
 export type { CatalogDetail } from './asmr';
 
 async function catalog() {
+  const { effectiveUrl } = await getCatalogSettings();
   if (isTauri()) {
-    const root = catalogRoot(await invoke<string>('get_endpoint_base_url'));
-    return createAsmrCatalog(root.href, (url) =>
-      invoke('fetch_catalog_json', { path: url.slice(root.href.length) }),
+    return createAsmrCatalog(effectiveUrl, (url) =>
+      invoke('fetch_catalog_json', { path: url.slice(effectiveUrl.length) }),
     );
   }
-  return createAsmrCatalog(import.meta.env.VITE_AOSKA_ASMR_URL || 'http://127.0.0.1:8765/');
+  return createAsmrCatalog(effectiveUrl);
 }
 
 export async function getCatalogHomepage(locale = 'zh-CN') {

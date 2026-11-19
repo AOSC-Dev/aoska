@@ -9,6 +9,26 @@
     "updates": "更新与卸载",
     "search": "软件包搜索"
   },
+  "settings": {
+    "title": "设置",
+    "source": "应用目录来源",
+    "channel": "发布渠道",
+    "auto": "自动（当前版本默认使用 {channel}）",
+    "dev": "Dev · GitHub Pages",
+    "stable": "Stable · AOSC 软件源",
+    "custom": "自定义地址",
+    "url": "目录地址",
+    "urlHint": "填写包含 index.json 的 HTTP 或 HTTPS 目录地址。",
+    "effective": "当前使用的地址",
+    "override": "环境变量已指定当前地址。保存的选择将在没有环境变量覆盖时生效。",
+    "stablePending": "Stable 目录尚待上线。",
+    "save": "保存设置",
+    "saving": "正在保存…",
+    "saved": "设置已保存。",
+    "loading": "正在读取设置…",
+    "loadError": "读取目录设置失败：{reason}",
+    "saveError": "保存目录设置失败：{reason}"
+  },
   "home": {
     "moreGuides": "更多指南",
     "retry": "重试",

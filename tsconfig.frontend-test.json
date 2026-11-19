@@ -12,6 +12,7 @@
   },
   "include": [
     "src/utils/asmr.ts",
+    "src/utils/catalogPreferences.ts",
     "src/types/pm.ts",
     "src/utils/pmStub.ts",
     "src/utils/pmTauri.ts",
