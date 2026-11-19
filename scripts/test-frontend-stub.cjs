@@ -5,43 +5,34 @@ const os = require('node:os');
 const path = require('node:path');
 
 const repo = path.resolve(__dirname, '..');
-const outDir = path.join(os.tmpdir(), 'aoska-frontend-stub-tests');
-fs.rmSync(outDir, { recursive: true, force: true });
+async function runFrontendTests(outDir) {
+  const { createTauriPackageManager } = require(path.join(outDir, 'utils', 'pmTauri.js'));
+  const { observeOperation, loadPackageInventory, createPackageOperationFlow } = require(path.join(outDir, 'utils', 'pmOperations.js'));
+  const { createStubPackageManager } = require(path.join(outDir, 'utils', 'pmStub.js'));
+  const { actionLabel, isDestructiveAction, operationHeading } = require(path.join(outDir, 'utils', 'pmPresentation.js'));
+  const { selectedPackageNames, batchActionState } = require(path.join(outDir, 'utils', 'pmSelection.js'));
+  const { flattenCatalogPackages, searchCatalogPackages } = require(path.join(outDir, 'utils', 'catalogSearch.js'));
 
-const tsc = path.join(repo, 'node_modules', '.bin', 'tsc');
-execFileSync(tsc, ['-p', 'tsconfig.frontend-test.json', '--outDir', outDir], {
-  cwd: repo,
-  stdio: 'inherit',
-});
+  const catalogIndex = {
+    version: 1,
+    generated_at: '2026-06-12T00:00:00.000Z',
+    packages: [
+      {
+        category: 'working',
+        packages: [
+          { name: 'wechat', intro: '用户超十亿的即时聊天软件', icon: 'wechat.png' },
+          { name: 'firefox', intro: '快速、安全的网页浏览器', icon: 'firefox.png' },
+        ],
+      },
+      {
+        category: 'games',
+        packages: [
+          { name: 'steam', intro: '数字游戏分发平台', icon: 'steam.png' },
+        ],
+      },
+    ],
+  };
 
-const { createTauriPackageManager } = require(path.join(outDir, 'utils', 'pmTauri.js'));
-const { observeOperation, loadPackageInventory, createPackageOperationFlow } = require(path.join(outDir, 'utils', 'pmOperations.js'));
-const { createStubPackageManager } = require(path.join(outDir, 'utils', 'pmStub.js'));
-const { actionLabel, isDestructiveAction, operationHeading } = require(path.join(outDir, 'utils', 'pmPresentation.js'));
-const { selectedPackageNames, batchActionState } = require(path.join(outDir, 'utils', 'pmSelection.js'));
-const { flattenCatalogPackages, searchCatalogPackages } = require(path.join(outDir, 'utils', 'catalogSearch.js'));
-
-const catalogIndex = {
-  version: 1,
-  generated_at: '2026-06-12T00:00:00.000Z',
-  packages: [
-    {
-      category: 'working',
-      packages: [
-        { name: 'wechat', intro: '用户超十亿的即时聊天软件', icon: 'wechat.png' },
-        { name: 'firefox', intro: '快速、安全的网页浏览器', icon: 'firefox.png' },
-      ],
-    },
-    {
-      category: 'games',
-      packages: [
-        { name: 'steam', intro: '数字游戏分发平台', icon: 'steam.png' },
-      ],
-    },
-  ],
-};
-
-async function main() {
   const calls = [];
   const id = '87025131895291905';
   const adapter = createTauriPackageManager(async (command, args) => {
@@ -90,6 +81,24 @@ async function main() {
   await assert.rejects(createTauriPackageManager(async () => ({})).startInstall(['firefox']), /id/i);
   await assert.rejects(createTauriPackageManager(async () => { throw new Error('denied'); }).startInstall(['firefox']), /denied/);
 
+  async function checksCatalogInventoryResponse() {
+    const empty = createTauriPackageManager(async () => ({ packages: [] }));
+    assert.deepEqual((await empty.listCatalogInstalled()).packages, []);
+
+    for (const response of [{}, { packages: [null] }, { packages: [{ installed: true }] }, { packages: [{ name: 'firefox' }] }]) {
+      const invalidCatalog = createTauriPackageManager(async command => {
+        assert.equal(command, 'pm_list_catalog_installed');
+        return response;
+      });
+      await assert.rejects(invalidCatalog.listCatalogInstalled(), /catalog|package|installed|name/i);
+    }
+    const validCatalog = createTauriPackageManager(async () => ({ packages: [{
+      name: 'firefox:amd64', installed: true, catalogName: 'firefox', icon: 'https://example.org/firefox.png',
+    }] }));
+    assert.equal((await validCatalog.listCatalogInstalled()).packages[0].name, 'firefox:amd64');
+  }
+  await checksCatalogInventoryResponse();
+
   const inventory = await loadPackageInventory({
     capabilities: async () => ({ kind: 'tauri', capabilities: ['query.upgradable.v1'] }),
     updateSummary: async () => ({ total: 1 }),
@@ -97,6 +106,7 @@ async function main() {
     listInstalled: async () => { throw new Error('unsupported installed query'); },
     storageSummary: async () => { throw new Error('unsupported storage query'); },
   });
+  assert.equal(inventory.installedScope, 'unavailable');
   assert.equal(inventory.updates.length, 1);
   assert.deepEqual(inventory.installed, []);
   assert.equal(inventory.storage, null);
@@ -248,10 +258,87 @@ async function main() {
   const updateCancel = await pm.cancelOperation(updateStart.id);
   assert.ok(['already_terminal', 'cancelled'].includes(updateCancel.state));
 
+  const { externalPageUrl, launchDesktopApplication } = require(path.join(outDir, 'utils', 'desktopActions.js'));
+  assert.equal(externalPageUrl('https://example.org/path'), 'https://example.org/path');
+  for (const url of ['file:///etc/passwd', 'javascript:alert(1)', 'data:text/plain,test']) assert.throws(() => externalPageUrl(url));
+  const launchCalls = [];
+  await launchDesktopApplication('firefox', false, async (...args) => { launchCalls.push(args); });
+  assert.deepEqual(launchCalls, [['app_launch', {catalogName:'firefox'}]]);
+  await assert.rejects(launchDesktopApplication('firefox', true, async () => { throw new Error('must not invoke'); }), /浏览器预览/);
+  const catalogPm = { ...pm, capabilities: async () => ({kind:'tauri',capabilities:['query.catalog-installed.v1']}), listInstalled: async () => { throw new Error('must not enumerate system'); }, listCatalogInstalled: async () => ({packages:[{name:'firefox:amd64',installed:true},{name:'firefox:amd64',installed:true},{name:'absent',installed:false}]}) };
+  const catalogInventory = await loadPackageInventory(catalogPm);
+  assert.equal(catalogInventory.installedScope, 'catalog');
+  assert.equal(catalogInventory.installed.length, 1);
+  const failedCatalog = await loadPackageInventory({...catalogPm,listCatalogInstalled:async()=>{throw new Error('catalog unavailable');}});
+  assert.match(failedCatalog.installedError, /catalog unavailable/);
+  assert.ok(failedCatalog.updates.length > 0);
+
+  async function fallsBackToSystemInventoryOnlyWhenAdvertised() {
+    let systemCalls = 0;
+    const systemInventory = await loadPackageInventory({
+      ...pm,
+      capabilities: async () => ({ kind: 'tauri', capabilities: ['query.installed.v1'] }),
+      listCatalogInstalled: async () => { throw new Error('catalog capability not advertised'); },
+      listInstalled: async () => { systemCalls++; return { packages: [{ name: 'system-tool', installed: true }] }; },
+    });
+    assert.equal(systemCalls, 1);
+    assert.equal(systemInventory.installedScope, 'system');
+    assert.deepEqual(systemInventory.installed.map(pkg => pkg.name), ['system-tool']);
+    assert.equal(systemInventory.installedError, undefined);
+  }
+  await fallsBackToSystemInventoryOnlyWhenAdvertised();
+
+  // Drive the same mock used by the browser without sleeping or touching a package manager.
+  let clock = Date.parse('2026-11-19T00:00:00Z');
+  const mock = createStubPackageManager({ now: () => clock, durationMs: 1000 });
+  const catalogNames = async () => (await loadPackageInventory(mock)).installed.map(pkg => pkg.name);
+  const remove = await mock.startRemove(['steam']);
+  assert.equal((await mock.operationStatus(remove.id)).state, 'running');
+  assert.ok((await catalogNames()).includes('steam'));
+  clock += 1000;
+  assert.equal((await mock.operationStatus(remove.id)).state, 'succeeded');
+  assert.ok(!(await catalogNames()).includes('steam'));
+  const install = await mock.startInstall(['steam']);
+  clock += 1000;
+  assert.equal((await mock.operationStatus(install.id)).state, 'succeeded');
+  assert.equal((await mock.packageState('steam')).action.primary, 'open');
+  const cancelled = await mock.startUpdate(['wechat']);
+  await mock.cancelOperation(cancelled.id);
+  clock += 1000;
+  assert.equal((await mock.operationStatus(cancelled.id)).state, 'cancelled');
+  assert.equal((await mock.updateSummary()).security, 1);
+  const upgrade = await mock.startUpdate(['wechat']);
+  clock += 1000;
+  assert.equal((await mock.operationStatus(upgrade.id)).state, 'succeeded');
+  assert.equal((await mock.packageState('wechat')).currentVersion, '4.0.1.12');
+  assert.deepEqual(await mock.tumUpdates(), []);
+  assert.equal((await createStubPackageManager().updateSummary()).security, 1);
+  const refresh = await mock.startRefresh();
+  clock += 1000;
+  assert.equal((await mock.operationStatus(refresh.id)).state, 'succeeded');
+  assert.equal((await mock.updateSummary()).lastCheckedAt, new Date(clock).toISOString());
+  await assert.rejects(mock.planRemove([]));
+  await assert.rejects(mock.startInstall(['not-in-fixture']));
   console.log('frontend stub backend tests passed');
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+async function runTests(suite = 'core') {
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'aoska-core-tests-'));
+  try {
+    execFileSync(path.join(repo, 'node_modules', '.bin', 'tsc'),
+      ['-p', 'tsconfig.frontend-test.json', '--outDir', outDir],
+      { cwd: repo, stdio: 'inherit' });
+    if (suite !== 'activity') await runFrontendTests(outDir);
+    await require('./test-update-activity.cjs').runUpdateActivityTests(outDir);
+  } finally {
+    fs.rmSync(outDir, { recursive: true, force: true });
+  }
+}
+
+module.exports = { runTests };
+if (require.main === module) {
+  runTests().catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

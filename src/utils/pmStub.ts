@@ -29,7 +29,7 @@ interface StubOperation {
 
 const STUB_NOW = '2026-06-12T08:00:00.000Z';
 
-const stubPackages: PmPackageRecord[] = [
+const initialPackages: PmPackageRecord[] = [
   {
     name: 'wechat',
     displayName: '微信',
@@ -103,6 +103,8 @@ const stubPackages: PmPackageRecord[] = [
 const stubCapabilities = [
   'stub.backend.v1',
   'query.installed.v1',
+  'query.catalog-installed.v1',
+  'desktop.launch.v1',
   'query.upgradable.v1',
   'query.package-detail.v1',
   'storage.summary.v1',
@@ -153,14 +155,21 @@ function requirePackages(packages: string[], operation: PackageOperationKind): s
   return filtered;
 }
 
-export function createStubPackageManager(): PackageManagerClient {
+export function createStubPackageManager({
+  now = Date.now,
+  durationMs = 1200,
+}: { now?: () => number; durationMs?: number } = {}): PackageManagerClient {
+  const stubPackages = clone(initialPackages);
+  let lastCheckedAt = STUB_NOW;
   const operations = new Map<string, StubOperation>();
   let operationId = 1;
 
   function makeOperation(operation: PackageOperationKind, requested: string[]): PmOperationStart {
     const packages = requirePackages(requested, operation);
+    const unknown = packages.find(name => !stubPackages.some(pkg => pkg.name === name));
+    if (unknown) throw new Error(`Unknown mock package: ${unknown}`);
     const id = `aoska-stub-${operation}-${operationId++}`;
-    const startedAt = new Date(STUB_NOW).toISOString();
+    const startedAt = new Date(now()).toISOString();
     const logs = [
       `[stub] scheduled ${operation}`,
       packages.length > 0 ? `[stub] packages: ${packages.join(', ')}` : '[stub] refresh package metadata',
@@ -178,7 +187,9 @@ export function createStubPackageManager(): PackageManagerClient {
   }
 
   function plan(kind: PmOperationPlan['operation'], requested: string[]): PmOperationPlan {
-    const names = requested.length ? requested : stubPackages.filter(pkg => pkg.upgradable).map(pkg => pkg.name);
+    const names = kind === 'update' && !requested.length
+      ? stubPackages.filter(pkg => pkg.upgradable).map(pkg => pkg.name)
+      : requested;
     const packages = requirePackages(names, kind);
     const entries = packages.map(name => {
       const pkg = stubPackages.find(item => item.name === name);
@@ -188,9 +199,37 @@ export function createStubPackageManager(): PackageManagerClient {
       remove: kind === 'remove' ? entries : [], totalDownloadSize: kind === 'remove' ? 0 : entries.reduce((sum, pkg) => sum + (pkg.downloadSize ?? 0), 0), diskSizeDelta: 0 };
   }
 
+  function complete(operation: StubOperation) {
+    if (operation.state !== 'running' || now() - Date.parse(operation.startedAt) < durationMs) return;
+
+    if (operation.operation === 'refresh') {
+      lastCheckedAt = new Date(now()).toISOString();
+    } else {
+      for (const packageName of operation.packages) {
+        const pkg = stubPackages.find(item => item.name === packageName || item.packageName === packageName);
+        if (!pkg) continue;
+        if (operation.operation === 'remove') {
+          pkg.newVersion ??= pkg.currentVersion;
+          pkg.installed = false;
+          pkg.openable = false;
+          pkg.currentVersion = undefined;
+        } else {
+          pkg.installed = true;
+          pkg.openable = initialPackages.some(initial => initial.name === pkg.name && initial.openable);
+          pkg.currentVersion = pkg.newVersion ?? pkg.currentVersion;
+        }
+        pkg.upgradable = false;
+      }
+    }
+    operation.state = 'succeeded';
+    operation.finishedAt = new Date(now()).toISOString();
+    operation.logs.push('[stub] operation completed');
+  }
+
   function operation(id: string): StubOperation {
     const found = operations.get(id);
     if (!found) throw new Error(`unknown stub operation: ${id}`);
+    complete(found);
     return found;
   }
 
@@ -209,13 +248,17 @@ export function createStubPackageManager(): PackageManagerClient {
         securityClassificationAvailable: true,
         system,
         software: updates.length - system,
-        lastCheckedAt: STUB_NOW,
+        lastCheckedAt,
         stale: false,
       };
     },
 
     async listUpdates(): Promise<PmPackageList> {
       return { packages: clone(sortedPackages(stubPackages.filter((pkg) => pkg.upgradable))) };
+    },
+
+    async listCatalogInstalled(): Promise<PmPackageList> {
+      return { packages: clone(sortedPackages(stubPackages.filter(pkg => pkg.installed && pkg.aoskaManageable))).map(pkg => ({...pkg, catalogName: pkg.name})) };
     },
 
     async listInstalled(): Promise<PmPackageList> {
@@ -250,6 +293,7 @@ export function createStubPackageManager(): PackageManagerClient {
     },
 
     async tumUpdates(): Promise<PmTumUpdateInfo[]> {
+      if (!stubPackages.some(pkg => pkg.name === 'wechat' && pkg.upgradable)) return [];
       return [
         {
           manifest_name: 'security',
@@ -305,7 +349,7 @@ export function createStubPackageManager(): PackageManagerClient {
     },
 
     async startRefresh(): Promise<PmOperationStart> {
-      return makeOperation('refresh', ['metadata']);
+      return makeOperation('refresh', []);
     },
 
     async operationStatus(id: string): Promise<PmOperationStatus> {
@@ -331,7 +375,7 @@ export function createStubPackageManager(): PackageManagerClient {
         return { id, state: 'already_terminal' };
       }
       current.state = 'cancelled';
-      current.finishedAt = new Date(STUB_NOW).toISOString();
+      current.finishedAt = new Date(now()).toISOString();
       current.logs.push('[stub] operation cancelled');
       return { id, state: 'cancelled' };
     },

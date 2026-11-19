@@ -24,6 +24,9 @@ export interface PmCapabilities {
 export interface PmPackageRecord {
   name: string;
   displayName: string;
+  catalogName?: string;
+  icon?: string;
+  desktopId?: string;
   packageName: string;
   architecture?: string;
   installed: boolean;
@@ -146,6 +149,7 @@ export interface PackageManagerClient {
   capabilities(): Promise<PmCapabilities>;
   updateSummary(): Promise<PmUpdateSummary>;
   listUpdates(): Promise<PmPackageList>;
+  listCatalogInstalled(): Promise<PmPackageList>;
   listInstalled(): Promise<PmPackageList>;
   packageState(name: string): Promise<PmPackageState>;
   tumUpdates(): Promise<PmTumUpdateInfo[] | null>;

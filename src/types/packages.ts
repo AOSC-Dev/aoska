@@ -6,6 +6,7 @@ export enum Category {
 }
 
 export interface PackageBrief {
+  desktop_id?: string;
   name: string;
   intro: string;
   icon: string; // PathBuf
@@ -21,6 +22,7 @@ export interface PackageFlags {
 }
 
 export interface PackageInfo {
+  desktop_id?: string;
   publisher: string;
   source: string;
   version: string;

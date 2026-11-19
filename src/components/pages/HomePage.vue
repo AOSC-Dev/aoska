@@ -1,7 +1,7 @@
 <template>
-  <!-- 整体布局容器 -->
+
   <div class="home-layout">
-    <!-- 上部组件 -->
+
     <div class="up-content">
       <WelcomeCard class="welcome"></WelcomeCard>
       <UpdateCard
@@ -15,15 +15,14 @@
       ></UpdateCard>
     </div>
 
-    <!-- 下部组件 -->
     <div class="down-content">
       <div class="app-content">
         <div class="app-title">{{ $t("home.appTitle") }}</div>
-        <p v-if="catalogError" role="alert">{{ catalogError }}</p>
+        <p v-if="catalogError" role="alert">{{ catalogError }} <button type="button" @click="loadCatalog">重试</button></p>
         <div class="apps">
           <AppCard
-            v-for="(app, index) in recommendList?.packages"
-            :key="index"
+            v-for="app in recommendList?.packages"
+            :key="app.name"
             :name="app.name"
             :intro="app.intro"
             :image="resolveAssetPath(app.icon, app.name)"
@@ -58,7 +57,7 @@ import AppCard from '../share/AppCard.vue';
 import TipCard from '../share/TipCard.vue';
 import router from '../../router';
 import { fetchRecommend } from '../../utils/wrapper';
-import { RecommendIndex } from '../../types/home';
+import type { RecommendIndex } from '../../types/home';
 import { resolveAssetPath } from '../../utils/url';
 import { getPackageManager } from '../../utils/pmClient';
 
@@ -70,13 +69,27 @@ const securityClassificationAvailable = ref(true);
 
 const updateError = ref('');
 const catalogError = ref('');
-onBeforeMount(() => {
-  void fetchRecommend().then(value => { recommendList.value = value; }).catch(cause => { catalogError.value = String(cause); });
-  void getPackageManager().updateSummary().then(summary => {
+const recommendList = ref<RecommendIndex | null>(null);
+async function loadCatalog() {
+  catalogError.value = '';
+  try {
+    recommendList.value = await fetchRecommend();
+  } catch (cause) {
+    catalogError.value = String(cause);
+  }
+}
+onBeforeMount(loadCatalog);
+onBeforeMount(async () => {
+  try {
+    const summary = await getPackageManager().updateSummary();
     securityClassificationAvailable.value = summary.securityClassificationAvailable;
     updateSecurity.value = summary.security ?? 0;
     update.value = Math.max(0, summary.total - updateSecurity.value);
-  }).catch(cause => { updateError.value = String(cause); }).finally(() => { loading.value = false; });
+  } catch (cause) {
+    updateError.value = String(cause);
+  } finally {
+    loading.value = false;
+  }
 });
 
 // 技巧指南列表
@@ -107,28 +120,10 @@ const tipList = [
   },
 ];
 
-// 获取推荐列表
-const recommendList = ref<RecommendIndex | null>(null);
-
-// const recommendList = ref<AppInfo[]>([])
-// const fetchRecommendList = async () => {
-//   try {
-//     const result = await invoke<AppInfo[]>('fetch_recommend');
-//     recommendList.value = result;
-//   } catch (error) {
-//     console.error('Error fetching list:', error);
-//   }
-// }
-
-// 跳转到应用详情
 const showDetail = (name: string) => {
   router.push(`/app/${name}`);
 };
 
-// 组件挂载时自动执行
-// onBeforeMount(() => {
-//   fetchRecommendList()
-// })
 </script>
 
 <style scoped>

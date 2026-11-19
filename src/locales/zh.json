@@ -18,9 +18,7 @@
     "intro": "一站式更新安同 OS 与应用程序",
     "status1": "个可用系统更新，",
     "status2": "个应用程序更新",
-    "managementEyebrow": "软件包管理",
     "managementTitle": "更新与卸载",
-    "managementIntro": "选择需要处理的软件包，批量更新或卸载前会交给后端操作队列执行。",
     "refresh": "查找更新",
     "upgradable": "可更新",
     "installed": "已安装",
@@ -28,39 +26,13 @@
     "removeSelected": "卸载选中",
     "loading": "正在读取软件包状态…",
     "noUpdates": "暂无可用更新。",
-    "noInstalled": "没有可由 Aoska 管理的已安装软件。"
+    "noInstalled": "没有可由 Aoska 管理的已安装软件。",
+    "catalogInstalled": "目录内已安装应用",
+    "catalogScope": "仅显示软件中心目录中的已安装应用"
   },
   "welcome": {
     "sub-title": "四季流光，尽收眼底",
     "title": "安同2024年历壁纸"
-  },
-  "noUpdate": {
-    "title": "一切如常！",
-    "status": "系统各组件已更新",
-    "greeting": "干得漂亮，祝您使用愉快",
-    "button": "查找更新"
-  },
-  "systemUpdate": {
-    "title": "好耶，有系统更新！",
-    "status1": "今天找到",
-    "status2": "个系统更新",
-    "greeting": "均为常规更新，无安全漏洞",
-    "button": "立即更新"
-  },
-  "unknownSecurityUpdate": {
-    "title": "发现系统更新",
-    "status1": "今天找到",
-    "status2": "个系统更新",
-    "greeting": "安全更新分类暂不可用，请查看更新详情",
-    "button": "立即更新"
-  },
-  "securityUpdate": {
-    "title": "前方注意！",
-    "status1": "今天找到",
-    "status2": "个安全更新",
-    "greeting1": "另有",
-    "greeting2": "个常规更新，请尽早进行更新",
-    "button": "立即更新"
   },
   "appBanner": {
     "install": "安装"
@@ -101,11 +73,5 @@
       "title": "服务可能受限",
       "description": "由于地理位置及网络条件，本软件功能可能受限。"
     }
-  },
-  "checkingUpdate": {
-    "title": "正在检查软件更新",
-    "status": "已用时间 00:00",
-    "greeting": "正在读取软件包状态",
-    "button": "取消"
   }
 }

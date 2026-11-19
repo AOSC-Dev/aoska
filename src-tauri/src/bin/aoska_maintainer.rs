@@ -63,6 +63,7 @@ struct TomlPackageBrief {
     name: String,
     intro: String,
     icon: PathBuf,
+    desktop_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -102,6 +103,7 @@ struct TomlPackageInfo {
     update_date: String,
     install_size: i64,
     homepage: String,
+    desktop_id: Option<String>,
 }
 
 impl From<TomlPackageBrief> for PackageBrief {
@@ -110,6 +112,7 @@ impl From<TomlPackageBrief> for PackageBrief {
             name: toml_brief.name,
             intro: toml_brief.intro,
             icon: toml_brief.icon,
+            desktop_id: toml_brief.desktop_id,
         }
     }
 }
@@ -146,6 +149,7 @@ impl From<TomlPackageInfo> for PackageInfo {
             update_date: toml_info.update_date,
             install_size: toml_info.install_size,
             homepage: toml_info.homepage,
+            desktop_id: toml_info.desktop_id,
         }
     }
 }
@@ -228,4 +232,19 @@ fn main() -> Result<()> {
     }
     
     Ok(())
+}
+
+#[cfg(test)]
+mod desktop_metadata_tests {
+    use super::*;
+
+    #[test]
+    fn generator_preserves_optional_desktop_ids() {
+        let old: TomlPackageBrief = toml::from_str("name = 'vlc'\nintro = 'Player'\nicon = 'logo.png'").unwrap();
+        assert!(PackageBrief::from(old).desktop_id.is_none());
+        let current: TomlPackageBrief = toml::from_str("name = 'vlc'\nintro = 'Player'\nicon = 'logo.png'\ndesktop_id = 'org.videolan.VLC.desktop'").unwrap();
+        assert_eq!(PackageBrief::from(current).desktop_id.as_deref(), Some("org.videolan.VLC.desktop"));
+        let old_info: TomlPackageInfo = toml::from_str("publisher='AOSC'\nsource='repository'\nversion='1'\ninner_version=1\nupdate_date='2026-11-17'\ninstall_size=1\nhomepage='https://aosc.io'").unwrap();
+        assert!(PackageInfo::from(old_info).desktop_id.is_none());
+    }
 }

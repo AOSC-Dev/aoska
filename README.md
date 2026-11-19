@@ -38,7 +38,7 @@ removing packages there changes the test system after confirmation and authoriza
 ## Checks and builds
 
 ```sh
-pnpm run test:frontend:stub
+pnpm run test:core
 pnpm exec eslint src
 pnpm build
 cargo test --locked --manifest-path src-tauri/Cargo.toml --lib
@@ -73,9 +73,19 @@ the daemon accepted the request.
 
 amo 0.6.1 has no full installed-package inventory, storage summary, cancellation,
 or operation-history API. Those controls are unavailable with this backend.
-Application launching needs separate desktop integration; this adapter does not
-infer launchability from installed package state. Package details still support
-removal of an installed catalog app.
+The installed-app tab queries only applications in the ASMR catalog and is labeled
+with that scope; it does not enumerate every system package. Installed apps can be
+removed individually or in a confirmed batch. Unknown package sizes remain unknown.
+
+Application launching uses GIO and registered visible Desktop Entries in the user
+session. Catalog `desktop_id` is optional (in the index or package information);
+otherwise aoska checks `package-name.desktop`. It never treats installation alone
+as proof that an application can be opened. Website and download links use the
+system URL opener and accept HTTP(S) URLs.
+
+Update cards retain successful checks/updates made through aoska, show a reminder
+after 14 days, and distinguish completion, failure, and unknown operation state.
+The saved times describe aoska activity, not the system's global update history.
 An empty TUM list cannot distinguish unavailable security metadata from no matching
 security updates, so aoska keeps the classification unknown in that case.
 

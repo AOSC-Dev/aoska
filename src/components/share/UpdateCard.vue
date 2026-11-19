@@ -1,86 +1,99 @@
 <template>
-  <div class="update-card" :class="updateClass">
-    <transition name="fade" mode="out-in">
-      <div v-if="isLoading" key="skeleton" class="card-content">
-        <div class="title"><div class="skeleton skeleton-title"></div></div>
-        <div class="status"><div class="skeleton skeleton-status"></div></div>
-        <div class="greeting"><div class="skeleton skeleton-greeting"></div></div>
-        <div class="button"><div class="skeleton skeleton-button"></div></div>
-      </div>
-      <div v-else-if="error" key="error" class="card-content"><div class="title">无法获取更新状态</div><p class="status" role="alert">{{ error }}</p><button class="button" type="button" :disabled="disabled" @click="$emit('action')">重试</button></div>
-      <div v-else key="content" class="card-content">
-        <div class="title">{{ $t(`${prefix}.title`) }}</div>
-        <div class="status">
-          <template v-if="hasSecurityUpdate">
-            {{ $t(`${prefix}.status1`) }}<span class="number">{{ updateSecurity }}</span>{{ $t(`${prefix}.status2`) }}
-          </template>
-          <template v-else-if="hasUpdates">
-            {{ $t(`${prefix}.status1`) }}<span class="number">{{ update }}</span>{{ $t(`${prefix}.status2`) }}
-          </template>
-          <template v-else>
-            {{ $t(`${prefix}.status`) }}
-          </template>
-        </div>
-        <div class="greeting">
-          <template v-if="hasSecurityUpdate">
-            {{ $t(`${prefix}.greeting1`) }}<span class="number small-number">{{ update }}</span>{{ $t(`${prefix}.greeting2`) }}
-          </template>
-          <template v-else>
-            {{ $t(`${prefix}.greeting`) }}
-          </template>
-        </div>
-        <button class="button" type="button" :disabled="disabled" @click="$emit('action')">{{ $t(`${prefix}.button`) }}</button>
-      </div>
-    </transition>
+  <div class="update-card" :class="tone" aria-live="polite">
+    <div class="card-content">
+      <div class="title">{{ title }}</div>
+      <p class="status">{{ detail }}</p>
+      <progress v-if="checking" aria-label="正在检查更新" />
+      <p v-if="!checking && !error && !recent" class="greeting">{{ securityClassificationAvailable ? '更新前请保存工作。' : '安全更新分类暂不可用。' }}</p>
+      <p class="greeting">{{ checkedAt ? `上次由 aoska 检查：${formatActivityDate(checkedAt, now)}` : '尚未通过 aoska 检查更新' }}</p>
+      <button class="button" type="button" :disabled="buttonDisabled" @click="act">{{ button }}</button>
+    </div>
   </div>
 </template>
 
-<script setup lang='ts'>
-import { computed } from 'vue';
-
-defineEmits<{ action: [] }>();
-
-const props = defineProps({
-  error: String,
-  disabled: Boolean,
-  update: {
-    type: Number,
-    default: 0
-  },
-  updateSecurity: {
-    type: Number,
-    default: 0
-  },
-  securityClassificationAvailable: {
-    type: Boolean,
-    default: true
-  },
-  isLoading: {
-    type: Boolean,
-    default: false
+<script setup lang="ts">
+import { computed, onUnmounted, ref } from 'vue';
+import { updateActivity, formatActivityDate, isStale, activityPresentation } from '../../utils/updateActivity';
+const props = withDefaults(defineProps<{ update?: number; updateSecurity?: number; securityClassificationAvailable?: boolean; isLoading?: boolean; error?: string; disabled?: boolean; lastCheckedAt?: string; stale?: boolean; canRefresh?: boolean; canUpdate?: boolean }>(), { update: 0, updateSecurity: 0, securityClassificationAvailable: true, canRefresh: true, canUpdate: true });
+const emit = defineEmits<{ action: [intent?: 'refresh' | 'update' | 'retry'] }>();
+const activity = ref(updateActivity.get());
+const stop = updateActivity.subscribe(() => { activity.value = updateActivity.get(); });
+const now = ref(Date.now());
+const timer = setInterval(() => { now.value = Date.now(); }, 1000);
+onUnmounted(() => { stop(); clearInterval(timer); });
+const checkedAt = computed(() => activity.value.lastCheckedAt ?? props.lastCheckedAt);
+const recent = computed(() => activity.value.result);
+const outdated = computed(() => props.stale || isStale(checkedAt.value, now.value));
+const presentation = computed(() => activityPresentation({
+  activity: activity.value,
+  loading: props.isLoading,
+  error: props.error,
+  security: props.updateSecurity,
+  updates: props.update,
+  stale: outdated.value,
+}));
+const checking = computed(() => presentation.value.state === 'checking');
+const tone = computed(() => presentation.value.tone);
+const title = computed(() => {
+  switch (presentation.value.state) {
+    case 'unknown': return '操作状态未知';
+    case 'checking': return '正在检查软件包更新';
+    case 'error': return '无法获取更新状态';
+    case 'completed': return '操作完成';
+    case 'failed': return '操作未完成';
+    case 'loading': return '正在读取更新状态';
+    case 'security': return '有可用的安全补丁！';
+    default: return props.update ? '有软件包更新！' : '一切如常！';
   }
 });
-
-const hasUpdates = computed(() => props.update > 0);
-const hasSecurityUpdate = computed(() => props.updateSecurity > 0);
-const hasUnknownSecurityClassification = computed(() => hasUpdates.value && !props.securityClassificationAvailable);
-
-const updateClass = computed(() => {
-  if (props.error) return 'unknown-security-update';
-  if (props.isLoading) return 'checking-update';
-  if (props.updateSecurity > 0) return 'security-update';
-  if (props.update > 0 && !props.securityClassificationAvailable) return 'unknown-security-update';
-  if (props.update > 0) return 'system-update';
-  return 'no-update';
+const detail = computed(() => {
+  switch (presentation.value.state) {
+    case 'unknown': return activity.value.uncertain?.message ?? '无法确认操作结果，请检查系统状态。';
+    case 'checking': {
+      const elapsed = Math.max(0, Math.floor((now.value - Date.parse(activity.value.current!.startedAt)) / 1000));
+      return `已用时间 ${elapsed} 秒`;
+    }
+    case 'error': return props.error;
+    case 'completed': return `包管理操作已完成（${formatActivityDate(recent.value!.finishedAt!, now.value)}）。`;
+    case 'failed': return recent.value?.message ?? '请查看操作日志。';
+    case 'loading': return '正在读取软件包状态…';
+    case 'security': return `${props.updateSecurity} 个安全更新，另有 ${props.update} 个常规更新`;
+    default: {
+      const counts = props.update ? `${props.update} 个可用软件包更新` : '当前软件包索引中没有可用更新。';
+      return counts + (outdated.value ? ' 建议重新检查更新。' : '');
+    }
+  }
 });
-
-const prefix = computed(() => {
-  if (props.isLoading) return 'checkingUpdate';
-  if (props.updateSecurity > 0) return 'securityUpdate';
-  if (hasUnknownSecurityClassification.value) return 'unknownSecurityUpdate';
-  if (props.update > 0) return 'systemUpdate';
-  return 'noUpdate';
+const refreshFailed = computed(() => recent.value?.state === 'failed' && recent.value.operation === 'refresh');
+const intent = computed<'refresh' | 'update' | 'retry'>(() => {
+  if (props.error) return 'retry';
+  if (refreshFailed.value || outdated.value || (!props.update && !props.updateSecurity)) return 'refresh';
+  return 'update';
 });
+const button = computed(() => {
+  if (activity.value.uncertain) return '操作结果未知，请检查系统状态';
+  if (checking.value) return '检查中…';
+  if (props.error) return '重试';
+  if (recent.value) return refreshFailed.value ? '重新检查' : '好';
+  return intent.value === 'refresh' ? '查找更新' : '查看更新';
+});
+const buttonDisabled = computed(() => {
+  if (props.disabled || props.isLoading || activity.value.current) return true;
+  if (recent.value) return false;
+  if (intent.value === 'refresh') return !props.canRefresh;
+  if (intent.value === 'update') return !props.canUpdate;
+  return false;
+});
+function act() {
+  if (recent.value && !props.error) {
+    const retry = refreshFailed.value;
+    updateActivity.dismiss();
+    if (retry) emit('action', 'refresh');
+    return;
+  }
+  emit('action', intent.value);
+}
+
 </script>
 
 <style scoped>
@@ -102,11 +115,13 @@ const prefix = computed(() => {
 }
 
 .checking-update,
-.system-update,
-.unknown-security-update {
+.system-update {
   border-color: var(--color-info-border);
   background-color: var(--color-info);
 }
+
+.warning-update { border-color: var(--color-warning-border); background: var(--color-warning); }
+progress { width: 100%; margin-top: 12px; }
 
 .no-update {
   border-color: var(--color-success-border);
@@ -129,17 +144,6 @@ const prefix = computed(() => {
   margin-top: 14px;
   color: var(--color-text);
   font-size: 16px;
-}
-
-.number {
-  margin: 0 5px;
-  font-size: 32px;
-  line-height: 20px;
-  font-weight: 600;
-}
-
-.small-number {
-  font-size: 22px;
 }
 
 .greeting {
@@ -166,44 +170,4 @@ const prefix = computed(() => {
   border-color: var(--color-text);
 }
 
-.skeleton {
-  background: linear-gradient(90deg, rgba(255,255,255,0.09) 25%, rgba(255,255,255,0.16) 37%, rgba(255,255,255,0.09) 63%);
-  background-size: 400% 100%;
-  animation: skeleton-loading 1.2s ease-in-out infinite;
-  border-radius: 4px;
-}
-
-.skeleton-title {
-  width: 220px;
-  height: 38px;
-  margin-bottom: 12px;
-}
-
-.skeleton-status {
-  width: 180px;
-  height: 22px;
-  margin-bottom: 10px;
-}
-
-.skeleton-greeting {
-  width: 240px;
-  height: 22px;
-  margin-bottom: 12px;
-}
-
-.skeleton-button {
-  width: 96px;
-  height: 35px;
-}
-
-@keyframes skeleton-loading {
-  0% { background-position: 100% 0; }
-  100% { background-position: 0 0; }
-}
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.25s cubic-bezier(.4,0,.2,1);
-}
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-.fade-enter-to, .fade-leave-from { opacity: 1; }
 </style>

@@ -9,13 +9,17 @@
     @action="handlePackageAction"
   />
   <p v-if="errorMessage || operationError" role="alert" class="package-error">{{ errorMessage || operationError }}</p>
+  <p v-if="catalogError" class="package-error" role="alert">{{ catalogError }} <button type="button" @click="loadCatalog">重试目录</button></p>
+  <button v-if="errorMessage" type="button" @click="loadPackageState">重试软件包状态</button>
   <div class="down-content">
     <div class="image-container">
       <ImageCarousel
+        v-if="packageDetail?.screenshot.length"
         :images="resolveAssetPath(packageDetail?.screenshot || [], packageName)"
         :autoplay="false"
         :interval="4000"
       />
+      <p v-if="!packageDetail?.screenshot.length">暂无应用截图</p>
     </div>
     <div class="down-right">
       <div class="flags">
@@ -54,7 +58,7 @@
       </div>
       <div class="btns">
         <button class="main-page" type="button" @click="openHomepage">官方网站</button>
-        <button class="report-bug" type="button">报告使用问题</button>
+        <button class="report-bug" type="button" @click="reportIssue">报告使用问题</button>
       </div>
     </div>
   </div>
@@ -65,7 +69,7 @@
 import { filesize } from 'filesize';
 import SoftwareFlags from "../share/SoftwareFlags.vue";
 import ImageCarousel from "../share/ImageCarousel.vue";
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AppHeader from "./AppPage/AppHeader.vue";
 import { useRoute } from "vue-router";
 import { fetchDetail } from "../../utils/wrapper";
@@ -74,6 +78,7 @@ import type { PackagePrimaryAction, PmPackageState, PmCapabilities } from '../..
 import { PackageDetail } from "../../types/packages";
 import { resolveAssetPath } from '../../utils/url';
 import OperationDialog from '../share/OperationDialog.vue';
+import { launchCatalogApp, openExternalPage } from '../../utils/desktopClient';
 import { usePackageOperation } from '../../utils/usePackageOperation';
 
 const route = useRoute();
@@ -81,34 +86,46 @@ const packageName = ref<string>(route.params.pkgName as string);
 const packageDetail = ref<PackageDetail | null>(null);
 const packageState = ref<PmPackageState | null>(null);
 const errorMessage = ref('');
+const catalogError = ref('');
 const capabilities = ref<PmCapabilities | null>(null);
 const { plan, activeOperation, submitting, locked: operationBusy, error: operationError, prepare, confirm, finished, close } = usePackageOperation(loadPackageState);
 
 async function loadPackageState() {
   errorMessage.value = '';
+  const name = packageName.value;
   try {
     const pm = getPackageManager();
     capabilities.value = await pm.capabilities();
-    packageState.value = await pm.packageState(packageName.value);
+    const nextState = await pm.packageState(name);
+    if (name === packageName.value) packageState.value = nextState;
   } catch (cause) {
-    errorMessage.value = String(cause);
-    packageState.value = null;
+    if (name === packageName.value) { errorMessage.value = String(cause); packageState.value = null; }
   }
 }
 
-onMounted(async () => {
-  await Promise.all([
-    fetchDetail(packageName.value).then(detail => { packageDetail.value = detail; }).catch(cause => { errorMessage.value = String(cause); }),
-    loadPackageState(),
-  ]);
-});
+async function loadCatalog() {
+  const name = packageName.value;
+  catalogError.value = '';
+  try { const detail = await fetchDetail(name); if (name === packageName.value) packageDetail.value = detail; }
+  catch (cause) { if (name === packageName.value) catalogError.value = String(cause); }
+}
+watch(() => route.params.pkgName, async value => {
+  packageName.value = String(value);
+  packageDetail.value = null;
+  packageState.value = null;
+  await Promise.all([loadCatalog(), loadPackageState()]);
+}, { immediate: true });
 
 const installSizeFormatted = computed(() => {
   return filesize(packageState.value?.installedSize ?? packageDetail.value?.package_info?.install_size ?? 0);
 });
 
 async function handlePackageAction(action: PackagePrimaryAction) {
-  if (action === 'download' || action === 'open') { openHomepage(); return; }
+  if (action === 'download') { await openHomepage(); return; }
+  if (action === 'open') {
+    try { await launchCatalogApp(packageName.value); } catch (cause) { errorMessage.value = String(cause); }
+    return;
+  }
   if (!['install', 'update', 'remove'].includes(action) || operationBusy.value) return;
   const kind = action as 'install' | 'update' | 'remove';
   const capability = kind === 'update' ? 'upgrade.selected' : kind;
@@ -119,9 +136,13 @@ async function handlePackageAction(action: PackagePrimaryAction) {
   await prepare(kind, [packageName.value]);
 }
 
-function openHomepage() {
+async function openHomepage() {
   const homepage = packageDetail.value?.package_info.homepage ?? packageState.value?.homepage;
-  if (homepage) window.open(homepage, '_blank', 'noopener,noreferrer');
+  try { if (homepage) await openExternalPage(homepage); } catch (cause) { errorMessage.value = String(cause); }
+}
+async function reportIssue() {
+  try { await openExternalPage(`https://github.com/AOSC-Dev/aoska/issues/new?title=${encodeURIComponent('应用使用问题：' + packageName.value)}`); }
+  catch (cause) { errorMessage.value = String(cause); }
 }
 </script>
 

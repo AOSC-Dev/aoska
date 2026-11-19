@@ -4,12 +4,14 @@ use crate::common::{
         PmCapabilities, PmOperationLogs, PmOperationStart, PmOperationStatus, PmPackageList,
         PmPlan, PmUpdateSummary, TumUpdateInfo,
     },
+    catalog::{installed_entries, preferred_desktop_id, unique_entries},
     config::{ASM_ENDPOINT, ASM_INDEX_PATH, ASM_RECOMMEND_INDEX_PATH},
+    desktop::{self, DesktopApplication},
     index::{CategoryIndex, Index, RecommendIndex},
     packages::{Category, PackageDetail},
     utils::fetch_data,
 };
-use anyhow::Result;
+use anyhow::{bail, Context, Result};
 use serde_json::Value;
 
 #[cfg(debug_assertions)]
@@ -106,6 +108,33 @@ impl Default for AppState {
     }
 }
 
+impl AppState {
+    async fn catalog_entries(&self) -> Result<Vec<crate::common::packages::PackageBrief>> {
+        let index: Index = fetch_data(&self.client, &self.base_url, ASM_INDEX_PATH).await?;
+        Ok(unique_entries(index))
+    }
+
+    async fn desktop_application(
+        &self,
+        name: &str,
+        index_id: Option<&str>,
+    ) -> Result<Option<DesktopApplication>> {
+        if index_id.is_some() {
+            return desktop::resolve(name, index_id);
+        }
+        let detail: PackageDetail = fetch_data(
+            &self.client,
+            &self.base_url,
+            &format!("packages/{name}/meta.json"),
+        )
+        .await?;
+        desktop::resolve(
+            name,
+            preferred_desktop_id(index_id, detail.package_info.desktop_id.as_deref()),
+        )
+    }
+}
+
 #[tauri::command]
 pub async fn fetch_recommend(app: tauri::State<'_, AppState>) -> Result<RecommendIndex, String> {
     fetch_data(&app.client, &app.base_url, ASM_RECOMMEND_INDEX_PATH)
@@ -159,10 +188,17 @@ pub async fn get_endpoint_base_url(app: tauri::State<'_, AppState>) -> Result<St
 pub async fn pm_capabilities(
     backend: tauri::State<'_, AmoBackend>,
 ) -> Result<PmCapabilities, String> {
-    backend
+    let mut capabilities = backend
         .capabilities()
         .await
-        .map_err(|error| format!("{error:#}"))
+        .map_err(|error| format!("{error:#}"))?;
+    capabilities
+        .capabilities
+        .push("query.catalog-installed.v1".into());
+    if cfg!(target_os = "linux") {
+        capabilities.capabilities.push("desktop.launch.v1".into());
+    }
+    Ok(capabilities)
 }
 
 #[tauri::command]
@@ -197,11 +233,104 @@ pub async fn pm_tum_updates(
 
 #[tauri::command]
 pub async fn pm_package_state(
+    app: tauri::State<'_, AppState>,
     backend: tauri::State<'_, AmoBackend>,
     packages: Vec<String>,
 ) -> Result<PmPackageList, String> {
-    backend
+    let mut result = backend
         .package_state(&packages)
+        .await
+        .map_err(|error| format!("{error:#}"))?;
+    if let Ok(entries) = app.catalog_entries().await {
+        for package in &mut result.packages {
+            if package.installed {
+                if let Some(entry) = entries.iter().find(|entry| entry.name == package.name) {
+                    match app
+                        .desktop_application(&entry.name, entry.desktop_id.as_deref())
+                        .await
+                    {
+                        Ok(application) => package.openable = application.is_some(),
+                        Err(error) => eprintln!("Desktop lookup for {}: {error:#}", entry.name),
+                    }
+                }
+            }
+        }
+    }
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn pm_list_catalog_installed(
+    app: tauri::State<'_, AppState>,
+    backend: tauri::State<'_, AmoBackend>,
+) -> Result<Value, String> {
+    async fn list(app: &AppState, backend: &AmoBackend) -> Result<Value> {
+        let entries = app
+            .catalog_entries()
+            .await
+            .context("Cannot load the application catalog")?;
+        if entries.is_empty() {
+            return Ok(serde_json::json!({"packages":[]}));
+        }
+        let names = entries
+            .iter()
+            .map(|entry| entry.name.clone())
+            .collect::<Vec<_>>();
+        let states = backend.package_state(&names).await?;
+        let mut applications = installed_entries(entries, states.packages, &app.base_url)?;
+        for application in &mut applications {
+            match app
+                .desktop_application(&application.catalog_name, application.desktop_id.as_deref())
+                .await
+            {
+                Ok(Some(desktop)) => {
+                    application.package.openable = true;
+                    application.package.display_name = desktop.name;
+                    application.desktop_id = Some(desktop.id);
+                }
+                Ok(None) => {}
+                Err(error) => {
+                    eprintln!("Desktop lookup for {}: {error:#}", application.catalog_name)
+                }
+            }
+        }
+        Ok(serde_json::json!({"packages":applications}))
+    }
+    list(&app, &backend)
+        .await
+        .map_err(|error| format!("{error:#}"))
+}
+
+#[tauri::command]
+pub async fn app_launch(
+    app: tauri::State<'_, AppState>,
+    backend: tauri::State<'_, AmoBackend>,
+    catalog_name: String,
+) -> Result<(), String> {
+    async fn launch(app: &AppState, backend: &AmoBackend, name: String) -> Result<()> {
+        let entry = app
+            .catalog_entries()
+            .await?
+            .into_iter()
+            .find(|entry| entry.name == name)
+            .context("Application is not in the catalog")?;
+        let state = backend.package_state(std::slice::from_ref(&name)).await?;
+        if !state
+            .packages
+            .iter()
+            .any(|package| package.installed && package.aoska_manageable)
+        {
+            bail!("Application is not installed");
+        }
+        let application = app
+            .desktop_application(&name, entry.desktop_id.as_deref())
+            .await?
+            .context("Application has no registered desktop entry")?;
+        tokio::task::spawn_blocking(move || desktop::launch(&name, Some(&application.id)))
+            .await??;
+        Ok(())
+    }
+    launch(&app, &backend, catalog_name)
         .await
         .map_err(|error| format!("{error:#}"))
 }

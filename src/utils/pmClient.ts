@@ -1,3 +1,4 @@
+import { trackPackageManager } from './updateActivity';
 import { invoke } from '@tauri-apps/api/core';
 import type { PackageManagerClient } from '../types/pm';
 import { stubPackageManager } from './pmStub';
@@ -13,7 +14,7 @@ let packageManager: PackageManagerClient | null = null;
 
 export function getPackageManager(): PackageManagerClient {
   if (packageManager) return packageManager;
-  packageManager = shouldUseStubBackend() ? stubPackageManager : createTauriPackageManager(invoke);
+  packageManager = trackPackageManager(shouldUseStubBackend() ? stubPackageManager : createTauriPackageManager(invoke));
   return packageManager;
 }
 

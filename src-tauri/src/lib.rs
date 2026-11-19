@@ -18,6 +18,8 @@ pub fn run() {
             command::pm_update_summary,
             command::pm_tum_updates,
             command::pm_list_installed,
+            command::pm_list_catalog_installed,
+            command::app_launch,
             command::pm_package_state,
             command::pm_plan_update,
             command::pm_plan_install,
