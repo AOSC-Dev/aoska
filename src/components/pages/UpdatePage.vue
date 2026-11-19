@@ -7,6 +7,10 @@
         :update-security="summary?.security ?? 0"
         :security-classification-available="summary?.securityClassificationAvailable ?? true"
         :is-loading="loading"
+        :last-checked-at="summary?.lastCheckedAt"
+        :stale="summary?.stale"
+        :can-refresh="canRefresh"
+        :can-update="canUpdateAll"
         :error="errorMessage"
         :disabled="operationBusy || (!errorMessage && !(summary?.total ? canUpdateAll : canRefresh))"
         @action="handleSummaryAction"
@@ -20,9 +24,8 @@
     <section class="management-card">
       <header class="management-header">
         <div>
-          <p class="eyebrow">{{ $t('updates.managementEyebrow') }}</p>
           <h1>{{ $t('updates.managementTitle') }}</h1>
-          <p class="intro">{{ $t('updates.managementIntro') }}</p>
+          <p v-if="activeTab === 'installed' && installedScope === 'catalog'" class="intro">{{ $t('updates.catalogScope') }}</p>
         </div>
         <button class="refresh" type="button" :disabled="operationBusy || !canRefresh" @click="refresh">
           {{ $t('updates.refresh') }}
@@ -47,12 +50,12 @@
           <button
             type="button"
             role="tab"
-            v-if="hasInstalledInventory"
+            v-if="installedScope !== 'unavailable'"
             :aria-selected="activeTab === 'installed'"
             :class="{ active: activeTab === 'installed' }"
             @click="activeTab = 'installed'"
           >
-            {{ $t('updates.installed') }} <span>{{ installed.length }}</span>
+            {{ installedScope === 'catalog' ? $t('updates.catalogInstalled') : $t('updates.installed') }} <span v-if="!installedError">{{ installed.length }}</span>
           </button>
         </div>
 
@@ -82,6 +85,7 @@
         {{ $t('updates.loading') }}
       </div>
       <div v-else-if="errorMessage" class="list-state">软件包状态暂不可用，请重试。</div>
+      <div v-else-if="activeTab === 'installed' && installedError" class="list-state" role="alert">{{ installedError }} <button type="button" @click="loadPackageState">重试</button></div>
       <div v-else-if="visiblePackages.length === 0" class="list-state">
         {{ activeTab === 'updates' ? $t('updates.noUpdates') : $t('updates.noInstalled') }}
       </div>
@@ -106,12 +110,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { launchCatalogApp } from '../../utils/desktopClient';
 import OperationDialog from '../share/OperationDialog.vue';
 import UpdateCard from '../share/UpdateCard.vue';
 import type { PackageOperationKind, PmPackageRecord, PmStorageSummary, PmUpdateSummary, PmCapabilities } from '../../types/pm';
 import { getPackageManager } from '../../utils/pmClient';
-import { loadPackageInventory } from '../../utils/pmOperations';
+import { loadPackageInventory, type InstalledScope } from '../../utils/pmOperations';
 import { usePackageOperation } from '../../utils/usePackageOperation';
 import { batchActionState, selectedPackageNames } from '../../utils/pmSelection';
 import PackageOperationRow from './Updates/PackageOperationRow.vue';
@@ -120,17 +124,17 @@ import StorageSummary from './Updates/StorageSummary.vue';
 type ActiveTab = 'updates' | 'installed';
 type RowOperation = Extract<PackageOperationKind, 'update' | 'remove'> | 'open';
 
-const router = useRouter();
 const loading = ref(true);
 const capabilities = ref<PmCapabilities | null>(null);
 const supports = (name: string) => capabilities.value?.capabilities.includes(name) ?? false;
-const hasInstalledInventory = computed(() => supports('query.installed.v1'));
+const installedScope = ref<InstalledScope>('unavailable');
 const canUpdateAll = computed(() => supports('run.upgrade.v1') && supports('plan.upgrade.v1'));
 const canRefresh = computed(() => supports('run.refresh.v1'));
 const canUpdateSelected = computed(() => supports('run.upgrade.selected.v1') && supports('plan.upgrade.selected.v1'));
 const canRemove = computed(() => supports('run.remove.v1') && supports('plan.remove.v1'));
 const { plan, activeOperation, submitting, locked: operationBusy, error: operationError, prepare, confirm, refresh, finished, close } = usePackageOperation(loadPackageState);
 const errorMessage = ref('');
+const installedError = ref('');
 const activeTab = ref<ActiveTab>('updates');
 const summary = ref<PmUpdateSummary | null>(null);
 const updates = ref<PmPackageRecord[]>([]);
@@ -139,15 +143,12 @@ const storage = ref<PmStorageSummary | null>(null);
 const selectedUpdates = ref<Set<string>>(new Set());
 const selectedInstalled = ref<Set<string>>(new Set());
 
-
 const visiblePackages = computed(() => activeTab.value === 'updates' ? updates.value : installed.value);
 const activeSelection = computed(() => activeTab.value === 'updates' ? selectedUpdates.value : selectedInstalled.value);
 const updateBatch = computed(() => batchActionState('update', updates.value, selectedUpdates.value));
 const removeBatch = computed(() => batchActionState('remove', installed.value, selectedInstalled.value));
 
-onMounted(async () => {
-  await loadPackageState();
-});
+onMounted(loadPackageState);
 
 async function loadPackageState() {
   loading.value = true;
@@ -159,8 +160,10 @@ async function loadPackageState() {
     summary.value = inventory.summary;
     updates.value = inventory.updates;
     installed.value = inventory.installed;
+    installedError.value = inventory.installedError ?? '';
     storage.value = inventory.storage;
-    if (!hasInstalledInventory.value) activeTab.value = 'updates';
+    installedScope.value = inventory.installedScope;
+    if (inventory.installedScope === 'unavailable') activeTab.value = 'updates';
     selectedUpdates.value = filterSelection(selectedUpdates.value, updates.value);
     selectedInstalled.value = filterSelection(selectedInstalled.value, installed.value);
   } catch (error) {
@@ -186,7 +189,9 @@ function toggleSelection(tab: ActiveTab, name: string) {
   source.value = next;
 }
 
-async function handleSummaryAction() {
+async function handleSummaryAction(intent?: 'refresh' | 'update' | 'retry') {
+  if (intent === 'retry') { await loadPackageState(); return; }
+  if (intent === 'refresh') { await refresh(); return; }
   if (errorMessage.value) { await loadPackageState(); return; }
   if (summary.value?.total) await startOperation('update', []);
   else await refresh();
@@ -206,7 +211,9 @@ async function runBatchRemove() {
 
 async function handleRowAction(operation: RowOperation, name: string) {
   if (operation === 'open') {
-    await router.push(`/app/${name}`);
+    const pkg = visiblePackages.value.find(pkg => pkg.name === name);
+    if (!pkg?.catalogName) return;
+    try { await launchCatalogApp(pkg.catalogName); } catch (error) { errorMessage.value = String(error); }
     return;
   }
   await startOperation(operation, [name]);
@@ -255,13 +262,6 @@ async function startOperation(operation: Extract<PackageOperationKind, 'update' 
   border-bottom: 1px solid var(--color-border);
 }
 
-.eyebrow {
-  margin: 0 0 6px;
-  color: var(--color-text-subtle);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 
 h1 {
   margin: 0;

@@ -8,7 +8,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "test:frontend:stub": "node scripts/test-frontend-stub.cjs"
+    "test:frontend:stub": "node scripts/test-frontend-stub.cjs",
+    "test:core": "node scripts/test-frontend-stub.cjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

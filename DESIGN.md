@@ -43,6 +43,12 @@
   - Let users install, remove, open, and update apps with clear safety boundaries.
   - Make system/package update status understandable: no updates, software updates, system updates, security updates, stale update state, failure, completion, and manual-action-required.
   - Support dark mode as a first-class visual target.
+- Current core delivery:
+  - The installed tab contains repository-managed applications present in the ASMR catalog, with an explicit catalog scope and independent loading errors.
+  - Installed state comes from amo; desktop launchability comes from registered Desktop Entries. Optional `desktop_id` metadata selects nonstandard entry IDs. Launch runs with user privileges through GIO.
+  - Show package updates without inventing a system/application classification. Security data stays unknown when unavailable.
+  - Save only successful refresh/update times observed by aoska. Labels refer to checks or updates made through aoska, including a 14-day reminder; they do not claim a system-wide history.
+  - Running, completed, failed, and unknown observation states stay distinct. Retry actions preserve their meaning: checking again never silently starts a full upgrade.
 - Non-goals:
   - Expose every `oma` subcommand.
   - Replace terminal workflows for advanced package-manager tasks.
@@ -63,7 +69,7 @@
   - Search for an app from the ASMR catalog, including manually maintained entries that may not exist in the AOSC package repository.
   - Inspect app screenshots, description, metadata, support/compatibility flags, and source.
   - Install, open, update, or remove an app.
-  - Review all installed/updatable software and batch update/remove selections.
+  - Review installed apps within the ASMR catalog, all upgradable packages, and confirmed batch actions.
   - Understand when updates require security attention or manual terminal action.
 - Key contexts of use:
   - Desktop GUI under Tauri.
@@ -281,8 +287,8 @@
   - Keep mutation controls busy while an operation is running; refresh package state after the terminal result. Surface daemon, authorization, and observation failures.
   - The operation dialog reads status and logs retained by the Rust adapter. These records belong to the current aoska process; amo 0.6.1 has no historical operation query.
 - Current amo 0.6.1 limits:
-  - No full installed-package inventory, storage summary, cancellation, or application-launch API. Hide or disable those controls through `pm_capabilities`.
-  - Installed catalog apps can still be updated or removed from their detail page.
+  - No full installed-package inventory, storage summary, cancellation, or historical operation API. Full inventory remains disabled; aoska provides a separate catalog-bound installed list. Desktop launching is a user-session integration independent of amo.
+  - Installed catalog apps can be updated or removed from details or the catalog-installed list. Show an open action only when a registered visible Desktop Entry exists; unknown sizes are not zero.
   - `Search("")` is not an inventory API. Do not replace the missing installed list with an incomplete search result or CLI query.
   - Most progress events have no request ID; the matching result signal determines completion.
   - User-visible package configuration prompts use amo's debconf path and require a desktop helper.

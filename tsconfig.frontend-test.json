@@ -17,6 +17,8 @@
     "src/utils/pmOperations.ts",
     "src/utils/pmPresentation.ts",
     "src/utils/pmSelection.ts",
-    "src/utils/catalogSearch.ts"
+    "src/utils/catalogSearch.ts",
+    "src/utils/desktopActions.ts",
+    "src/utils/updateActivity.ts"
   ]
 }

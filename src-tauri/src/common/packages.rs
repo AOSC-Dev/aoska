@@ -17,6 +17,8 @@ pub struct PackageBrief {
     pub name: String,
     pub intro: String,
     pub icon: PathBuf,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub desktop_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,6 +40,8 @@ pub struct PackageInfo {
     pub update_date: String,
     pub install_size: i64,
     pub homepage: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub desktop_id: Option<String>,
 }
 
 /// The detailed infomation of a package.
@@ -53,4 +57,23 @@ pub struct PackageDetail {
     pub package_flags: PackageFlags,
     pub package_info: PackageInfo,
     pub banner: PathBuf,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn old_catalog_records_remain_readable() {
+        let brief: PackageBrief =
+            serde_json::from_str(r#"{"name":"vlc","intro":"Player","icon":"logo.png"}"#).unwrap();
+        assert!(brief.desktop_id.is_none());
+        assert!(serde_json::to_value(brief)
+            .unwrap()
+            .get("desktop_id")
+            .is_none());
+        let detail: PackageDetail =
+            serde_json::from_str(include_str!("../../mock_data/packages/firefox/meta.json"))
+                .unwrap();
+        assert!(detail.package_info.desktop_id.is_none());
+    }
 }

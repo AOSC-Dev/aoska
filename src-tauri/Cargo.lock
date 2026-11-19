@@ -134,6 +134,7 @@ dependencies = [
  "chrono",
  "clap",
  "futures-util",
+ "gio",
  "httpmock",
  "regex",
  "reqwest",

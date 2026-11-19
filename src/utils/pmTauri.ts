@@ -73,6 +73,9 @@ function normalizePackage(raw: RawRecord, defaults: Partial<PmPackageRecord>): P
   const upgradable = boolField(raw, ['upgradable'], defaults.upgradable ?? (installed && Boolean(newVersion)));
   return {
     name,
+    catalogName: optionalStringField(raw, ['catalogName', 'catalog_name']),
+    icon: optionalStringField(raw, ['icon']),
+    desktopId: optionalStringField(raw, ['desktopId', 'desktop_id']),
     displayName: stringField(raw, ['title', 'display_name', 'displayName', 'name'], defaults.displayName ?? name),
     packageName: stringField(raw, ['package_name', 'packageName', 'name'], defaults.packageName ?? name),
     architecture: optionalStringField(raw, ['architecture', 'arch'], defaults.architecture),
@@ -161,6 +164,20 @@ export function createTauriPackageManager(invokeCommand: InvokeFunction): Packag
     async listUpdates(): Promise<PmPackageList> {
       const result = await invokeCommand<unknown>('pm_list_updates');
       return normalizeList(result, { installed: true, upgradable: true });
+    },
+
+    async listCatalogInstalled(): Promise<PmPackageList> {
+      const raw = await invokeCommand<unknown>('pm_list_catalog_installed');
+      if (!isRecord(raw) || !Array.isArray(raw.packages)) {
+        throw new Error('Invalid catalog inventory: expected a packages array');
+      }
+      const packages = raw.packages.map((row: unknown) => {
+        if (!isRecord(row) || typeof row.name !== 'string' || !row.name.trim() || typeof row.installed !== 'boolean') {
+          throw new Error('Invalid catalog package: expected a name and installed flag');
+        }
+        return normalizePackage(row, {});
+      });
+      return { packages, raw };
     },
 
     async listInstalled(): Promise<PmPackageList> {

@@ -4,16 +4,34 @@ export function isTerminalOperation(state: string): boolean {
   return ['succeeded', 'failed', 'cancelled', 'already_terminal'].includes(state);
 }
 
+export type InstalledScope = 'catalog' | 'system' | 'unavailable';
+
+async function loadInstalledApps(pm: PackageManagerClient, scope: InstalledScope) {
+  if (scope === 'unavailable') return { installed: [] };
+  try {
+    const list = scope === 'catalog' ? await pm.listCatalogInstalled() : await pm.listInstalled();
+    const unique = new Map(list.packages.filter(pkg => pkg.installed).map(pkg => [pkg.name, pkg]));
+    return { installed: [...unique.values()] };
+  } catch (error) {
+    // Updates remain usable while the installed tab displays the query error.
+    return { installed: [], installedError: String(error) };
+  }
+}
+
 export async function loadPackageInventory(pm: PackageManagerClient) {
   const capabilities = await pm.capabilities();
   const supports = (name: string) => capabilities.capabilities.includes(name);
-  const [summary, updates, installed, storage] = await Promise.all([
+  let installedScope: InstalledScope = 'unavailable';
+  if (supports('query.catalog-installed.v1')) installedScope = 'catalog';
+  else if (supports('query.installed.v1')) installedScope = 'system';
+
+  const [summary, updates, inventory, storage] = await Promise.all([
     pm.updateSummary(),
     pm.listUpdates(),
-    supports('query.installed.v1') ? pm.listInstalled() : Promise.resolve({ packages: [] }),
-    supports('storage.summary.v1') ? pm.storageSummary() : Promise.resolve(null),
+    loadInstalledApps(pm, installedScope),
+    supports('storage.summary.v1') ? pm.storageSummary() : null,
   ]);
-  return { capabilities, summary, updates: updates.packages, installed: installed.packages, storage };
+  return { capabilities, summary, updates: updates.packages, installedScope, ...inventory, storage };
 }
 
 interface OperationObserver {

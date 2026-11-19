@@ -8,9 +8,9 @@
       :aria-label="pkg.displayName"
       @change="$emit('toggle', pkg.name)"
     />
-    <div class="icon" aria-hidden="true">●</div>
+    <img v-if="pkg.icon" class="icon" :src="pkg.icon" alt="" /><div v-else class="icon" aria-hidden="true">▣</div>
     <div class="main">
-      <div class="name">{{ pkg.displayName }}</div>
+      <RouterLink v-if="pkg.catalogName" class="name" :to="`/app/${encodeURIComponent(pkg.catalogName)}`">{{ pkg.displayName }}</RouterLink><div v-else class="name">{{ pkg.displayName }}</div>
       <div class="versions">
         <template v-if="pkg.currentVersion && pkg.newVersion">
           {{ pkg.currentVersion }} → {{ pkg.newVersion }}
@@ -40,6 +40,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { RouterLink } from 'vue-router';
 import { filesize } from 'filesize';
 import type { PackageOperationKind, PmPackageRecord } from '../../../types/pm';
 
@@ -57,7 +58,10 @@ defineEmits<{
 }>();
 
 const localeZh = navigator.language.startsWith('zh');
-const size = computed(() => filesize(props.pkg.downloadSize ?? props.pkg.installedSize ?? 0, { standard: 'iec' }));
+const size = computed(() => {
+  const bytes = props.pkg.downloadSize ?? props.pkg.installedSize;
+  return bytes === undefined ? (localeZh ? '大小未知' : 'Size unknown') : filesize(bytes, { standard: 'iec' });
+});
 </script>
 
 <style scoped>
@@ -88,7 +92,8 @@ const size = computed(() => filesize(props.pkg.downloadSize ?? props.pkg.install
   height: 48px;
   border-radius: 50%;
   color: #4285f4;
-  background: conic-gradient(#4285f4, #34a853, #fbbc05, #ea4335, #4285f4);
+  background: var(--color-surface-raised);
+  object-fit: contain;
   font-size: 20px;
 }
 
@@ -97,6 +102,8 @@ const size = computed(() => filesize(props.pkg.downloadSize ?? props.pkg.install
 }
 
 .name {
+  color: inherit;
+  text-decoration: none;
   font-size: 18px;
 }
 
