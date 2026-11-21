@@ -31,6 +31,8 @@ exports.runCatalogTests = async function runCatalogTests(outDir) {
     locales: { en: { name: 'Editor' } },
     icon: null,
     categories: ['office'],
+    aliases: ['Code Writer'],
+    keywords: ['编程'],
   };
   const files = {
     'index.json': { default_locale: 'zh-CN', homepage: 'editorial/home.json', apps: [card] },
@@ -84,7 +86,11 @@ exports.runCatalogTests = async function runCatalogTests(outDir) {
     home.essentials.apps.map((app) => app.id),
     ['unlisted', 'editor'],
   );
+  const cards = await catalog.cards('zh');
+  assert.ok(cards[0].searchTerms.includes('Code Writer'));
+  assert.ok(cards[0].searchTerms.includes('编程'));
   const detail = await catalog.detail('editor', 'en-US');
+  assert.deepEqual(detail.sourceKinds, ['aosc-repository']);
   assert.equal(detail.name, 'Editor');
   assert.equal(detail.disclosures.telemetry, 'unknown');
   assert.deepEqual(detail.screenshots, [{ url: root + 'apps/editor/shot.png', alt: 'Window' }]);

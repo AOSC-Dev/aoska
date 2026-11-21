@@ -1,6 +1,7 @@
 <template>
   <button class="card" type="button">
-    <img v-if="image" :src="image" class="app-icon" alt="" />
+    <img v-if="image && !imageFailed" :src="image" class="app-icon" alt="" @error="imageFailed = true" />
+    <span v-else class="app-icon fallback-icon" aria-hidden="true">{{ name.slice(0, 1).toLocaleUpperCase() }}</span>
     <span class="copy">
       <span class="name">{{ name }}</span>
       <span v-if="intro" class="intro">{{ intro }}</span>
@@ -9,11 +10,15 @@
 </template>
 
 <script setup lang='ts'>
-defineProps<{
+import { ref, watch } from 'vue';
+
+const props = defineProps<{
   name: string,
   intro?: string,
   image?: string | null
 }>();
+const imageFailed = ref(false);
+watch(() => props.image, () => { imageFailed.value = false; });
 </script>
 
 <style scoped>
@@ -44,6 +49,16 @@ defineProps<{
   height: 52px;
   margin-right: 12px;
   object-fit: contain;
+}
+
+.fallback-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--color-surface-soft);
+  color: var(--color-text-muted);
+  font-size: 28px;
 }
 
 .copy {

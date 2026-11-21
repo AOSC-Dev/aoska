@@ -2,15 +2,15 @@
   <div class="image-carousel" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
     <!-- 主图显示区域 -->
     <div class="main-image-container">
-      <button v-if="images.length > 1" class="nav-button prev" :class="{ visible: isHovering }" @click="prev">
+      <button v-if="images.length > 1" type="button" :aria-label="$t('detail.previousScreenshot')" class="nav-button prev" :class="{ visible: isHovering }" @click="prev">
         &lt;
       </button>
-      
+
       <div class="main-image">
         <div class="image-wrapper">
           <transition-group name="fade" tag="div" class="image-transition-container">
-            <img 
-              v-for="(image, index) in images" 
+            <img
+              v-for="(image, index) in images"
               v-show="currentIndex === index"
               :key="index"
               :src="image.url"
@@ -19,19 +19,22 @@
           </transition-group>
         </div>
       </div>
-      
-      <button v-if="images.length > 1" class="nav-button next" :class="{ visible: isHovering }" @click="next">
+
+      <button v-if="images.length > 1" type="button" :aria-label="$t('detail.nextScreenshot')" class="nav-button next" :class="{ visible: isHovering }" @click="next">
         &gt;
       </button>
-      
-      <div v-if="isHovering && images.length > 1" class="indicators">
-        <div 
-          v-for="(_, index) in images" 
-          :key="index" 
-          class="indicator" 
+
+      <div v-if="images.length > 1" class="indicators">
+        <button
+          v-for="(_, index) in images"
+          :key="index"
+          type="button"
+          class="indicator"
+          :aria-label="$t('detail.selectScreenshot', { number: index + 1 })"
+          :aria-pressed="index === currentIndex"
           :class="{ active: index === currentIndex }"
           @click="showImage(index)"
-        ></div>
+        ></button>
       </div>
     </div>
   </div>
@@ -185,7 +188,9 @@ watch(() => props.images, () => {
 }
 
 .nav-button.visible,
-.nav-button:hover {
+.nav-button:hover,
+.nav-button:focus-visible,
+.image-carousel:focus-within .nav-button {
   opacity: 0.8;
 }
 
@@ -209,8 +214,9 @@ watch(() => props.images, () => {
 }
 
 .indicator {
-  width: 10px;
-  height: 10px;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #111;
   border-radius: 50%;
   background-color: rgba(255, 255, 255, 0.5);
   cursor: pointer;

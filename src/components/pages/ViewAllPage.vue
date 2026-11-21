@@ -51,7 +51,7 @@ const packages = computed(() => {
   const query = normalizeSearchQuery(searchQuery.value);
   return (cards.value ?? []).filter(app =>
     (!props.category || app.categories.includes(props.category)) &&
-    (!query || [app.id, app.name, app.summary].some(field => field?.toLocaleLowerCase().includes(query)))
+    (!query || [app.id, app.name, app.summary, ...app.searchTerms].some(field => field?.toLocaleLowerCase().includes(query)))
   );
 });
 

@@ -247,7 +247,9 @@ async function runFrontendTests(outDir) {
 
   const selection = new Set(['wechat']);
   assert.deepEqual(selectedPackageNames(updates.packages, selection), ['wechat']);
-  assert.deepEqual(batchActionState('update', updates.packages, new Set()), { enabled: false, count: 0 });
+  assert.deepEqual(batchActionState('update', updates.packages, new Set()), { enabled: true, count: updates.packages.length });
+  assert.deepEqual(batchActionState('remove', updates.packages, new Set()), { enabled: false, count: 0 });
+  assert.deepEqual(batchActionState('update', [], new Set()), { enabled: false, count: 0 });
   assert.deepEqual(batchActionState('update', updates.packages, selection), { enabled: true, count: 1 });
 
   assert.deepEqual(flattenCatalogPackages(catalogIndex).map((pkg) => pkg.name), ['wechat', 'firefox', 'steam']);

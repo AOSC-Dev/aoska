@@ -44,6 +44,8 @@
     "refresh": "Check updates",
     "upgradable": "Upgradable",
     "installed": "Installed",
+    "updateAll": "Update all",
+    "stateUnavailable": "Package status is unavailable. Please retry.",
     "updateSelected": "Update selected",
     "removeSelected": "Remove selected",
     "loading": "Reading package state…",
@@ -84,7 +86,8 @@
       "runtime": "Runtime",
       "service": "Service availability",
       "telemetry": "Telemetry",
-      "support": "Support"
+      "support": "Support",
+      "publisherRelationship": "Publisher relationship"
     },
     "values": {
       "verified": "Verified",
@@ -102,8 +105,57 @@
       "aosc": "AOSC",
       "upstream": "Upstream",
       "community": "Community",
-      "none": "None"
-    }
+      "none": "None",
+      "third-party": "Third party"
+    },
+    "source": "Source",
+    "missingScreenshots": "Screenshots have not been provided for this app.",
+    "downloadNotice": "Visit the upstream download page and follow its instructions to install this app manually.",
+    "sources": {
+      "aosc-repository": "AOSC OS repository",
+      "browser-assisted-deb": "Official download page",
+      "direct-deb": "Upstream DEB download",
+      "external-link": "Upstream page"
+    },
+    "disclosureDescriptions": {
+      "availability": {
+        "verified": "This app has passed availability checks.",
+        "unverified": "Availability has not been verified.",
+        "broken": "This app is known to be unusable at present.",
+        "unknown": "The maintainer has not confirmed availability."
+      },
+      "runtime": {
+        "native": "This app runs in a native environment.",
+        "compatibility-layer": "This app requires a compatibility layer, which may affect performance and functionality.",
+        "windows": "This app was designed for Windows and requires a compatibility environment.",
+        "unknown": "The maintainer has not specified the runtime environment."
+      },
+      "telemetry": {
+        "present": "This app includes usage-data collection. Check its settings and notices.",
+        "absent": "The app metadata declares that it has no telemetry.",
+        "unknown": "The maintainer has not confirmed whether this app includes telemetry."
+      },
+      "service": {
+        "full": "Online services are marked as fully available.",
+        "limited": "Online services may be limited by location or network conditions.",
+        "unavailable": "Online services required by this app are unavailable.",
+        "unknown": "The maintainer has not confirmed online service availability."
+      },
+      "support": {
+        "aosc": "Support is provided by AOSC.",
+        "upstream": "Support is provided by the upstream publisher.",
+        "community": "Support is provided by the community.",
+        "none": "No support provider has been declared for this app.",
+        "unknown": "The maintainer has not specified a support provider."
+      },
+      "publisherRelationship": {
+        "community": "This app is distributed by the community. Consult the publisher metadata for its relationship to upstream.",
+        "third-party": "This app is distributed by a third party. Check its relationship to the upstream publisher."
+      }
+    },
+    "previousScreenshot": "Previous screenshot",
+    "nextScreenshot": "Next screenshot",
+    "selectScreenshot": "View screenshot {number}"
   },
   "tags": {
     "unofficial": {

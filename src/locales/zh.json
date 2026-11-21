@@ -44,6 +44,8 @@
     "refresh": "查找更新",
     "upgradable": "可更新",
     "installed": "已安装",
+    "updateAll": "更新全部",
+    "stateUnavailable": "软件包状态暂不可用，请重试。",
     "updateSelected": "更新选中",
     "removeSelected": "卸载选中",
     "loading": "正在读取软件包状态…",
@@ -84,7 +86,8 @@
       "runtime": "运行环境",
       "service": "服务可用性",
       "telemetry": "遥测",
-      "support": "支持方"
+      "support": "支持方",
+      "publisherRelationship": "发行方关系"
     },
     "values": {
       "verified": "已验证",
@@ -102,8 +105,57 @@
       "aosc": "安同开源社区",
       "upstream": "上游",
       "community": "社区",
-      "none": "无"
-    }
+      "none": "无",
+      "third-party": "第三方"
+    },
+    "source": "来源",
+    "missingScreenshots": "此应用尚未提供截图。",
+    "downloadNotice": "此应用需要前往上游页面下载并按说明手动安装。",
+    "sources": {
+      "aosc-repository": "安同 OS 软件仓库",
+      "browser-assisted-deb": "官方下载页面",
+      "direct-deb": "上游 DEB 下载",
+      "external-link": "上游网页"
+    },
+    "disclosureDescriptions": {
+      "availability": {
+        "verified": "此应用已通过可用性验证。",
+        "unverified": "此应用的可用性尚未经过验证。",
+        "broken": "已知此应用当前无法正常使用。",
+        "unknown": "维护者尚未确认此应用的可用性。"
+      },
+      "runtime": {
+        "native": "此应用使用原生运行环境。",
+        "compatibility-layer": "此应用需要兼容层，性能与功能可能受到影响。",
+        "windows": "此应用为 Windows 设计，需要兼容环境运行。",
+        "unknown": "维护者尚未说明此应用的运行环境。"
+      },
+      "telemetry": {
+        "present": "此应用包含收集使用数据的功能，请留意相关配置及提示。",
+        "absent": "此应用的元数据声明不包含遥测功能。",
+        "unknown": "维护者尚未确认此应用是否包含遥测功能。"
+      },
+      "service": {
+        "full": "此应用的在线服务已标记为完整可用。",
+        "limited": "受地理位置或网络条件影响，此应用的服务可能受限。",
+        "unavailable": "此应用所依赖的在线服务当前不可用。",
+        "unknown": "维护者尚未确认此应用的在线服务可用性。"
+      },
+      "support": {
+        "aosc": "此应用由安同开源社区提供支持。",
+        "upstream": "此应用由上游发行方提供支持。",
+        "community": "此应用由社区提供支持。",
+        "none": "此应用没有声明可提供支持的维护方。",
+        "unknown": "维护者尚未明确此应用的支持方。"
+      },
+      "publisherRelationship": {
+        "community": "此应用由社区重新分发，发行方与应用上游的关系见元数据。",
+        "third-party": "此应用由第三方发行，请核对发行方和上游的关系。"
+      }
+    },
+    "previousScreenshot": "上一张截图",
+    "nextScreenshot": "下一张截图",
+    "selectScreenshot": "查看第 {number} 张截图"
   },
   "tags": {
     "unofficial": {

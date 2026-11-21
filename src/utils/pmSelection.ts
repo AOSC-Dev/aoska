@@ -15,10 +15,11 @@ export function selectedPackageNames(
 }
 
 export function batchActionState(
-  _operation: Extract<PackageOperationKind, 'update' | 'remove'>,
+  operation: Extract<PackageOperationKind, 'update' | 'remove'>,
   packages: PmPackageRecord[],
   selected: ReadonlySet<string>,
 ): BatchActionState {
-  const count = selectedPackageNames(packages, selected).length;
+  const selectedCount = selectedPackageNames(packages, selected).length;
+  const count = operation === 'update' && selectedCount === 0 ? packages.length : selectedCount;
   return { enabled: count > 0, count };
 }

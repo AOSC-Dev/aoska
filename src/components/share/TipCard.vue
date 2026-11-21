@@ -95,20 +95,16 @@ const month = computed(() => new Intl.DateTimeFormat(locale.value, { month: "lon
 .title {
   color: var(--color-text);
   font-size: 19px;
-  line-height: 20px;
+  line-height: 1.4;
   font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .intro {
   margin-top: 8px;
   color: var(--color-text-muted);
   font-size: 14px;
-  line-height: 14px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 </style>
