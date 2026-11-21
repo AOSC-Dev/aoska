@@ -41,6 +41,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { filesize } from 'filesize';
 import type { PackageOperationKind, PmPackageRecord } from '../../../types/pm';
 
@@ -57,10 +58,11 @@ defineEmits<{
   action: [operation: Extract<PackageOperationKind, 'update' | 'remove'> | 'open', name: string];
 }>();
 
-const localeZh = navigator.language.startsWith('zh');
+const { locale } = useI18n();
+const localeZh = computed(() => locale.value.startsWith('zh'));
 const size = computed(() => {
-  const bytes = props.pkg.downloadSize ?? props.pkg.installedSize;
-  return bytes === undefined ? (localeZh ? '大小未知' : 'Size unknown') : filesize(bytes, { standard: 'iec' });
+  const bytes = props.pkg.upgradable ? props.pkg.downloadSize : props.pkg.installedSize;
+  return bytes === undefined ? (localeZh.value ? '大小未知' : 'Size unknown') : filesize(bytes, { standard: 'iec' });
 });
 </script>
 

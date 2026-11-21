@@ -18,15 +18,24 @@
     <p v-if="stateError" role="alert" class="package-error">
       {{ stateError }} <button type="button" @click="loadPackageState">{{ $t('detail.retryState') }}</button>
     </p>
-    <div class="down-content">
+    <div class="down-content" :class="{ 'no-media': !detail.screenshots.length }">
       <div>
         <div v-if="detail.screenshots.length" class="image-container">
           <ImageCarousel :images="detail.screenshots" />
         </div>
+        <p v-else class="missing-media" role="status">{{ $t('detail.missingScreenshots') }}</p>
         <p v-if="detail.description" class="description">{{ detail.description }}</p>
       </div>
       <aside class="down-right">
+        <div v-if="detail.downloadUrl && !detail.packageNames.length" class="download-notice">
+          <p>{{ $t('detail.downloadNotice') }}</p>
+          <button type="button" @click="openPage(detail.downloadUrl!)">{{ $t('detail.download') }}</button>
+        </div>
         <div class="flags">
+          <SoftwareFlags
+            v-if="detail.publisherRelationship === 'third-party' || detail.publisherRelationship === 'community'"
+            field="publisherRelationship" :value="detail.publisherRelationship"
+          />
           <template v-for="field in disclosureFields" :key="field">
             <SoftwareFlags v-if="detail.disclosures[field]" :field="field" :value="detail.disclosures[field]!" />
           </template>
@@ -38,6 +47,9 @@
           </template>
           <template v-if="detail.publisher">
             <dt>{{ $t('detail.publisher') }}</dt><dd>{{ detail.publisher }}</dd>
+          </template>
+          <template v-if="detail.sourceKinds.length">
+            <dt>{{ $t('detail.source') }}</dt><dd>{{ detail.sourceKinds.map(kind => $t('detail.sources.' + kind)).join(' / ') }}</dd>
           </template>
           <template v-if="selectedPackage">
             <dt>{{ $t('detail.package') }}</dt><dd>{{ selectedPackage }}</dd>
@@ -51,9 +63,13 @@
         </dl>
         <div class="btns">
           <button v-if="website" type="button" @click="openPage(website)">{{ $t('detail.website') }}</button>
-          <button v-if="detail.downloadUrl" type="button" @click="openPage(detail.downloadUrl)">{{ $t('detail.download') }}</button>
-          <button type="button" @click="reportIssue">{{ $t('detail.report') }}</button>
+          <button
+            v-if="packageState && packageState.action.primary !== 'none' && packageState.action.primary !== 'manual'"
+            type="button" :disabled="operationBusy" @click="handlePackageAction(packageState.action.primary)"
+          >{{ actionLabel(packageState.action.primary, locale) }}</button>
+          <button v-if="detail.downloadUrl && detail.packageNames.length" type="button" @click="openPage(detail.downloadUrl)">{{ $t('detail.download') }}</button>
         </div>
+        <button class="report-link" type="button" @click="reportIssue">{{ $t('detail.report') }}</button>
       </aside>
     </div>
   </section>
@@ -74,6 +90,7 @@ import { getCatalogDetail, type CatalogDetail } from '../../utils/asmrClient';
 import { launchCatalogApp, openExternalPage } from '../../utils/desktopClient';
 import { getPackageManager } from '../../utils/pmClient';
 import { usePackageOperation } from '../../utils/usePackageOperation';
+import { actionLabel } from '../../utils/pmPresentation';
 import type { PackagePrimaryAction, PmPackageState, PmCapabilities } from '../../types/pm';
 import ImageCarousel from '../share/ImageCarousel.vue';
 import OperationDialog from '../share/OperationDialog.vue';
@@ -160,16 +177,25 @@ function reportIssue() {
 <style scoped>
 .catalog-status { margin: 76px 20px 16px; }
 .package-error { padding: 12px 20px; background: var(--color-danger); overflow-wrap: anywhere; }
-.down-content { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); gap: 20px; margin: 12px 20px 24px; }
+.down-content { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr); gap: 20px; margin: 12px 20px 24px; }
 .image-container { width: 100%; aspect-ratio: 16 / 10; border: 1px solid var(--color-border); border-radius: var(--radius-card); }
 .description { white-space: pre-wrap; overflow-wrap: anywhere; margin: 16px 0; line-height: 1.6; }
 .down-right { display: flex; flex-direction: column; gap: 12px; }
-.flags { display: flex; flex-wrap: wrap; gap: 8px; }
-.info { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; align-items: baseline; }
+.flags { display: grid; gap: 10px; }
+.info { padding: 14px 16px; background: var(--color-surface-raised); border-radius: var(--radius-card); display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; align-items: baseline; }
 .info dt { color: var(--color-text-muted); }
 .info dd { margin: 0; overflow-wrap: anywhere; }
-.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+.btns button { flex: 1; min-width: 128px; }
+.btns button:disabled { opacity: .55; cursor: default; }
+.download-notice { padding: 14px 16px; border: 1px solid var(--color-warning-border); border-radius: var(--radius-card); background: var(--color-warning); }
+.download-notice p { line-height: 1.5; margin-bottom: 12px; }
+.download-notice button { min-width: 128px; padding: 6px 12px; color: var(--color-text); background: var(--color-button-grey); border: 1px solid var(--color-border); border-radius: var(--radius-control); }
+.missing-media { display: grid; place-items: center; min-height: 72px; border: 1px dashed var(--color-border); border-radius: var(--radius-card); color: var(--color-text-muted); }
+.report-link { align-self: flex-end; color: var(--color-text-muted); background: transparent; border: 0; text-decoration: underline; cursor: pointer; }
 .btns button, .package-picker select { padding: 6px 12px; background: var(--color-button-grey); color: var(--color-text); border: 1px solid var(--color-border); border-radius: var(--radius-control); }
 .package-picker { margin: 0 20px; }
-@media (max-width: 720px) { .down-content { grid-template-columns: 1fr; } }
+.down-content.no-media { grid-template-columns: 1fr; }
+.no-media .flags { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 720px) { .down-content, .no-media .flags { grid-template-columns: 1fr; } }
 </style>

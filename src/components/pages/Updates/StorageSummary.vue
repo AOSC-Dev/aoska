@@ -23,18 +23,20 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { filesize } from 'filesize';
+import { useI18n } from 'vue-i18n';
 import type { PmStorageSummary } from '../../../types/pm';
 
 const props = defineProps<{
   storage: PmStorageSummary;
 }>();
 
-const localeZh = navigator.language.startsWith('zh');
+const { locale } = useI18n();
+const localeZh = computed(() => locale.value.startsWith('zh'));
 const usedFormatted = computed(() => filesize(props.storage.totalUsedBytes, { standard: 'iec' }));
-const tooltip = computed(() => localeZh ? '此处以系统所在磁盘的空间作估算' : 'Estimated from the system disk.');
+const tooltip = computed(() => localeZh.value ? '此处以系统所在磁盘的空间作估算' : 'Estimated from the system disk.');
 const normalizedSegments = computed(() => props.storage.segments.map((segment) => ({
   ...segment,
-  percent: props.storage.totalBytes > 0 ? Math.max(1, (segment.bytes / props.storage.totalBytes) * 100) : 0,
+  percent: props.storage.totalBytes > 0 ? Math.max(0, Math.min(100, (segment.bytes / props.storage.totalBytes) * 100)) : 0,
 })));
 </script>
 

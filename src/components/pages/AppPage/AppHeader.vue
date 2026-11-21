@@ -3,6 +3,7 @@
     <img v-if="appBannerImg" :src="appBannerImg" class="backdrop" alt="">
     <div class="app-banner">
       <img v-if="appIcon" :src="appIcon" class="app-img" alt="">
+      <span v-else class="app-img fallback-icon" aria-hidden="true">{{ appName?.slice(0, 1).toUpperCase() }}</span>
       <div class="app-intro">
         <div class="name">{{ appName }}</div>
         <div class="intro">{{ appIntro }}</div>
@@ -141,6 +142,8 @@ const updateCopy = computed(() => locale.value.startsWith('zh') ? '有可用更�
   font-size: 15px;
 }
 
+.fallback-icon { display: grid; place-items: center; flex-shrink: 0; border-radius: var(--radius-card); background: var(--color-surface-raised); color: var(--color-text-muted); font-size: 56px; }
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -152,5 +155,12 @@ const updateCopy = computed(() => locale.value.startsWith('zh') ? '有可用更�
 
 .actions :deep(.button) {
   margin: 0;
+}
+
+@media (max-width: 760px) {
+  .header { flex-direction: column; }
+  .header .app-img { width: 80px; height: 80px; margin-right: 16px; }
+  .name { font-size: 30px; overflow-wrap: anywhere; }
+  .actions { margin: 0 20px 20px; justify-content: flex-start; }
 }
 </style>

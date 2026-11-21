@@ -98,6 +98,8 @@ watch([locale, refresh], async ([language], _, onCleanup) => {
   let active = true;
   onCleanup(() => { active = false; });
   catalogError.value = '';
+  homepage.value = null;
+  showHeroCollection.value = false;
   try {
     const content = await getCatalogHomepage(language);
     if (active) homepage.value = content;
@@ -199,7 +201,7 @@ h2 {
 
 .apps {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 15px;
 }
 
@@ -230,5 +232,7 @@ h2 {
   .update, .tip-content {
     grid-column: 1;
   }
+
+  .apps { grid-template-columns: 1fr; }
 }
 </style>

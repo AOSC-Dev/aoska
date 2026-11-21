@@ -8,6 +8,8 @@ type App = {
   locales: Locales<AppText>;
   icon?: string | null;
   categories: string[];
+  aliases?: string[];
+  keywords?: string[];
 };
 type Collection = { id: string; apps: string[]; locales: Locales<Caption> };
 type Index = { default_locale: string; homepage: string; apps: App[] };
@@ -33,7 +35,7 @@ type Detail = App & {
   external?: boolean;
   disclosures: Disclosures;
   installers: Installer[];
-  publisher?: { name: string };
+  publisher?: { name: string; relationship?: string };
   links?: { homepage?: string };
   media: { icon?: string; hero?: string; screenshots?: { path: string; alt: Locales<string> }[] };
 };
@@ -119,6 +121,8 @@ export function createAsmrCatalog(address: string, loadJson = httpJson) {
       })),
       disclosures: app.disclosures,
       publisher: app.publisher?.name,
+      publisherRelationship: app.publisher?.relationship,
+      sourceKinds: [...new Set(app.installers.map(installer => installer.kind))],
       homepage: app.links?.homepage,
       packageNames: [...new Set(packageNames)],
       downloadUrl: external?.acquisition?.landing_url,
@@ -170,7 +174,11 @@ export function createAsmrCatalog(address: string, loadJson = httpJson) {
 
   async function cards(locale: string) {
     const index = await read<Index>('index.json');
-    return index.apps.map((app) => ({ ...card(app, locale), categories: app.categories }));
+    return index.apps.map((app) => ({
+      ...card(app, locale), categories: app.categories,
+      searchTerms: [...(app.aliases ?? []), ...(app.keywords ?? []), ...Object.values(app.locales)
+        .flatMap(text => [text.name, text.summary ?? ''])],
+    }));
   }
   return { detail, homepage, cards };
 }

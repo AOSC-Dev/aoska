@@ -1,6 +1,6 @@
 <template>
   <main class="updates-page">
-    <section class="hero-grid">
+    <section class="hero-grid" :class="{ 'without-storage': !storage }">
       <UpdateCard
         class="update-status"
         :update="Math.max(0, (summary?.total ?? 0) - (summary?.security ?? 0))"
@@ -17,6 +17,7 @@
       />
       <StorageSummary
         v-if="storage"
+        class="storage-summary"
         :storage="storage"
       />
     </section>
@@ -27,13 +28,13 @@
           <h1>{{ $t('updates.managementTitle') }}</h1>
           <p v-if="activeTab === 'installed' && installedScope === 'catalog'" class="intro">{{ $t('updates.catalogScope') }}</p>
         </div>
-        <button class="refresh" type="button" :disabled="operationBusy || !canRefresh" @click="refresh">
+        <button class="refresh" type="button" :disabled="loading || operationBusy || (!errorMessage && !canRefresh)" @click="errorMessage ? loadPackageState() : refresh()">
           {{ $t('updates.refresh') }}
         </button>
       </header>
 
-      <div v-if="errorMessage || operationError" class="error" role="alert">
-        {{ errorMessage || operationError }}
+      <div v-if="errorMessage || actionError || operationError" class="error" role="alert">
+        {{ errorMessage || actionError || operationError }}
       </div>
 
       <div class="toolbar">
@@ -64,16 +65,16 @@
             v-if="activeTab === 'updates'"
             type="button"
             class="primary"
-            :disabled="!updateBatch.enabled || operationBusy || !canUpdateSelected"
+            :disabled="loading || !!errorMessage || !updateBatch.enabled || operationBusy || !(selectedUpdates.size ? canUpdateSelected : canUpdateAll)"
             @click="runBatchUpdate"
           >
-            {{ $t('updates.updateSelected') }} ({{ updateBatch.count }})
+            {{ $t(selectedUpdates.size ? 'updates.updateSelected' : 'updates.updateAll') }} ({{ updateBatch.count }})
           </button>
           <button
             v-else
             type="button"
             class="danger"
-            :disabled="!removeBatch.enabled || operationBusy || !canRemove"
+            :disabled="loading || !!errorMessage || !!installedError || !removeBatch.enabled || operationBusy || !canRemove"
             @click="runBatchRemove"
           >
             {{ $t('updates.removeSelected') }} ({{ removeBatch.count }})
@@ -84,8 +85,8 @@
       <div v-if="loading" class="list-state">
         {{ $t('updates.loading') }}
       </div>
-      <div v-else-if="errorMessage" class="list-state">软件包状态暂不可用，请重试。</div>
-      <div v-else-if="activeTab === 'installed' && installedError" class="list-state" role="alert">{{ installedError }} <button type="button" @click="loadPackageState">重试</button></div>
+      <div v-else-if="errorMessage" class="list-state">{{ $t('updates.stateUnavailable') }}</div>
+      <div v-else-if="activeTab === 'installed' && installedError" class="list-state" role="alert">{{ installedError }} <button type="button" @click="loadPackageState">{{ $t('home.retry') }}</button></div>
       <div v-else-if="visiblePackages.length === 0" class="list-state">
         {{ activeTab === 'updates' ? $t('updates.noUpdates') : $t('updates.noInstalled') }}
       </div>
@@ -134,6 +135,7 @@ const canUpdateSelected = computed(() => supports('run.upgrade.selected.v1') && 
 const canRemove = computed(() => supports('run.remove.v1') && supports('plan.remove.v1'));
 const { plan, activeOperation, submitting, locked: operationBusy, error: operationError, prepare, confirm, refresh, finished, close } = usePackageOperation(loadPackageState);
 const errorMessage = ref('');
+const actionError = ref('');
 const installedError = ref('');
 const activeTab = ref<ActiveTab>('updates');
 const summary = ref<PmUpdateSummary | null>(null);
@@ -153,6 +155,7 @@ onMounted(loadPackageState);
 async function loadPackageState() {
   loading.value = true;
   errorMessage.value = '';
+  actionError.value = '';
   try {
     const pm = getPackageManager();
     const inventory = await loadPackageInventory(pm);
@@ -199,7 +202,7 @@ async function handleSummaryAction(intent?: 'refresh' | 'update' | 'retry') {
 
 async function runBatchUpdate() {
   const packages = selectedPackageNames(updates.value, selectedUpdates.value);
-  if (packages.length === 0) return;
+  if (!updateBatch.value.enabled) return;
   await startOperation('update', packages);
 }
 
@@ -210,10 +213,11 @@ async function runBatchRemove() {
 }
 
 async function handleRowAction(operation: RowOperation, name: string) {
+  actionError.value = '';
   if (operation === 'open') {
     const pkg = visiblePackages.value.find(pkg => pkg.name === name);
     if (!pkg?.catalogName) return;
-    try { await launchCatalogApp(pkg.catalogName, pkg.name); } catch (error) { errorMessage.value = String(error); }
+    try { await launchCatalogApp(pkg.catalogName, pkg.name); } catch (error) { actionError.value = String(error); }
     return;
   }
   await startOperation(operation, [name]);
@@ -231,7 +235,7 @@ async function startOperation(operation: Extract<PackageOperationKind, 'update' 
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 82px 20px 24px;
+  padding: 62px 20px 24px;
   color: var(--color-text);
 }
 
@@ -242,8 +246,15 @@ async function startOperation(operation: Extract<PackageOperationKind, 'update' 
 }
 
 .update-status {
+  grid-column: 2;
+  grid-row: 1;
   min-height: 190px;
 }
+
+.storage-summary { grid-column: 1; grid-row: 1; }
+
+.without-storage { grid-template-columns: 1fr; }
+.without-storage .update-status { grid-column: 1; }
 
 .management-card {
   overflow: hidden;
@@ -369,6 +380,9 @@ h1 {
 }
 
 @media (max-width: 900px) {
+  .storage-summary,
+  .update-status { grid-column: 1; grid-row: auto; }
+
   .hero-grid,
   .management-header,
   .toolbar {
