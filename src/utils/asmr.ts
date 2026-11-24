@@ -13,8 +13,11 @@ type App = {
 };
 type Collection = { id: string; apps: string[]; locales: Locales<Caption> };
 type Index = { default_locale: string; homepage: string; apps: App[] };
+type Banner = { target: Target; locales: Locales<Caption>; image: string };
+export type CatalogBanner = Caption & { target: Target; image: string };
 type Homepage = {
-  hero: { target: Target; locales: Locales<Caption>; image: string } | null;
+  hero?: Banner | null;
+  banners?: Banner[];
   essentials: string | null;
   guides: {
     more_url?: string;
@@ -132,19 +135,20 @@ export function createAsmrCatalog(address: string, loadJson = httpJson) {
   async function homepage(locale: string) {
     const index = await read<Index>('index.json');
     const home = await read<Homepage>(index.homepage);
-    const hero = home.hero && {
-      ...localized(home.hero.locales, locale, index.default_locale),
-      target: home.hero.target,
-      image: catalogUrl(root, home.hero.image),
-    };
-    const collectionId = hero?.target.collection;
+    const banners: CatalogBanner[] = (home.banners ?? (home.hero ? [home.hero] : [])).map(banner => ({
+      ...localized(banner.locales, locale, index.default_locale),
+      target: banner.target,
+      image: catalogUrl(root, banner.image),
+    }));
+    const featuredIds = [...new Set(banners.flatMap(({ target }) =>
+      target.collection && target.collection !== home.essentials ? [target.collection] : [],
+    ))];
     const collections =
-      home.essentials || collectionId
+      home.essentials || featuredIds.length
         ? (await read<{ collections: Collection[] }>('collections.json')).collections
         : [];
     const apps = new Map(index.apps.map((app) => [app.id, app]));
-    async function collection(id?: string | null) {
-      if (!id) return null;
+    async function collection(id: string) {
       const entry = collections.find((c) => c.id === id);
       if (!entry) throw new Error('Unknown ASMR collection: ' + id);
       return {
@@ -159,9 +163,9 @@ export function createAsmrCatalog(address: string, loadJson = httpJson) {
       };
     }
     return {
-      hero,
-      essentials: await collection(home.essentials),
-      heroCollection: collectionId !== home.essentials ? await collection(collectionId) : null,
+      banners,
+      essentials: home.essentials ? await collection(home.essentials) : null,
+      featuredCollections: await Promise.all(featuredIds.map(collection)),
       guides: {
         more_url: home.guides.more_url,
         items: home.guides.items.map(({ locales, ...item }) => ({

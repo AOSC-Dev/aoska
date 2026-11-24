@@ -30,6 +30,9 @@
     "saveError": "Could not save catalog settings: {reason}"
   },
   "home": {
+    "banners": "Featured banners",
+    "previousBanner": "Previous banner",
+    "nextBanner": "Next banner",
     "moreGuides": "More guides",
     "retry": "Retry",
     "loading": "Loading catalog…",
