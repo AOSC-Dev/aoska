@@ -80,7 +80,8 @@ exports.runCatalogTests = async function runCatalogTests(outDir) {
     requests,
     ['index.json', 'editorial/home.json', 'collections.json', 'apps/unlisted.json'].map((p) => root + p),
   );
-  assert.equal(home.hero.image, root + 'banners/feature.svg');
+  assert.equal(home.banners.length, 1);
+  assert.equal(home.banners[0].image, root + 'banners/feature.svg');
   assert.equal(home.guides.items[0].title, '指南');
   assert.deepEqual(
     home.essentials.apps.map((app) => app.id),
@@ -98,11 +99,23 @@ exports.runCatalogTests = async function runCatalogTests(outDir) {
   const external = await catalog.detail('unlisted', 'zh');
   assert.deepEqual(external.packageNames, []);
   assert.equal(external.downloadUrl, 'https://example.org/download');
+  const featured = files['editorial/home.json'];
+  featured.banners = [
+    { target: { url: 'https://aosc.io/' }, image: 'banners/news.svg', locales: caption },
+    { target: { collection: 'featured' }, image: 'banners/featured.svg', locales: caption },
+  ];
+  files['collections.json'].collections.push({ id: 'featured', locales: caption, apps: ['editor'] });
+  const carousel = await catalog.homepage('zh');
+  assert.deepEqual(carousel.banners.map(banner => banner.target), [
+    { url: 'https://aosc.io/' }, { collection: 'featured' },
+  ]);
+  assert.equal(carousel.essentials.id, 'essentials');
+  assert.equal(carousel.featuredCollections[0].id, 'featured');
   await assert.rejects(catalog.detail('../index', 'en'), /Invalid ASMR app ID/);
   await assert.rejects(catalog.detail('missing', 'en'), /404/);
   files['editorial/home.json'] = { hero: null, essentials: null, guides: { items: [] } };
   const empty = await catalog.homepage('zh');
-  assert.equal(empty.hero, null);
+  assert.deepEqual(empty.banners, []);
   assert.equal(empty.essentials, null);
   assert.deepEqual(empty.guides.items, []);
   files['index.json'].schema_version = 2;

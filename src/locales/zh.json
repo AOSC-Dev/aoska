@@ -30,6 +30,9 @@
     "saveError": "保存目录设置失败：{reason}"
   },
   "home": {
+    "banners": "首页头图",
+    "previousBanner": "上一张头图",
+    "nextBanner": "下一张头图",
     "moreGuides": "更多指南",
     "retry": "重试",
     "loading": "正在读取目录…",

@@ -1,16 +1,13 @@
 <template>
   <div class="home-layout">
-    <WelcomeCard
-      v-if="homepage?.hero"
-      class="welcome"
-      :image="homepage.hero.image"
-      :title="homepage.hero.title"
-      :subtitle="homepage.hero.subtitle"
-      @click="activateHero"
+    <HomeBanner
+      v-if="homepage?.banners.length"
+      :slides="homepage.banners"
+      @activate="activateBanner"
     />
     <UpdateCard
       class="update"
-      :class="{ wide: !homepage?.hero }"
+      :class="{ wide: !homepage?.banners.length }"
       :is-loading="loading"
       :error="updateError"
       :update="update"
@@ -73,24 +70,25 @@ import { computed, nextTick, onBeforeMount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import router from '../../router';
 import { getCatalogHomepage } from '../../utils/asmrClient';
+import type { CatalogBanner } from '../../utils/asmr';
 import { openExternalPage } from '../../utils/desktopClient';
 import { getPackageManager } from '../../utils/pmClient';
 import AppCard from '../share/AppCard.vue';
+import HomeBanner from '../share/HomeBanner.vue';
 import TipCard from '../share/TipCard.vue';
 import UpdateCard from '../share/UpdateCard.vue';
-import WelcomeCard from '../share/WelcomeCard.vue';
 
 const { locale } = useI18n();
 const homepage = ref<Awaited<ReturnType<typeof getCatalogHomepage>> | null>(null);
 const catalogError = ref('');
 const linkError = ref('');
 const refresh = ref(0);
-const showHeroCollection = ref(false);
+const featuredCollectionId = ref<string>();
 const collections = computed(() => {
   const essentials = homepage.value?.essentials;
   const result = essentials ? [essentials] : [];
-  const featured = homepage.value?.heroCollection;
-  if (showHeroCollection.value && featured && featured.id !== essentials?.id) result.push(featured);
+  const featured = homepage.value?.featuredCollections.find(collection => collection.id === featuredCollectionId.value);
+  if (featured) result.push(featured);
   return result;
 });
 
@@ -99,7 +97,7 @@ watch([locale, refresh], async ([language], _, onCleanup) => {
   onCleanup(() => { active = false; });
   catalogError.value = '';
   homepage.value = null;
-  showHeroCollection.value = false;
+  featuredCollectionId.value = undefined;
   try {
     const content = await getCatalogHomepage(language);
     if (active) homepage.value = content;
@@ -121,14 +119,13 @@ async function openLink(url: string) {
   }
 }
 
-async function activateHero() {
-  const target = homepage.value?.hero?.target;
-  if (target?.app) {
+async function activateBanner({ target }: CatalogBanner) {
+  if (target.app) {
     await openApp(target.app);
-  } else if (target?.url) {
+  } else if (target.url) {
     await openLink(target.url);
-  } else if (target?.collection) {
-    showHeroCollection.value = true;
+  } else if (target.collection) {
+    featuredCollectionId.value = target.collection;
     await nextTick();
     const section = document.getElementById('collection-' + target.collection);
     section?.focus({ preventScroll: true });
@@ -165,7 +162,7 @@ onBeforeMount(async () => {
   color: var(--color-text);
 }
 
-.welcome, .update {
+.update {
   height: 200px;
 }
 
