@@ -31,6 +31,14 @@ pnpm install --frozen-lockfile
 pnpm tauri dev
 ```
 
+On Linux, Aoska detects Wayland sessions with the NVIDIA kernel module loaded
+and sets `__NV_DISABLE_EXPLICIT_SYNC=1` before GTK initializes. This avoids the
+surface acquire-point violation described in [WebKit #280210](https://bugs.webkit.org/show_bug.cgi?id=280210)
+while allowing WebKit to select its DMA-BUF renderer. Existing values of that
+variable take precedence. To test the native explicit-sync path, launch with
+`__NV_DISABLE_EXPLICIT_SYNC=0 aoska`. The workaround affects only the Aoska
+process and its children.
+
 ### ASMR catalog
 
 Aoska reads a built ASMR v1 directory over HTTP(S). To preview the ASMR examples,
