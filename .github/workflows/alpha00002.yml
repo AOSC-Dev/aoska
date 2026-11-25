@@ -1,0 +1,96 @@
+name: Build Aoska alpha00002
+
+on:
+  push:
+    branches: [build/alpha00002]
+
+permissions:
+  contents: read
+
+jobs:
+  deb:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libxdo-dev libssl-dev
+          rustup toolchain install 1.95.0 --profile minimal
+
+      - name: Build frontend
+        run: |
+          npm exec --yes --package=pnpm@10.12.1 -- pnpm install --frozen-lockfile
+          npm exec --yes --package=pnpm@10.12.1 -- pnpm build
+
+      - name: Test Linux startup and package adapter
+        run: cargo +1.95.0 test --manifest-path src-tauri/Cargo.toml --locked --bin aoska --lib
+
+      - name: Build standalone Linux binary
+        env:
+          CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS: 'true'
+          TAURI_CONFIG: '{"version":"0.1.0-alpha00002"}'
+        run: |
+          cargo +1.95.0 build --manifest-path src-tauri/Cargo.toml --bin aoska --release --locked --features tauri/custom-protocol
+
+      - name: Package for AOSC OS
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_root="$(mktemp -d)"
+          mkdir -p "$package_root/DEBIAN" "$package_root/usr/share/applications" artifacts
+          install -Ds -m 0755 src-tauri/target/release/aoska "$package_root/usr/bin/aoska"
+          install -D -m 0644 src-tauri/icons/128x128.png "$package_root/usr/share/icons/hicolor/128x128/apps/aoska.png"
+          install -D -m 0644 src-tauri/icons/128x128@2x.png "$package_root/usr/share/icons/hicolor/256x256/apps/aoska.png"
+
+          cat > "$package_root/DEBIAN/control" <<EOF
+          Package: aoska
+          Version: 0.1.0~alpha00002
+          Architecture: amd64
+          Section: admin
+          Priority: optional
+          Maintainer: ${GITHUB_ACTOR} <${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com>
+          Depends: glibc (>= 2.39), gtk-3, webkit2gtk, dbus, amo (>= 0.6.1), debconf-kde
+          Homepage: https://github.com/AOSC-Dev/aoska
+          Description: Graphical software center for AOSC OS (alpha)
+           Browse the ASMR catalog and manage packages through amo.
+          EOF
+
+          cat > "$package_root/usr/share/applications/com.aosc.aoska.desktop" <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=Aoska
+          Comment=Software center for AOSC OS
+          Exec=/usr/bin/aoska
+          Icon=aoska
+          Terminal=false
+          Categories=System;PackageManager;
+          EOF
+
+          dpkg-deb --build --root-owner-group "$package_root" artifacts/aoska_alpha00002_amd64.deb
+          deb=artifacts/aoska_alpha00002_amd64.deb
+          test "$(dpkg-deb --field "$deb" Package)" = aoska
+          test "$(dpkg-deb --field "$deb" Version)" = '0.1.0~alpha00002'
+          test "$(dpkg-deb --field "$deb" Architecture)" = amd64
+          if ! grep -aq '__NV_DISABLE_EXPLICIT_SYNC' "$package_root/usr/bin/aoska"; then
+            echo 'Missing NVIDIA startup compatibility code'
+            exit 1
+          fi
+          file "$package_root/usr/bin/aoska" | grep -F 'x86-64'
+          ldd "$package_root/usr/bin/aoska" | tee artifacts/aoska_alpha00002_amd64.ldd.txt
+          if grep -F 'not found' artifacts/aoska_alpha00002_amd64.ldd.txt; then exit 1; fi
+          dpkg-deb --contents "$deb"
+          (
+            cd artifacts
+            sha256sum aoska_alpha00002_amd64.deb > aoska_alpha00002_amd64.deb.sha256
+          )
+
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: aoska_alpha00002_amd64
+          path: |
+            artifacts/aoska_alpha00002_amd64.deb
+            artifacts/aoska_alpha00002_amd64.deb.sha256
+          if-no-files-found: error
+          retention-days: 7
